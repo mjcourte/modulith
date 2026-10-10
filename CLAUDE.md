@@ -38,7 +38,7 @@ Follow `services/storagecatalogue`:
 - `service_test.go`: one shared suite (`runServiceTests`) that every implementation runs (`memory_test.go`, `postgres_test.go`), so the fake can't drift from the real thing.
 - `OPTIMIZATIONS.md` (next to the README): performance findings with evidence, split into Done and Open (with "when to act"). Add an entry whenever a performance issue is found, fixed or deliberately deferred.
 - Never edit a migration that has been applied; add a new one.
-- `cmd/` mains are wiring only: `main` calls `run() error` so defers run before `os.Exit`.
+- `cmd/` mains are wiring only: `main` calls `run() error` so defers run before `os.Exit`. Shutdown sequence: after `<-ctx.Done()` call `stop()` (a second Ctrl+C then kills the process), derive `context.WithTimeout(context.WithoutCancel(ctx), shutdownTimeout)`, and stop things in reverse startup order. Blocking closes without a context (`pool.Close`, gRPC `GracefulStop`) go through `platform/shutdown.Within`, never a bare `defer`, so a stuck connection can't hang exit.
 - Go packages have no hyphens or underscores; binary names under `cmd/` may.
 
 ## Languages

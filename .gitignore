@@ -1,1 +1,5 @@
+# ignore KW engine for now
 libs/
+
+# Local settings with credentials; see .env.example
+.env
