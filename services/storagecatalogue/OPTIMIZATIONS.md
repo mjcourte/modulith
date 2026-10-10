@@ -20,6 +20,7 @@ one owner with 20k objects.
 ## Done
 
 ### Owner listing scanned the whole table
+
 - **Found:** `owner_id IS NOT DISTINCT FROM $2` (so Gyoza's NULL owner ID
   matched) can't use an index. Listing by owner was a sequential scan of the
   entire table: 131ms to return 29 rows.
@@ -27,6 +28,7 @@ one owner with 20k objects.
   query uses `owner_id = $2`. Now an index scan.
 
 ### Later pages re-read every earlier row
+
 - **Found:** `($cursor IS NULL OR (created_at, id) > $cursor)` kept the cursor
   out of the index condition, so each page read and discarded every row
   before it, like `OFFSET`.
@@ -34,6 +36,7 @@ one owner with 20k objects.
   cursor (`cursor{}` in Go). The cursor is now an index condition.
 
 ### Cached generic plans read the whole scope
+
 - **Found:** pgx uses prepared statements, and Postgres may switch them to a
   generic plan that can't see the parameter values. It assumed every owner is
   small (estimated 12 rows), chose a bitmap scan of the whole scope plus a
@@ -46,6 +49,7 @@ one owner with 20k objects.
 ## Open
 
 ### Rare filter values scan the whole scope
+
 - **Found:** optional filters (`Kind`, `CreatedBy`) are checked on rows the
   index returns. Finding 20 exports among a 20k-object owner read all 20k
   rows: 4ms.
@@ -55,6 +59,7 @@ one owner with 20k objects.
   uses it. Each index slows writes, so only for filters that are actually used.
 
 ### Soft-deleted rows stay in the indexes
+
 - **Expected:** deleted rows are skipped by a filter, not by the index. If
   deletions pile up, every List reads and discards them.
 - **When to act:** a meaningful share of rows are deleted, or the hard-purge
@@ -63,6 +68,7 @@ one owner with 20k objects.
   for the default (non-deleted) listing.
 
 ### Random IDs scatter primary-key inserts
+
 - **Expected:** IDs come from `crypto/rand.Text()`, so each insert lands on a
   random page of the primary-key B-tree. At high insert rates that means more
   page splits and a larger working set than time-ordered keys.
@@ -71,6 +77,7 @@ one owner with 20k objects.
   generator changes.
 
 ### force_custom_plan applies to every query on the pool
+
 - **Expected:** in the monolith all services share one pool, so every query
   is re-planned on each run, not only the catalogue's List.
 - **When to act:** planning time shows up in profiles for some other
@@ -79,6 +86,7 @@ one owner with 20k objects.
   `plan_cache_mode` per transaction for the List queries only.
 
 ### ClearCreatedBy is one UPDATE
+
 - **Expected:** a user who created a very large number of objects makes this a
   single long-running update that locks all those rows at once.
 - **When to act:** user deletion for heavy users takes noticeably long or
