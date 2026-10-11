@@ -22,6 +22,11 @@ func runServiceTests(t *testing.T, newService func(t *testing.T) ledger.Service)
 		{"ListPagination", testListPagination},
 		{"ProjectDeletion", testProjectDeletion},
 		{"UserDeletion", testUserDeletion},
+		{"TransferOwner", testTransferOwner},
+		{"MarkDeletedByOwner", testMarkDeletedByOwner},
+		{"CreateWithChosenID", testCreateWithChosenID},
+		{"ListDeleted", testListDeleted},
+		{"Purge", testPurge},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

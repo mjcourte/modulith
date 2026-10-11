@@ -22,18 +22,24 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	LedgerService_CreateObject_FullMethodName      = "/gyoza.storageledger.v1.LedgerService/CreateObject"
-	LedgerService_GetObject_FullMethodName         = "/gyoza.storageledger.v1.LedgerService/GetObject"
-	LedgerService_ListObjects_FullMethodName       = "/gyoza.storageledger.v1.LedgerService/ListObjects"
-	LedgerService_MarkObjectDeleted_FullMethodName = "/gyoza.storageledger.v1.LedgerService/MarkObjectDeleted"
-	LedgerService_ClearCreatedBy_FullMethodName    = "/gyoza.storageledger.v1.LedgerService/ClearCreatedBy"
+	LedgerService_CreateObject_FullMethodName       = "/gyoza.storageledger.v1.LedgerService/CreateObject"
+	LedgerService_GetObject_FullMethodName          = "/gyoza.storageledger.v1.LedgerService/GetObject"
+	LedgerService_ListObjects_FullMethodName        = "/gyoza.storageledger.v1.LedgerService/ListObjects"
+	LedgerService_MarkObjectDeleted_FullMethodName  = "/gyoza.storageledger.v1.LedgerService/MarkObjectDeleted"
+	LedgerService_ClearCreatedBy_FullMethodName     = "/gyoza.storageledger.v1.LedgerService/ClearCreatedBy"
+	LedgerService_TransferOwner_FullMethodName      = "/gyoza.storageledger.v1.LedgerService/TransferOwner"
+	LedgerService_MarkDeletedByOwner_FullMethodName = "/gyoza.storageledger.v1.LedgerService/MarkDeletedByOwner"
+	LedgerService_ListDeletedObjects_FullMethodName = "/gyoza.storageledger.v1.LedgerService/ListDeletedObjects"
+	LedgerService_PurgeObject_FullMethodName        = "/gyoza.storageledger.v1.LedgerService/PurgeObject"
 )
 
 // LedgerServiceClient is the client API for LedgerService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type LedgerServiceClient interface {
-	// Records a new object. The server assigns id and created_at.
+	// Records a new object. The server assigns created_at, and id unless the
+	// caller chose one. With a caller-chosen id it is idempotent: the same file
+	// again returns the existing object; a different file is ALREADY_EXISTS.
 	CreateObject(ctx context.Context, in *CreateObjectRequest, opts ...grpc.CallOption) (*CreateObjectResponse, error)
 	// Fails with NOT_FOUND if there is no such object.
 	GetObject(ctx context.Context, in *GetObjectRequest, opts ...grpc.CallOption) (*GetObjectResponse, error)
@@ -43,6 +49,16 @@ type LedgerServiceClient interface {
 	MarkObjectDeleted(ctx context.Context, in *MarkObjectDeletedRequest, opts ...grpc.CallOption) (*MarkObjectDeletedResponse, error)
 	// Removes a deleted user as creator from every object.
 	ClearCreatedBy(ctx context.Context, in *ClearCreatedByRequest, opts ...grpc.CallOption) (*ClearCreatedByResponse, error)
+	// Gives every object of one owner (deleted or not) to another, e.g. a
+	// departing user's files to their org. Never to or from a project.
+	TransferOwner(ctx context.Context, in *TransferOwnerRequest, opts ...grpc.CallOption) (*TransferOwnerResponse, error)
+	// Soft-deletes every live object of an owner, e.g. a deleted project's.
+	MarkDeletedByOwner(ctx context.Context, in *MarkDeletedByOwnerRequest, opts ...grpc.CallOption) (*MarkDeletedByOwnerResponse, error)
+	// Lists objects deleted before a time, longest-deleted first, for the purge job.
+	ListDeletedObjects(ctx context.Context, in *ListDeletedObjectsRequest, opts ...grpc.CallOption) (*ListDeletedObjectsResponse, error)
+	// Removes a deleted object for good once its bytes are gone. Missing is
+	// fine; a live object is FAILED_PRECONDITION.
+	PurgeObject(ctx context.Context, in *PurgeObjectRequest, opts ...grpc.CallOption) (*PurgeObjectResponse, error)
 }
 
 type ledgerServiceClient struct {
@@ -103,11 +119,53 @@ func (c *ledgerServiceClient) ClearCreatedBy(ctx context.Context, in *ClearCreat
 	return out, nil
 }
 
+func (c *ledgerServiceClient) TransferOwner(ctx context.Context, in *TransferOwnerRequest, opts ...grpc.CallOption) (*TransferOwnerResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(TransferOwnerResponse)
+	err := c.cc.Invoke(ctx, LedgerService_TransferOwner_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *ledgerServiceClient) MarkDeletedByOwner(ctx context.Context, in *MarkDeletedByOwnerRequest, opts ...grpc.CallOption) (*MarkDeletedByOwnerResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(MarkDeletedByOwnerResponse)
+	err := c.cc.Invoke(ctx, LedgerService_MarkDeletedByOwner_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *ledgerServiceClient) ListDeletedObjects(ctx context.Context, in *ListDeletedObjectsRequest, opts ...grpc.CallOption) (*ListDeletedObjectsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListDeletedObjectsResponse)
+	err := c.cc.Invoke(ctx, LedgerService_ListDeletedObjects_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *ledgerServiceClient) PurgeObject(ctx context.Context, in *PurgeObjectRequest, opts ...grpc.CallOption) (*PurgeObjectResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PurgeObjectResponse)
+	err := c.cc.Invoke(ctx, LedgerService_PurgeObject_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // LedgerServiceServer is the server API for LedgerService service.
 // All implementations must embed UnimplementedLedgerServiceServer
 // for forward compatibility.
 type LedgerServiceServer interface {
-	// Records a new object. The server assigns id and created_at.
+	// Records a new object. The server assigns created_at, and id unless the
+	// caller chose one. With a caller-chosen id it is idempotent: the same file
+	// again returns the existing object; a different file is ALREADY_EXISTS.
 	CreateObject(context.Context, *CreateObjectRequest) (*CreateObjectResponse, error)
 	// Fails with NOT_FOUND if there is no such object.
 	GetObject(context.Context, *GetObjectRequest) (*GetObjectResponse, error)
@@ -117,6 +175,16 @@ type LedgerServiceServer interface {
 	MarkObjectDeleted(context.Context, *MarkObjectDeletedRequest) (*MarkObjectDeletedResponse, error)
 	// Removes a deleted user as creator from every object.
 	ClearCreatedBy(context.Context, *ClearCreatedByRequest) (*ClearCreatedByResponse, error)
+	// Gives every object of one owner (deleted or not) to another, e.g. a
+	// departing user's files to their org. Never to or from a project.
+	TransferOwner(context.Context, *TransferOwnerRequest) (*TransferOwnerResponse, error)
+	// Soft-deletes every live object of an owner, e.g. a deleted project's.
+	MarkDeletedByOwner(context.Context, *MarkDeletedByOwnerRequest) (*MarkDeletedByOwnerResponse, error)
+	// Lists objects deleted before a time, longest-deleted first, for the purge job.
+	ListDeletedObjects(context.Context, *ListDeletedObjectsRequest) (*ListDeletedObjectsResponse, error)
+	// Removes a deleted object for good once its bytes are gone. Missing is
+	// fine; a live object is FAILED_PRECONDITION.
+	PurgeObject(context.Context, *PurgeObjectRequest) (*PurgeObjectResponse, error)
 	mustEmbedUnimplementedLedgerServiceServer()
 }
 
@@ -141,6 +209,18 @@ func (UnimplementedLedgerServiceServer) MarkObjectDeleted(context.Context, *Mark
 }
 func (UnimplementedLedgerServiceServer) ClearCreatedBy(context.Context, *ClearCreatedByRequest) (*ClearCreatedByResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ClearCreatedBy not implemented")
+}
+func (UnimplementedLedgerServiceServer) TransferOwner(context.Context, *TransferOwnerRequest) (*TransferOwnerResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method TransferOwner not implemented")
+}
+func (UnimplementedLedgerServiceServer) MarkDeletedByOwner(context.Context, *MarkDeletedByOwnerRequest) (*MarkDeletedByOwnerResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method MarkDeletedByOwner not implemented")
+}
+func (UnimplementedLedgerServiceServer) ListDeletedObjects(context.Context, *ListDeletedObjectsRequest) (*ListDeletedObjectsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListDeletedObjects not implemented")
+}
+func (UnimplementedLedgerServiceServer) PurgeObject(context.Context, *PurgeObjectRequest) (*PurgeObjectResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method PurgeObject not implemented")
 }
 func (UnimplementedLedgerServiceServer) mustEmbedUnimplementedLedgerServiceServer() {}
 func (UnimplementedLedgerServiceServer) testEmbeddedByValue()                       {}
@@ -253,6 +333,78 @@ func _LedgerService_ClearCreatedBy_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _LedgerService_TransferOwner_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TransferOwnerRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LedgerServiceServer).TransferOwner(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LedgerService_TransferOwner_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LedgerServiceServer).TransferOwner(ctx, req.(*TransferOwnerRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LedgerService_MarkDeletedByOwner_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MarkDeletedByOwnerRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LedgerServiceServer).MarkDeletedByOwner(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LedgerService_MarkDeletedByOwner_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LedgerServiceServer).MarkDeletedByOwner(ctx, req.(*MarkDeletedByOwnerRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LedgerService_ListDeletedObjects_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListDeletedObjectsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LedgerServiceServer).ListDeletedObjects(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LedgerService_ListDeletedObjects_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LedgerServiceServer).ListDeletedObjects(ctx, req.(*ListDeletedObjectsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LedgerService_PurgeObject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PurgeObjectRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LedgerServiceServer).PurgeObject(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LedgerService_PurgeObject_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LedgerServiceServer).PurgeObject(ctx, req.(*PurgeObjectRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // LedgerService_ServiceDesc is the grpc.ServiceDesc for LedgerService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -279,6 +431,22 @@ var LedgerService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ClearCreatedBy",
 			Handler:    _LedgerService_ClearCreatedBy_Handler,
+		},
+		{
+			MethodName: "TransferOwner",
+			Handler:    _LedgerService_TransferOwner_Handler,
+		},
+		{
+			MethodName: "MarkDeletedByOwner",
+			Handler:    _LedgerService_MarkDeletedByOwner_Handler,
+		},
+		{
+			MethodName: "ListDeletedObjects",
+			Handler:    _LedgerService_ListDeletedObjects_Handler,
+		},
+		{
+			MethodName: "PurgeObject",
+			Handler:    _LedgerService_PurgeObject_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

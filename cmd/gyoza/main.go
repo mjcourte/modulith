@@ -2,16 +2,24 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
+	"net"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
+	"google.golang.org/grpc"
+
+	"gyoza/cmd/internal/wiring"
+	ledgerpb "gyoza/contracts/gen/go/gyoza/storageledger/v1"
+	managerpb "gyoza/contracts/gen/go/gyoza/storagemanager/v1"
 	"gyoza/platform/config"
 	"gyoza/platform/postgres"
 	"gyoza/platform/shutdown"
-	storageledger "gyoza/services/storageledger"
+	"gyoza/services/storageledger"
+	"gyoza/services/storagemanager"
 )
 
 func main() {
@@ -33,6 +41,8 @@ func run() error {
 	logLevel := slog.LevelInfo
 	env.Text("GYOZA_LOG_LEVEL", &logLevel)
 	shutdownTimeout := env.Duration("GYOZA_SHUTDOWN_TIMEOUT", 20*time.Second)
+	grpcAddr := env.String("GYOZA_GRPC_ADDR", "localhost:9090")
+	storage := wiring.StorageManagerFromEnv(env)
 	if err := env.Err(); err != nil {
 		return err
 	}
@@ -47,11 +57,40 @@ func run() error {
 		pool.Close() // nothing is running yet, so this returns promptly
 		return err
 	}
+	// In-process: the manager calls the ledger directly, no gRPC in between.
 	ledger := storageledger.NewPostgres(pool)
-	_ = ledger // nothing consumes it yet; storage-manager will take it directly
+	manager, err := wiring.NewStorageManager(ctx, pool, ledger, storage)
+	if err != nil {
+		pool.Close()
+		return err
+	}
 
-	slog.Info("gyoza started")
-	<-ctx.Done()
+	// Until the gateway exists, the services are reachable over gRPC so
+	// they can be called by hand (go tool buf curl, see contracts/README.md).
+	lis, err := net.Listen("tcp", grpcAddr)
+	if err != nil {
+		pool.Close()
+		return err
+	}
+	server := grpc.NewServer()
+	ledgerpb.RegisterLedgerServiceServer(server, storageledger.NewGRPCServer(ledger))
+	managerpb.RegisterStorageManagerServiceServer(server, storagemanager.NewGRPCServer(manager))
+	serveErr := make(chan error, 1)
+	go func() { serveErr <- server.Serve(lis) }()
+
+	cleanupCtx, stopCleanup := context.WithCancel(context.WithoutCancel(ctx))
+	defer stopCleanup()
+	cleanupDone := wiring.StartCleanup(cleanupCtx, manager, storage.CleanupInterval)
+	slog.Info("gyoza started", "grpc", lis.Addr().String(), "bucket", storage.Manager.Bucket)
+
+	select {
+	case <-ctx.Done():
+	case err := <-serveErr:
+		stopCleanup()
+		<-cleanupDone
+		pool.Close()
+		return fmt.Errorf("grpc server: %w", err)
+	}
 	stop() // from here a second Ctrl+C kills the process instead of waiting
 	slog.Info("shutting down", "timeout", shutdownTimeout)
 
@@ -60,8 +99,16 @@ func run() error {
 	shutdownCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), shutdownTimeout)
 	defer cancel()
 
-	// Stop in reverse order of startup: servers first (once there are any),
-	// then the pool, because in-flight requests still need it.
+	// Stop in reverse order of startup: the server, the cleanup job, then
+	// the pool, because both of them still need it until they've stopped.
+	if err := shutdown.Within(shutdownCtx, server.GracefulStop); err != nil {
+		server.Stop()
+		slog.Warn("grpc calls cut off at shutdown deadline")
+	}
+	stopCleanup()
+	if err := shutdown.Within(shutdownCtx, func() { <-cleanupDone }); err != nil {
+		slog.Warn("cleanup run cut off at shutdown deadline")
+	}
 	if err := shutdown.Within(shutdownCtx, pool.Close); err != nil {
 		return err
 	}

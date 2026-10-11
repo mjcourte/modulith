@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-Gyoza (formerly K2/KAD) is an early-stage monorepo re-architecture of the Kyoso platform, written after a post-mortem. `services/storageledger` is the first implemented Go service. Other components hold only README intent notes. `libs/engine` is the existing Rust engine, dumped in as-is; it has its own `AGENTS.md` and build scripts and isn't integrated yet. `Cargo.toml`, `package.json` and `pyproject.toml` at the root are still empty placeholders.
+Gyoza (formerly K2/KAD) is an early-stage monorepo re-architecture of the Kyoso platform, written after a post-mortem. `services/storageledger` and `services/storagemanager` (steps 1-10 of its plan: DAM, cascades, Postgres store, S3 blobs, cleanup job, gRPC API and binaries) are implemented in Go. Other components hold only README intent notes. `libs/engine` is the existing Rust engine, dumped in as-is; it has its own `AGENTS.md` and build scripts and isn't integrated yet. `Cargo.toml`, `package.json` and `pyproject.toml` at the root are still empty placeholders.
 
 The user is learning Go and is working through things step by step. Don't scaffold beyond what's asked. The README files are the spec: read the relevant one before working on a component, and record decisions there as they are made.
 
@@ -20,18 +20,20 @@ go generate ./services/storageledger               # rerun sqlc after editing mi
 go generate ./contracts                               # buf lint + generate after editing .proto (needs go on PATH)
 ```
 
-Call a running gRPC service by hand with `go tool buf curl` (example in `contracts/README.md`).
+Call a running gRPC service by hand with `go tool buf curl` (example in `contracts/README.md`). Run it from bash: Windows PowerShell 5.1 strips the double quotes from JSON arguments to native programs.
 
 Postgres 18 runs locally as a Windows service (`psql` at `C:\Program Files\PostgreSQL\18\bin\psql.exe`, not on PATH). Dev database: `postgres://gyoza:gyoza@localhost:5432/gyoza`.
 
-- `GYOZA_DATABASE_URL`: required by the binaries (`go run ./cmd/gyoza`, `go run ./cmd/storage-ledger`). They connect, run migrations at startup, and run until Ctrl+C.
-- `GYOZA_TEST_DATABASE_URL`: enables the Postgres tests. Each subtest runs in a rolled-back transaction, so they are safe against the dev database.
+- `GYOZA_DATABASE_URL`: required by the binaries (`go run ./cmd/gyoza`, `./cmd/storage-ledger`, `./cmd/storage-manager`). They connect, run migrations at startup, and run until Ctrl+C. Binaries hosting storagemanager (the monolith, `storage-manager`) also need the `GYOZA_S3_*` settings, and `storage-manager` needs `GYOZA_LEDGER_ADDR`; `.env.example` has working local values.
+- `GYOZA_TEST_DATABASE_URL`: enables the Postgres tests. Each subtest runs in a rolled-back transaction, so they are safe against the dev database. They do assume the test owners (`alice`, `bob`, `acme`, `p1`, ...) have no committed rows there: manual runs against the dev database must use other IDs.
 
 Always open pools with `platform/postgres.Connect`, never `pgxpool.New` directly: it sets `plan_cache_mode=force_custom_plan`, which the keyset-paginated queries depend on for index scans.
 
 `sqlc` is a Go tool dependency (`go tool sqlc`), and builds without cgo. There's no C compiler on this machine.
 
-Docker Desktop is installed (`%LOCALAPPDATA%\Programs\DockerDesktop\resources\bin`, may not be on PATH; the CLI needs that folder on PATH to find its credential helper). `deploy/monolith/compose.yaml` runs Postgres on `localhost:5433` as a second option alongside the local install on 5432; see `deploy/README.md`.
+Docker Desktop is installed (`%LOCALAPPDATA%\Programs\DockerDesktop\resources\bin`, may not be on PATH; the CLI needs that folder on PATH to find its credential helper). `deploy/monolith/compose.yaml` runs Postgres on `localhost:5433` as a second option alongside the local install on 5432, and RustFS (S3-compatible) on `localhost:9000`; see `deploy/README.md`.
+
+- `GYOZA_TEST_S3_ENDPOINT=http://localhost:9000`: enables the S3 blob tests (`platform/blob/s3_test.go`; credentials default to the compose file's).
 
 ## Go service pattern
 
@@ -46,24 +48,31 @@ Follow `services/storageledger`:
 - Never edit a migration that has been applied; add a new one. (One deliberate pre-release exception: on 2026-10-10 the service was renamed storagecatalogue → storageledger, including its Postgres schema `catalogue` → `ledger`, by editing migrations and dropping the old schema from the empty dev databases. Once anything is deployed, renames need forward migrations.)
 - Naming: the service is the "ledger" (`storageledger`, `cmd/storage-ledger`, `LedgerService`, schema `ledger`), never "catalogue"/"catalog".
 - `cmd/` mains are wiring only: `main` calls `run() error` so defers run before `os.Exit`. Shutdown sequence: after `<-ctx.Done()` call `stop()` (a second Ctrl+C then kills the process), derive `context.WithTimeout(context.WithoutCancel(ctx), shutdownTimeout)`, and stop things in reverse startup order. Blocking closes without a context (`pool.Close`, gRPC `GracefulStop`) go through `platform/shutdown.Within`, never a bare `defer`, so a stuck connection can't hang exit.
+- Setup shared by several mains (reading a service's settings, building it, starting its background jobs) goes in `cmd/internal/wiring`, so the monolith and the standalone binary can't drift apart.
 - Go packages have no hyphens or underscores; binary names under `cmd/` may.
 
 ### Services with real logic: `services/storagemanager`
 
 The ledger is pure data, so its `Service` *is* its store. storagemanager has logic, so it splits:
 
-- `Manager` (logic, step 4+) depends on interfaces only: `storageledger.Service`, `Store` (DAM data, `assets.go`), `Blobs` (S3, `blobs.go`), and later `Authorizer`. Tests wire memory fakes of all of them.
+- `Manager` (logic) depends on interfaces only: `storageledger.Service`, `Store` (DAM data, `assets.go`), `blob.Store` (S3, `platform/blob`), and `Authorizer` (`authz.go`). Tests wire memory fakes of all of them.
 - The `Store` checks data shape only, never permissions. Shared validation/normalisation lives in `assets_rules.go`, so every Store implementation accepts and rejects the same input.
-- Errors and limits go at the top of the file that defines the types (`assets.go`).
-- Progress and decisions: `services/storagemanager/README.md`; step plan in the user's plan file.
+- Errors and limits go at the top of the file that defines the types they belong to: asset ones in `assets.go`, folder ones in `folders.go`, upload ones in `uploads.go`, `ErrForbidden` in `authz.go`; `blob.ErrNotFound` in `platform/blob/blob.go`.
+- Package layout: a folder is a package, so split only along real boundaries (a small API, no dependency back, reusable), not by layer. Many files in one package, grouped by name prefix, is normal. Package names give context, so avoid stutter (`blob.Store`, not `blobs.Blobs`). Shared test suites other packages need go in an `xxxtest` package (`platform/blob/blobtest`).
+- Callers use the `Service` interface (`service.go`), implemented by `*Manager` and `GRPCClient`, never `*Manager` itself. Background work (`Cleanup`/`RunCleanup`) stays off `Service`: it runs inside whichever binary hosts the Manager.
+- When several sentinel errors share a gRPC code, the status carries one `google.rpc.ErrorInfo` per matching sentinel and the client rebuilds them (`wireErrors` in `grpc.go`); one table drives both directions.
+- Progress and decisions: `services/storagemanager/README.md`; upcoming work in its `PLAN.md`.
+
+Planned work lives in a `PLAN.md` next to each component's README (`services/usermanager`, `services/storagemanager`, `services/gateway`, `services/documentmanager`, `apps/web`); the plans link to each other where a decision spans components. READMEs record what is built and decided; PLAN.md records what is next.
 
 ### Testing conventions
 
-- Every interface with several implementations gets one shared suite (`runServiceTests`, `runBlobsTests`, `runStoreTests`) taking a constructor or harness; each implementation has a tiny `*_test.go` that runs it.
+- Every interface with several implementations gets one shared suite (`runServiceTests`, `blobtest.RunSuite`, `runStoreTests`) taking a constructor or harness; each implementation has a tiny `*_test.go` that runs it.
 - Mutation-check a new suite: reintroduce realistic bugs into the implementation one at a time, confirm each is caught by a named test, then restore the file. A first pass found tests that passed while proving nothing.
 - External test files (`package x_test`) in one folder share a namespace: prefix helper and case names (`testGetAssetMissing`, not `testGetMissing`) to avoid clashes.
 - Stores keep microsecond timestamps, so two calls can share one; tests asserting "must not change `UpdatedAt`/`DeletedAt`" call `letTimePass()` between them.
 - Compare whole sets of IDs for order-independent results; with UUIDv7 (storagemanager) order is exact and can be asserted.
+- Test-only hooks into unexported state (e.g. `SetClock` to jump past the trash retention) go in `export_test.go` in the package itself (not `_test`): compiled only into tests, so the real API never exposes them.
 
 ## Languages
 

@@ -2,8 +2,10 @@ package storageledger
 
 import (
 	"context"
+	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	pb "gyoza/contracts/gen/go/gyoza/storageledger/v1"
 )
@@ -56,7 +58,7 @@ func (c *GRPCClient) List(ctx context.Context, q ListQuery) (ListPage, error) {
 	if n.ProjectID != "" {
 		req.Scope = &pb.ListObjectsRequest_ProjectId{ProjectId: n.ProjectID}
 	} else {
-		req.Scope = &pb.ListObjectsRequest_Owner{Owner: ownerToProto(n.Owner)}
+		req.Scope = &pb.ListObjectsRequest_Owner{Owner: OwnerToProto(n.Owner)}
 	}
 
 	resp, err := c.c.ListObjects(ctx, req)
@@ -86,4 +88,42 @@ func (c *GRPCClient) ClearCreatedBy(ctx context.Context, userID string) (int, er
 		return 0, fromStatus(err, ErrInvalidQuery)
 	}
 	return int(resp.GetCount()), nil
+}
+
+func (c *GRPCClient) TransferOwner(ctx context.Context, from, to Owner) (int, error) {
+	resp, err := c.c.TransferOwner(ctx, &pb.TransferOwnerRequest{From: OwnerToProto(from), To: OwnerToProto(to)})
+	if err != nil {
+		return 0, fromStatus(err, ErrInvalidQuery)
+	}
+	return int(resp.GetCount()), nil
+}
+
+func (c *GRPCClient) MarkDeletedByOwner(ctx context.Context, owner Owner) (int, error) {
+	resp, err := c.c.MarkDeletedByOwner(ctx, &pb.MarkDeletedByOwnerRequest{Owner: OwnerToProto(owner)})
+	if err != nil {
+		return 0, fromStatus(err, ErrInvalidQuery)
+	}
+	return int(resp.GetCount()), nil
+}
+
+func (c *GRPCClient) ListDeleted(ctx context.Context, before time.Time, limit int) ([]Object, error) {
+	if err := checkLimit(limit); err != nil {
+		return nil, err // checked here too: a huge limit would wrap around in int32
+	}
+	resp, err := c.c.ListDeletedObjects(ctx, &pb.ListDeletedObjectsRequest{Before: timestamppb.New(before), Limit: int32(limit)})
+	if err != nil {
+		return nil, fromStatus(err, ErrInvalidQuery)
+	}
+	objs := make([]Object, len(resp.GetObjects()))
+	for i, p := range resp.GetObjects() {
+		objs[i] = objectFromProto(p)
+	}
+	return objs, nil
+}
+
+func (c *GRPCClient) Purge(ctx context.Context, id string) error {
+	if _, err := c.c.PurgeObject(ctx, &pb.PurgeObjectRequest{Id: id}); err != nil {
+		return fromStatus(err, ErrInvalidQuery)
+	}
+	return nil
 }

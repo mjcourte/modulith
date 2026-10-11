@@ -38,6 +38,55 @@ func runStoreTests(t *testing.T, newStore func(t *testing.T) sm.Store) {
 		{"ListPagination", testListPagination},
 		{"ListRejectsInvalid", testListRejectsInvalid},
 		{"ReturnedSlicesAreCopies", testReturnedSlicesAreCopies},
+
+		// Folders: store_folders_test.go
+		{"FolderCreateThenGet", testFolderCreateThenGet},
+		{"FolderCreateRejects", testFolderCreateRejects},
+		{"FolderNamesUniqueIgnoringCase", testFolderNamesUniqueIgnoringCase},
+		{"FolderDepthLimit", testFolderDepthLimit},
+		{"ListFolders", testListFolders},
+		{"RenameFolder", testRenameFolder},
+		{"MoveFolder", testMoveFolder},
+		{"MoveFolderDepthCountsSubtree", testMoveFolderDepthCountsSubtree},
+		{"AssetsInFolders", testAssetsInFolders},
+		{"DeleteEmptyFolder", testDeleteEmptyFolder},
+		{"DeleteFolderNotEmpty", testDeleteFolderNotEmpty},
+		{"DeleteFolderTree", testDeleteFolderTree},
+		{"TrashedFoldersAreReadOnly", testTrashedFoldersAreReadOnly},
+
+		// Upload sessions: store_uploads_test.go
+		{"UploadCreateThenGet", testUploadCreateThenGet},
+		{"UploadCreateRejects", testUploadCreateRejects},
+		{"CompleteUploadNewAsset", testCompleteUploadNewAsset},
+		{"CompleteUploadNewVersion", testCompleteUploadNewVersion},
+		{"CompleteUploadIsIdempotent", testCompleteUploadIsIdempotent},
+		{"CompleteUploadRejects", testCompleteUploadRejects},
+		{"ListExpiredUploads", testListExpiredUploads},
+		{"DeleteUpload", testDeleteUpload},
+		{"UploadSlicesAreCopies", testUploadSlicesAreCopies},
+		{"UploadObjectID", testUploadObjectID},
+
+		// Versions by number, breadcrumbs, trash: store_trash_test.go
+		{"GetVersion", testGetVersion},
+		{"ListOnlyDeleted", testListOnlyDeleted},
+		{"RestoreAsset", testRestoreAsset},
+		{"FolderPath", testFolderPath},
+		{"ListTrashedFolders", testListTrashedFolders},
+		{"RestoreDeletion", testRestoreDeletion},
+		{"RestoreDeletionResolvesConflicts", testRestoreDeletionResolvesConflicts},
+
+		// Owner lifecycle: store_owners_test.go
+		{"TransferOwner", testTransferOwner},
+		{"TransferOwnerMidUpload", testTransferOwnerMidUpload},
+		{"MarkDeletedByOwner", testMarkDeletedByOwner},
+		{"ClearCreatedBy", testClearCreatedByStore},
+		{"ExpireUploadsBy", testExpireUploadsBy},
+
+		// Purging for the cleanup job: store_purge_test.go
+		{"ListAssetsTrashedBefore", testListAssetsTrashedBefore},
+		{"PurgeAsset", testPurgeAsset},
+		{"PurgeFolders", testPurgeFolders},
+		{"DeleteCompletedUploads", testDeleteCompletedUploads},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

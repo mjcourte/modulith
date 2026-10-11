@@ -31,11 +31,13 @@ var ownerKindFromProto = map[pb.OwnerKind]OwnerKind{
 // Unknown kinds map to the zero value on both sides (missing map keys return
 // zero), and the server's validation rejects them.
 
-func ownerToProto(o Owner) *pb.Owner {
+// OwnerToProto and OwnerFromProto convert owners for any service whose API
+// carries the ledger's Owner message (storagemanager's does).
+func OwnerToProto(o Owner) *pb.Owner {
 	return &pb.Owner{Kind: ownerKindToProto[o.Kind], Id: o.ID}
 }
 
-func ownerFromProto(o *pb.Owner) Owner {
+func OwnerFromProto(o *pb.Owner) Owner {
 	if o == nil {
 		return Owner{}
 	}
@@ -45,7 +47,7 @@ func ownerFromProto(o *pb.Owner) Owner {
 func objectToProto(o Object) *pb.Object {
 	p := &pb.Object{
 		Id:          o.ID,
-		Owner:       ownerToProto(o.Owner),
+		Owner:       OwnerToProto(o.Owner),
 		CreatedBy:   o.CreatedBy,
 		ProjectId:   o.ProjectID,
 		Kind:        string(o.Kind),
@@ -70,7 +72,7 @@ func objectFromProto(p *pb.Object) Object {
 	}
 	o := Object{
 		ID:          p.GetId(),
-		Owner:       ownerFromProto(p.GetOwner()),
+		Owner:       OwnerFromProto(p.GetOwner()),
 		CreatedBy:   p.GetCreatedBy(),
 		ProjectID:   p.GetProjectId(),
 		Kind:        Kind(p.GetKind()),
@@ -98,6 +100,10 @@ func toStatus(err error) error {
 		return status.Error(codes.NotFound, err.Error())
 	case errors.Is(err, ErrInvalidQuery), errors.Is(err, ErrInvalidObject):
 		return status.Error(codes.InvalidArgument, err.Error())
+	case errors.Is(err, ErrAlreadyExists):
+		return status.Error(codes.AlreadyExists, err.Error())
+	case errors.Is(err, ErrNotDeleted):
+		return status.Error(codes.FailedPrecondition, err.Error())
 	default:
 		slog.Error("storageledger: internal error", "err", err)
 		return status.Error(codes.Internal, "internal error")
@@ -128,6 +134,10 @@ func fromStatus(err error, invalid error) error {
 		return &remoteError{sentinel: ErrNotFound, msg: st.Message()}
 	case codes.InvalidArgument:
 		return &remoteError{sentinel: invalid, msg: st.Message()}
+	case codes.AlreadyExists:
+		return &remoteError{sentinel: ErrAlreadyExists, msg: st.Message()}
+	case codes.FailedPrecondition:
+		return &remoteError{sentinel: ErrNotDeleted, msg: st.Message()}
 	default:
 		return err
 	}

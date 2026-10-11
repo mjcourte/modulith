@@ -50,7 +50,7 @@ func (s *GRPCServer) ListObjects(ctx context.Context, req *pb.ListObjectsRequest
 	case *pb.ListObjectsRequest_ProjectId:
 		q.ProjectID = scope.ProjectId
 	case *pb.ListObjectsRequest_Owner:
-		q.Owner = ownerFromProto(scope.Owner)
+		q.Owner = OwnerFromProto(scope.Owner)
 	}
 	page, err := s.svc.List(ctx, q)
 	if err != nil {
@@ -79,4 +79,39 @@ func (s *GRPCServer) ClearCreatedBy(ctx context.Context, req *pb.ClearCreatedByR
 		return nil, toStatus(err)
 	}
 	return &pb.ClearCreatedByResponse{Count: int64(n)}, nil
+}
+
+func (s *GRPCServer) TransferOwner(ctx context.Context, req *pb.TransferOwnerRequest) (*pb.TransferOwnerResponse, error) {
+	n, err := s.svc.TransferOwner(ctx, OwnerFromProto(req.GetFrom()), OwnerFromProto(req.GetTo()))
+	if err != nil {
+		return nil, toStatus(err)
+	}
+	return &pb.TransferOwnerResponse{Count: int64(n)}, nil
+}
+
+func (s *GRPCServer) MarkDeletedByOwner(ctx context.Context, req *pb.MarkDeletedByOwnerRequest) (*pb.MarkDeletedByOwnerResponse, error) {
+	n, err := s.svc.MarkDeletedByOwner(ctx, OwnerFromProto(req.GetOwner()))
+	if err != nil {
+		return nil, toStatus(err)
+	}
+	return &pb.MarkDeletedByOwnerResponse{Count: int64(n)}, nil
+}
+
+func (s *GRPCServer) ListDeletedObjects(ctx context.Context, req *pb.ListDeletedObjectsRequest) (*pb.ListDeletedObjectsResponse, error) {
+	objs, err := s.svc.ListDeleted(ctx, req.GetBefore().AsTime(), int(req.GetLimit()))
+	if err != nil {
+		return nil, toStatus(err)
+	}
+	resp := &pb.ListDeletedObjectsResponse{Objects: make([]*pb.Object, len(objs))}
+	for i, obj := range objs {
+		resp.Objects[i] = objectToProto(obj)
+	}
+	return resp, nil
+}
+
+func (s *GRPCServer) PurgeObject(ctx context.Context, req *pb.PurgeObjectRequest) (*pb.PurgeObjectResponse, error) {
+	if err := s.svc.Purge(ctx, req.GetId()); err != nil {
+		return nil, toStatus(err)
+	}
+	return &pb.PurgeObjectResponse{}, nil
 }

@@ -7,6 +7,7 @@
 #
 # Then point the binaries and tests at it:
 #   GYOZA_DATABASE_URL=postgres://gyoza:gyoza@localhost:5433/gyoza
+#   GYOZA_TEST_S3_ENDPOINT=http://localhost:9000   (S3: access key gyoza, secret gyoza-dev-secret)
 
 name: gyoza
 
@@ -32,5 +33,25 @@ services:
       timeout: 5s
       retries: 15
 
+  # S3-compatible storage for local runs and the blob tests. RustFS (Apache-2.0)
+  # because MinIO no longer publishes community images. It validates presigned
+  # signatures, including the signed size and content type, like S3 does.
+  s3:
+    image: rustfs/rustfs:1.0.0
+    environment:
+      RUSTFS_ACCESS_KEY: gyoza
+      RUSTFS_SECRET_KEY: gyoza-dev-secret # local development only
+      RUSTFS_VOLUMES: /data
+    ports:
+      - "127.0.0.1:9000:9000" # S3 API
+    volumes:
+      - s3-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:9000/health"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
 volumes:
   postgres-data:
+  s3-data:

@@ -15,6 +15,8 @@ type MemoryStore struct {
 	// versions holds each asset's versions, oldest first. Versions are only
 	// ever appended, so version n is always at index n-1.
 	versions map[string][]Version
+	folders  map[string]Folder // by folder ID; methods in folders_memory.go
+	uploads  map[string]Upload // by upload ID; methods in uploads_memory.go
 }
 
 // NewMemoryStore returns an empty MemoryStore.
@@ -22,6 +24,8 @@ func NewMemoryStore() *MemoryStore {
 	return &MemoryStore{
 		assets:   make(map[string]Asset),
 		versions: make(map[string][]Version),
+		folders:  make(map[string]Folder),
+		uploads:  make(map[string]Upload),
 	}
 }
 
@@ -54,13 +58,21 @@ func (m *MemoryStore) CreateAsset(ctx context.Context, a Asset, first Version) (
 	if err != nil {
 		return Asset{}, err
 	}
-	t := now()
-	a.ID = newID()
-	a.CreatedAt, a.UpdatedAt, a.DeletedAt = t, t, nil
-	first.AssetID, first.Number, first.CreatedAt = a.ID, 1, t
-
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	return m.insertAsset(a, first)
+}
+
+// insertAsset stores a normalised asset with first as version 1. The caller
+// must hold m.mu; CompleteUpload calls it too, inside its own locked section.
+func (m *MemoryStore) insertAsset(a Asset, first Version) (Asset, error) {
+	if err := m.checkAssetFolder(a.FolderID, a.Owner); err != nil {
+		return Asset{}, err
+	}
+	t := now()
+	a.ID = newID()
+	a.CreatedAt, a.UpdatedAt, a.DeletedAt, a.DeletionID = t, t, nil, ""
+	first.AssetID, first.Number, first.CreatedAt = a.ID, 1, t
 	m.assets[a.ID] = cloneAsset(a)
 	m.versions[a.ID] = []Version{first}
 	return cloneAsset(a), nil
@@ -118,10 +130,54 @@ func matchesAssetQuery(a Asset, q AssetQuery) bool {
 		return false
 	case q.Category != "" && a.Category != q.Category:
 		return false
+	case q.Folder != nil && a.FolderID != *q.Folder:
+		return false
 	case !q.IncludeDeleted && a.DeletedAt != nil:
+		return false
+	case q.OnlyDeleted && a.DeletedAt == nil:
 		return false
 	}
 	return true
+}
+
+func (m *MemoryStore) GetVersion(ctx context.Context, assetID string, number int) (Version, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if _, ok := m.assets[assetID]; !ok {
+		return Version{}, ErrAssetNotFound
+	}
+	versions := m.versions[assetID]
+	if number < 1 || number > len(versions) {
+		return Version{}, ErrVersionNotFound
+	}
+	return versions[number-1], nil
+}
+
+func (m *MemoryStore) RestoreAsset(ctx context.Context, id string) (Asset, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	a, ok := m.assets[id]
+	if !ok {
+		return Asset{}, ErrAssetNotFound
+	}
+	if a.DeletedAt == nil {
+		return cloneAsset(a), nil // not in the trash: nothing to do
+	}
+	m.restoreAssetLocked(&a)
+	m.assets[id] = a
+	return cloneAsset(a), nil
+}
+
+// restoreAssetLocked takes a out of the trash, moving it to the top level if
+// its folder isn't live. The caller must hold m.mu and write a back.
+func (m *MemoryStore) restoreAssetLocked(a *Asset) {
+	if a.FolderID != "" {
+		if _, err := m.ownedFolder(a.FolderID, a.Owner); err != nil {
+			a.FolderID = ""
+		}
+	}
+	a.DeletedAt, a.DeletionID = nil, ""
+	a.UpdatedAt = now()
 }
 
 func (m *MemoryStore) UpdateAsset(ctx context.Context, id string, u AssetUpdate) (Asset, error) {
@@ -145,6 +201,13 @@ func (m *MemoryStore) UpdateAsset(ctx context.Context, id string, u AssetUpdate)
 	if u.Tags != nil {
 		a.Tags = slices.Clone(*u.Tags)
 	}
+	if u.FolderID != nil {
+		// Checked before anything is written back, so a bad move changes nothing.
+		if err := m.checkAssetFolder(*u.FolderID, a.Owner); err != nil {
+			return Asset{}, err
+		}
+		a.FolderID = *u.FolderID
+	}
 	a.UpdatedAt = now()
 	m.assets[id] = a // a is a copy; write it back
 	return cloneAsset(a), nil
@@ -153,6 +216,12 @@ func (m *MemoryStore) UpdateAsset(ctx context.Context, id string, u AssetUpdate)
 func (m *MemoryStore) AddVersion(ctx context.Context, assetID string, v Version) (Version, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	return m.appendVersion(assetID, v)
+}
+
+// appendVersion adds v as the asset's next, current version. The caller must
+// hold m.mu; CompleteUpload calls it too.
+func (m *MemoryStore) appendVersion(assetID string, v Version) (Version, error) {
 	a, err := m.liveAsset(assetID)
 	if err != nil {
 		return Version{}, err

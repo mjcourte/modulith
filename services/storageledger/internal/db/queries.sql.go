@@ -31,6 +31,7 @@ INSERT INTO ledger.objects (
 ) VALUES (
     $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 )
+ON CONFLICT (id) DO NOTHING
 RETURNING id, owner_kind, owner_id, created_by, project_id, kind, bucket, key, size_bytes, content_type, created_at, deleted_at
 `
 
@@ -47,6 +48,8 @@ type CreateObjectParams struct {
 	ContentType string
 }
 
+// On an ID clash nothing is inserted and no row returned (pgx.ErrNoRows): the
+// caller then reads the existing object and compares (Create is idempotent).
 func (q *Queries) CreateObject(ctx context.Context, arg CreateObjectParams) (LedgerObject, error) {
 	row := q.db.QueryRow(ctx, createObject,
 		arg.ID,
@@ -100,6 +103,52 @@ func (q *Queries) GetObject(ctx context.Context, id string) (LedgerObject, error
 		&i.DeletedAt,
 	)
 	return i, err
+}
+
+const listDeletedObjects = `-- name: ListDeletedObjects :many
+SELECT id, owner_kind, owner_id, created_by, project_id, kind, bucket, key, size_bytes, content_type, created_at, deleted_at FROM ledger.objects
+WHERE deleted_at IS NOT NULL AND deleted_at < $1::timestamptz
+ORDER BY deleted_at, id
+LIMIT $2
+`
+
+type ListDeletedObjectsParams struct {
+	Before   time.Time
+	RowLimit int32
+}
+
+// Uses the partial index objects_deleted (migration 00003).
+func (q *Queries) ListDeletedObjects(ctx context.Context, arg ListDeletedObjectsParams) ([]LedgerObject, error) {
+	rows, err := q.db.Query(ctx, listDeletedObjects, arg.Before, arg.RowLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []LedgerObject
+	for rows.Next() {
+		var i LedgerObject
+		if err := rows.Scan(
+			&i.ID,
+			&i.OwnerKind,
+			&i.OwnerID,
+			&i.CreatedBy,
+			&i.ProjectID,
+			&i.Kind,
+			&i.Bucket,
+			&i.Key,
+			&i.SizeBytes,
+			&i.ContentType,
+			&i.CreatedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listObjectsByOwner = `-- name: ListObjectsByOwner :many
@@ -236,6 +285,26 @@ func (q *Queries) ListObjectsByProject(ctx context.Context, arg ListObjectsByPro
 	return items, nil
 }
 
+const markDeletedByOwner = `-- name: MarkDeletedByOwner :execrows
+UPDATE ledger.objects
+SET deleted_at = now()
+WHERE owner_kind = $1::text AND owner_id = $2::text
+  AND deleted_at IS NULL
+`
+
+type MarkDeletedByOwnerParams struct {
+	OwnerKind string
+	OwnerID   string
+}
+
+func (q *Queries) MarkDeletedByOwner(ctx context.Context, arg MarkDeletedByOwnerParams) (int64, error) {
+	result, err := q.db.Exec(ctx, markDeletedByOwner, arg.OwnerKind, arg.OwnerID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const markObjectDeleted = `-- name: MarkObjectDeleted :execrows
 UPDATE ledger.objects
 SET deleted_at = COALESCE(deleted_at, now())
@@ -245,6 +314,47 @@ WHERE id = $1
 // Keeps the original deletion time if already deleted; 0 rows means not found.
 func (q *Queries) MarkObjectDeleted(ctx context.Context, id string) (int64, error) {
 	result, err := q.db.Exec(ctx, markObjectDeleted, id)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const purgeObject = `-- name: PurgeObject :execrows
+DELETE FROM ledger.objects WHERE id = $1 AND deleted_at IS NOT NULL
+`
+
+// Only deleted objects; 0 rows means missing or live (the caller tells which).
+func (q *Queries) PurgeObject(ctx context.Context, id string) (int64, error) {
+	result, err := q.db.Exec(ctx, purgeObject, id)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const transferOwner = `-- name: TransferOwner :execrows
+UPDATE ledger.objects
+SET owner_kind = $1::text, owner_id = $2::text
+WHERE owner_kind = $3::text AND owner_id = $4::text
+`
+
+type TransferOwnerParams struct {
+	ToKind   string
+	ToID     string
+	FromKind string
+	FromID   string
+}
+
+// Both owners are checked in Go (never projects, never equal), so the
+// table's owner constraints hold after the update.
+func (q *Queries) TransferOwner(ctx context.Context, arg TransferOwnerParams) (int64, error) {
+	result, err := q.db.Exec(ctx, transferOwner,
+		arg.ToKind,
+		arg.ToID,
+		arg.FromKind,
+		arg.FromID,
+	)
 	if err != nil {
 		return 0, err
 	}

@@ -10,3 +10,4 @@ Domain logic does not belong here; it lives in `services/`.
 
 - `config`: reads environment variables (falling back to `.env` for local dev), collecting every problem so a misconfigured binary reports them all at once. Settings: `GYOZA_DATABASE_URL`, `GYOZA_LOG_LEVEL`, `GYOZA_SHUTDOWN_TIMEOUT` (see `.env.example`).
 - `shutdown`: `Within(ctx, fn)` runs a blocking cleanup such as `pool.Close` but gives up at the shutdown deadline.
+- `blob`: file storage (S3, or the `Memory` fake) via presigned URLs; `blob/blobtest` is the shared suite every implementation runs. See [blob/README.md](blob/README.md).

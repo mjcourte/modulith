@@ -81,6 +81,192 @@ func (OwnerKind) EnumDescriptor() ([]byte, []int) {
 	return file_gyoza_storageledger_v1_ledger_proto_rawDescGZIP(), []int{0}
 }
 
+type TransferOwnerRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	From          *Owner                 `protobuf:"bytes,1,opt,name=from,proto3" json:"from,omitempty"`
+	To            *Owner                 `protobuf:"bytes,2,opt,name=to,proto3" json:"to,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TransferOwnerRequest) Reset() {
+	*x = TransferOwnerRequest{}
+	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TransferOwnerRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TransferOwnerRequest) ProtoMessage() {}
+
+func (x *TransferOwnerRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TransferOwnerRequest.ProtoReflect.Descriptor instead.
+func (*TransferOwnerRequest) Descriptor() ([]byte, []int) {
+	return file_gyoza_storageledger_v1_ledger_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *TransferOwnerRequest) GetFrom() *Owner {
+	if x != nil {
+		return x.From
+	}
+	return nil
+}
+
+func (x *TransferOwnerRequest) GetTo() *Owner {
+	if x != nil {
+		return x.To
+	}
+	return nil
+}
+
+type TransferOwnerResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// How many objects moved.
+	Count         int64 `protobuf:"varint,1,opt,name=count,proto3" json:"count,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TransferOwnerResponse) Reset() {
+	*x = TransferOwnerResponse{}
+	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TransferOwnerResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TransferOwnerResponse) ProtoMessage() {}
+
+func (x *TransferOwnerResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TransferOwnerResponse.ProtoReflect.Descriptor instead.
+func (*TransferOwnerResponse) Descriptor() ([]byte, []int) {
+	return file_gyoza_storageledger_v1_ledger_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *TransferOwnerResponse) GetCount() int64 {
+	if x != nil {
+		return x.Count
+	}
+	return 0
+}
+
+type MarkDeletedByOwnerRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Owner         *Owner                 `protobuf:"bytes,1,opt,name=owner,proto3" json:"owner,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MarkDeletedByOwnerRequest) Reset() {
+	*x = MarkDeletedByOwnerRequest{}
+	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MarkDeletedByOwnerRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MarkDeletedByOwnerRequest) ProtoMessage() {}
+
+func (x *MarkDeletedByOwnerRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MarkDeletedByOwnerRequest.ProtoReflect.Descriptor instead.
+func (*MarkDeletedByOwnerRequest) Descriptor() ([]byte, []int) {
+	return file_gyoza_storageledger_v1_ledger_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *MarkDeletedByOwnerRequest) GetOwner() *Owner {
+	if x != nil {
+		return x.Owner
+	}
+	return nil
+}
+
+type MarkDeletedByOwnerResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// How many objects were newly deleted.
+	Count         int64 `protobuf:"varint,1,opt,name=count,proto3" json:"count,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MarkDeletedByOwnerResponse) Reset() {
+	*x = MarkDeletedByOwnerResponse{}
+	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MarkDeletedByOwnerResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MarkDeletedByOwnerResponse) ProtoMessage() {}
+
+func (x *MarkDeletedByOwnerResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MarkDeletedByOwnerResponse.ProtoReflect.Descriptor instead.
+func (*MarkDeletedByOwnerResponse) Descriptor() ([]byte, []int) {
+	return file_gyoza_storageledger_v1_ledger_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *MarkDeletedByOwnerResponse) GetCount() int64 {
+	if x != nil {
+		return x.Count
+	}
+	return 0
+}
+
 // The single principal that owns an object. Deleting it deletes what it owns.
 type Owner struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -92,7 +278,7 @@ type Owner struct {
 
 func (x *Owner) Reset() {
 	*x = Owner{}
-	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[0]
+	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -104,7 +290,7 @@ func (x *Owner) String() string {
 func (*Owner) ProtoMessage() {}
 
 func (x *Owner) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[0]
+	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -117,7 +303,7 @@ func (x *Owner) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Owner.ProtoReflect.Descriptor instead.
 func (*Owner) Descriptor() ([]byte, []int) {
-	return file_gyoza_storageledger_v1_ledger_proto_rawDescGZIP(), []int{0}
+	return file_gyoza_storageledger_v1_ledger_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *Owner) GetKind() OwnerKind {
@@ -157,7 +343,7 @@ type Object struct {
 
 func (x *Object) Reset() {
 	*x = Object{}
-	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[1]
+	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -169,7 +355,7 @@ func (x *Object) String() string {
 func (*Object) ProtoMessage() {}
 
 func (x *Object) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[1]
+	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -182,7 +368,7 @@ func (x *Object) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Object.ProtoReflect.Descriptor instead.
 func (*Object) Descriptor() ([]byte, []int) {
-	return file_gyoza_storageledger_v1_ledger_proto_rawDescGZIP(), []int{1}
+	return file_gyoza_storageledger_v1_ledger_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *Object) GetId() string {
@@ -272,7 +458,7 @@ type CreateObjectRequest struct {
 
 func (x *CreateObjectRequest) Reset() {
 	*x = CreateObjectRequest{}
-	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[2]
+	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -284,7 +470,7 @@ func (x *CreateObjectRequest) String() string {
 func (*CreateObjectRequest) ProtoMessage() {}
 
 func (x *CreateObjectRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[2]
+	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -297,7 +483,7 @@ func (x *CreateObjectRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateObjectRequest.ProtoReflect.Descriptor instead.
 func (*CreateObjectRequest) Descriptor() ([]byte, []int) {
-	return file_gyoza_storageledger_v1_ledger_proto_rawDescGZIP(), []int{2}
+	return file_gyoza_storageledger_v1_ledger_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *CreateObjectRequest) GetObject() *Object {
@@ -316,7 +502,7 @@ type CreateObjectResponse struct {
 
 func (x *CreateObjectResponse) Reset() {
 	*x = CreateObjectResponse{}
-	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[3]
+	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -328,7 +514,7 @@ func (x *CreateObjectResponse) String() string {
 func (*CreateObjectResponse) ProtoMessage() {}
 
 func (x *CreateObjectResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[3]
+	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -341,7 +527,7 @@ func (x *CreateObjectResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateObjectResponse.ProtoReflect.Descriptor instead.
 func (*CreateObjectResponse) Descriptor() ([]byte, []int) {
-	return file_gyoza_storageledger_v1_ledger_proto_rawDescGZIP(), []int{3}
+	return file_gyoza_storageledger_v1_ledger_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *CreateObjectResponse) GetObject() *Object {
@@ -360,7 +546,7 @@ type GetObjectRequest struct {
 
 func (x *GetObjectRequest) Reset() {
 	*x = GetObjectRequest{}
-	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[4]
+	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -372,7 +558,7 @@ func (x *GetObjectRequest) String() string {
 func (*GetObjectRequest) ProtoMessage() {}
 
 func (x *GetObjectRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[4]
+	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -385,7 +571,7 @@ func (x *GetObjectRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetObjectRequest.ProtoReflect.Descriptor instead.
 func (*GetObjectRequest) Descriptor() ([]byte, []int) {
-	return file_gyoza_storageledger_v1_ledger_proto_rawDescGZIP(), []int{4}
+	return file_gyoza_storageledger_v1_ledger_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *GetObjectRequest) GetId() string {
@@ -404,7 +590,7 @@ type GetObjectResponse struct {
 
 func (x *GetObjectResponse) Reset() {
 	*x = GetObjectResponse{}
-	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[5]
+	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -416,7 +602,7 @@ func (x *GetObjectResponse) String() string {
 func (*GetObjectResponse) ProtoMessage() {}
 
 func (x *GetObjectResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[5]
+	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -429,7 +615,7 @@ func (x *GetObjectResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetObjectResponse.ProtoReflect.Descriptor instead.
 func (*GetObjectResponse) Descriptor() ([]byte, []int) {
-	return file_gyoza_storageledger_v1_ledger_proto_rawDescGZIP(), []int{5}
+	return file_gyoza_storageledger_v1_ledger_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *GetObjectResponse) GetObject() *Object {
@@ -462,7 +648,7 @@ type ListObjectsRequest struct {
 
 func (x *ListObjectsRequest) Reset() {
 	*x = ListObjectsRequest{}
-	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[6]
+	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -474,7 +660,7 @@ func (x *ListObjectsRequest) String() string {
 func (*ListObjectsRequest) ProtoMessage() {}
 
 func (x *ListObjectsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[6]
+	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -487,7 +673,7 @@ func (x *ListObjectsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListObjectsRequest.ProtoReflect.Descriptor instead.
 func (*ListObjectsRequest) Descriptor() ([]byte, []int) {
-	return file_gyoza_storageledger_v1_ledger_proto_rawDescGZIP(), []int{6}
+	return file_gyoza_storageledger_v1_ledger_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *ListObjectsRequest) GetScope() isListObjectsRequest_Scope {
@@ -577,7 +763,7 @@ type ListObjectsResponse struct {
 
 func (x *ListObjectsResponse) Reset() {
 	*x = ListObjectsResponse{}
-	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[7]
+	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -589,7 +775,7 @@ func (x *ListObjectsResponse) String() string {
 func (*ListObjectsResponse) ProtoMessage() {}
 
 func (x *ListObjectsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[7]
+	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -602,7 +788,7 @@ func (x *ListObjectsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListObjectsResponse.ProtoReflect.Descriptor instead.
 func (*ListObjectsResponse) Descriptor() ([]byte, []int) {
-	return file_gyoza_storageledger_v1_ledger_proto_rawDescGZIP(), []int{7}
+	return file_gyoza_storageledger_v1_ledger_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *ListObjectsResponse) GetObjects() []*Object {
@@ -628,7 +814,7 @@ type MarkObjectDeletedRequest struct {
 
 func (x *MarkObjectDeletedRequest) Reset() {
 	*x = MarkObjectDeletedRequest{}
-	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[8]
+	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -640,7 +826,7 @@ func (x *MarkObjectDeletedRequest) String() string {
 func (*MarkObjectDeletedRequest) ProtoMessage() {}
 
 func (x *MarkObjectDeletedRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[8]
+	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -653,7 +839,7 @@ func (x *MarkObjectDeletedRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MarkObjectDeletedRequest.ProtoReflect.Descriptor instead.
 func (*MarkObjectDeletedRequest) Descriptor() ([]byte, []int) {
-	return file_gyoza_storageledger_v1_ledger_proto_rawDescGZIP(), []int{8}
+	return file_gyoza_storageledger_v1_ledger_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *MarkObjectDeletedRequest) GetId() string {
@@ -671,7 +857,7 @@ type MarkObjectDeletedResponse struct {
 
 func (x *MarkObjectDeletedResponse) Reset() {
 	*x = MarkObjectDeletedResponse{}
-	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[9]
+	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -683,7 +869,7 @@ func (x *MarkObjectDeletedResponse) String() string {
 func (*MarkObjectDeletedResponse) ProtoMessage() {}
 
 func (x *MarkObjectDeletedResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[9]
+	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -696,7 +882,7 @@ func (x *MarkObjectDeletedResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MarkObjectDeletedResponse.ProtoReflect.Descriptor instead.
 func (*MarkObjectDeletedResponse) Descriptor() ([]byte, []int) {
-	return file_gyoza_storageledger_v1_ledger_proto_rawDescGZIP(), []int{9}
+	return file_gyoza_storageledger_v1_ledger_proto_rawDescGZIP(), []int{13}
 }
 
 type ClearCreatedByRequest struct {
@@ -708,7 +894,7 @@ type ClearCreatedByRequest struct {
 
 func (x *ClearCreatedByRequest) Reset() {
 	*x = ClearCreatedByRequest{}
-	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[10]
+	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -720,7 +906,7 @@ func (x *ClearCreatedByRequest) String() string {
 func (*ClearCreatedByRequest) ProtoMessage() {}
 
 func (x *ClearCreatedByRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[10]
+	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -733,7 +919,7 @@ func (x *ClearCreatedByRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ClearCreatedByRequest.ProtoReflect.Descriptor instead.
 func (*ClearCreatedByRequest) Descriptor() ([]byte, []int) {
-	return file_gyoza_storageledger_v1_ledger_proto_rawDescGZIP(), []int{10}
+	return file_gyoza_storageledger_v1_ledger_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *ClearCreatedByRequest) GetUserId() string {
@@ -753,7 +939,7 @@ type ClearCreatedByResponse struct {
 
 func (x *ClearCreatedByResponse) Reset() {
 	*x = ClearCreatedByResponse{}
-	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[11]
+	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -765,7 +951,7 @@ func (x *ClearCreatedByResponse) String() string {
 func (*ClearCreatedByResponse) ProtoMessage() {}
 
 func (x *ClearCreatedByResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[11]
+	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -778,7 +964,7 @@ func (x *ClearCreatedByResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ClearCreatedByResponse.ProtoReflect.Descriptor instead.
 func (*ClearCreatedByResponse) Descriptor() ([]byte, []int) {
-	return file_gyoza_storageledger_v1_ledger_proto_rawDescGZIP(), []int{11}
+	return file_gyoza_storageledger_v1_ledger_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *ClearCreatedByResponse) GetCount() int64 {
@@ -788,11 +974,197 @@ func (x *ClearCreatedByResponse) GetCount() int64 {
 	return 0
 }
 
+type ListDeletedObjectsRequest struct {
+	state  protoimpl.MessageState `protogen:"open.v1"`
+	Before *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=before,proto3" json:"before,omitempty"`
+	// Between 1 and 500.
+	Limit         int32 `protobuf:"varint,2,opt,name=limit,proto3" json:"limit,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListDeletedObjectsRequest) Reset() {
+	*x = ListDeletedObjectsRequest{}
+	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListDeletedObjectsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListDeletedObjectsRequest) ProtoMessage() {}
+
+func (x *ListDeletedObjectsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListDeletedObjectsRequest.ProtoReflect.Descriptor instead.
+func (*ListDeletedObjectsRequest) Descriptor() ([]byte, []int) {
+	return file_gyoza_storageledger_v1_ledger_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *ListDeletedObjectsRequest) GetBefore() *timestamppb.Timestamp {
+	if x != nil {
+		return x.Before
+	}
+	return nil
+}
+
+func (x *ListDeletedObjectsRequest) GetLimit() int32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+type ListDeletedObjectsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Objects       []*Object              `protobuf:"bytes,1,rep,name=objects,proto3" json:"objects,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListDeletedObjectsResponse) Reset() {
+	*x = ListDeletedObjectsResponse{}
+	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListDeletedObjectsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListDeletedObjectsResponse) ProtoMessage() {}
+
+func (x *ListDeletedObjectsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListDeletedObjectsResponse.ProtoReflect.Descriptor instead.
+func (*ListDeletedObjectsResponse) Descriptor() ([]byte, []int) {
+	return file_gyoza_storageledger_v1_ledger_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *ListDeletedObjectsResponse) GetObjects() []*Object {
+	if x != nil {
+		return x.Objects
+	}
+	return nil
+}
+
+type PurgeObjectRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PurgeObjectRequest) Reset() {
+	*x = PurgeObjectRequest{}
+	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PurgeObjectRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PurgeObjectRequest) ProtoMessage() {}
+
+func (x *PurgeObjectRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PurgeObjectRequest.ProtoReflect.Descriptor instead.
+func (*PurgeObjectRequest) Descriptor() ([]byte, []int) {
+	return file_gyoza_storageledger_v1_ledger_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *PurgeObjectRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+type PurgeObjectResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PurgeObjectResponse) Reset() {
+	*x = PurgeObjectResponse{}
+	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PurgeObjectResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PurgeObjectResponse) ProtoMessage() {}
+
+func (x *PurgeObjectResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_gyoza_storageledger_v1_ledger_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PurgeObjectResponse.ProtoReflect.Descriptor instead.
+func (*PurgeObjectResponse) Descriptor() ([]byte, []int) {
+	return file_gyoza_storageledger_v1_ledger_proto_rawDescGZIP(), []int{19}
+}
+
 var File_gyoza_storageledger_v1_ledger_proto protoreflect.FileDescriptor
 
 const file_gyoza_storageledger_v1_ledger_proto_rawDesc = "" +
 	"\n" +
-	"#gyoza/storageledger/v1/ledger.proto\x12\x16gyoza.storageledger.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"N\n" +
+	"#gyoza/storageledger/v1/ledger.proto\x12\x16gyoza.storageledger.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"x\n" +
+	"\x14TransferOwnerRequest\x121\n" +
+	"\x04from\x18\x01 \x01(\v2\x1d.gyoza.storageledger.v1.OwnerR\x04from\x12-\n" +
+	"\x02to\x18\x02 \x01(\v2\x1d.gyoza.storageledger.v1.OwnerR\x02to\"-\n" +
+	"\x15TransferOwnerResponse\x12\x14\n" +
+	"\x05count\x18\x01 \x01(\x03R\x05count\"P\n" +
+	"\x19MarkDeletedByOwnerRequest\x123\n" +
+	"\x05owner\x18\x01 \x01(\v2\x1d.gyoza.storageledger.v1.OwnerR\x05owner\"2\n" +
+	"\x1aMarkDeletedByOwnerResponse\x12\x14\n" +
+	"\x05count\x18\x01 \x01(\x03R\x05count\"N\n" +
 	"\x05Owner\x125\n" +
 	"\x04kind\x18\x01 \x01(\x0e2!.gyoza.storageledger.v1.OwnerKindR\x04kind\x12\x0e\n" +
 	"\x02id\x18\x02 \x01(\tR\x02id\"\x81\x03\n" +
@@ -843,19 +1215,31 @@ const file_gyoza_storageledger_v1_ledger_proto_rawDesc = "" +
 	"\x15ClearCreatedByRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\".\n" +
 	"\x16ClearCreatedByResponse\x12\x14\n" +
-	"\x05count\x18\x01 \x01(\x03R\x05count*~\n" +
+	"\x05count\x18\x01 \x01(\x03R\x05count\"e\n" +
+	"\x19ListDeletedObjectsRequest\x122\n" +
+	"\x06before\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\x06before\x12\x14\n" +
+	"\x05limit\x18\x02 \x01(\x05R\x05limit\"V\n" +
+	"\x1aListDeletedObjectsResponse\x128\n" +
+	"\aobjects\x18\x01 \x03(\v2\x1e.gyoza.storageledger.v1.ObjectR\aobjects\"$\n" +
+	"\x12PurgeObjectRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"\x15\n" +
+	"\x13PurgeObjectResponse*~\n" +
 	"\tOwnerKind\x12\x1a\n" +
 	"\x16OWNER_KIND_UNSPECIFIED\x10\x00\x12\x16\n" +
 	"\x12OWNER_KIND_PROJECT\x10\x01\x12\x13\n" +
 	"\x0fOWNER_KIND_USER\x10\x02\x12\x12\n" +
 	"\x0eOWNER_KIND_ORG\x10\x03\x12\x14\n" +
-	"\x10OWNER_KIND_GYOZA\x10\x042\xaf\x04\n" +
+	"\x10OWNER_KIND_GYOZA\x10\x042\xff\a\n" +
 	"\rLedgerService\x12i\n" +
 	"\fCreateObject\x12+.gyoza.storageledger.v1.CreateObjectRequest\x1a,.gyoza.storageledger.v1.CreateObjectResponse\x12`\n" +
 	"\tGetObject\x12(.gyoza.storageledger.v1.GetObjectRequest\x1a).gyoza.storageledger.v1.GetObjectResponse\x12f\n" +
 	"\vListObjects\x12*.gyoza.storageledger.v1.ListObjectsRequest\x1a+.gyoza.storageledger.v1.ListObjectsResponse\x12x\n" +
 	"\x11MarkObjectDeleted\x120.gyoza.storageledger.v1.MarkObjectDeletedRequest\x1a1.gyoza.storageledger.v1.MarkObjectDeletedResponse\x12o\n" +
-	"\x0eClearCreatedBy\x12-.gyoza.storageledger.v1.ClearCreatedByRequest\x1a..gyoza.storageledger.v1.ClearCreatedByResponseB\xe2\x01\n" +
+	"\x0eClearCreatedBy\x12-.gyoza.storageledger.v1.ClearCreatedByRequest\x1a..gyoza.storageledger.v1.ClearCreatedByResponse\x12l\n" +
+	"\rTransferOwner\x12,.gyoza.storageledger.v1.TransferOwnerRequest\x1a-.gyoza.storageledger.v1.TransferOwnerResponse\x12{\n" +
+	"\x12MarkDeletedByOwner\x121.gyoza.storageledger.v1.MarkDeletedByOwnerRequest\x1a2.gyoza.storageledger.v1.MarkDeletedByOwnerResponse\x12{\n" +
+	"\x12ListDeletedObjects\x121.gyoza.storageledger.v1.ListDeletedObjectsRequest\x1a2.gyoza.storageledger.v1.ListDeletedObjectsResponse\x12f\n" +
+	"\vPurgeObject\x12*.gyoza.storageledger.v1.PurgeObjectRequest\x1a+.gyoza.storageledger.v1.PurgeObjectResponseB\xe2\x01\n" +
 	"\x1acom.gyoza.storageledger.v1B\vLedgerProtoP\x01Z=gyoza/contracts/gen/go/gyoza/storageledger/v1;storageledgerv1\xa2\x02\x03GSX\xaa\x02\x16Gyoza.Storageledger.V1\xca\x02\x16Gyoza\\Storageledger\\V1\xe2\x02\"Gyoza\\Storageledger\\V1\\GPBMetadata\xea\x02\x18Gyoza::Storageledger::V1b\x06proto3"
 
 var (
@@ -871,48 +1255,69 @@ func file_gyoza_storageledger_v1_ledger_proto_rawDescGZIP() []byte {
 }
 
 var file_gyoza_storageledger_v1_ledger_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_gyoza_storageledger_v1_ledger_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+var file_gyoza_storageledger_v1_ledger_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
 var file_gyoza_storageledger_v1_ledger_proto_goTypes = []any{
-	(OwnerKind)(0),                    // 0: gyoza.storageledger.v1.OwnerKind
-	(*Owner)(nil),                     // 1: gyoza.storageledger.v1.Owner
-	(*Object)(nil),                    // 2: gyoza.storageledger.v1.Object
-	(*CreateObjectRequest)(nil),       // 3: gyoza.storageledger.v1.CreateObjectRequest
-	(*CreateObjectResponse)(nil),      // 4: gyoza.storageledger.v1.CreateObjectResponse
-	(*GetObjectRequest)(nil),          // 5: gyoza.storageledger.v1.GetObjectRequest
-	(*GetObjectResponse)(nil),         // 6: gyoza.storageledger.v1.GetObjectResponse
-	(*ListObjectsRequest)(nil),        // 7: gyoza.storageledger.v1.ListObjectsRequest
-	(*ListObjectsResponse)(nil),       // 8: gyoza.storageledger.v1.ListObjectsResponse
-	(*MarkObjectDeletedRequest)(nil),  // 9: gyoza.storageledger.v1.MarkObjectDeletedRequest
-	(*MarkObjectDeletedResponse)(nil), // 10: gyoza.storageledger.v1.MarkObjectDeletedResponse
-	(*ClearCreatedByRequest)(nil),     // 11: gyoza.storageledger.v1.ClearCreatedByRequest
-	(*ClearCreatedByResponse)(nil),    // 12: gyoza.storageledger.v1.ClearCreatedByResponse
-	(*timestamppb.Timestamp)(nil),     // 13: google.protobuf.Timestamp
+	(OwnerKind)(0),                     // 0: gyoza.storageledger.v1.OwnerKind
+	(*TransferOwnerRequest)(nil),       // 1: gyoza.storageledger.v1.TransferOwnerRequest
+	(*TransferOwnerResponse)(nil),      // 2: gyoza.storageledger.v1.TransferOwnerResponse
+	(*MarkDeletedByOwnerRequest)(nil),  // 3: gyoza.storageledger.v1.MarkDeletedByOwnerRequest
+	(*MarkDeletedByOwnerResponse)(nil), // 4: gyoza.storageledger.v1.MarkDeletedByOwnerResponse
+	(*Owner)(nil),                      // 5: gyoza.storageledger.v1.Owner
+	(*Object)(nil),                     // 6: gyoza.storageledger.v1.Object
+	(*CreateObjectRequest)(nil),        // 7: gyoza.storageledger.v1.CreateObjectRequest
+	(*CreateObjectResponse)(nil),       // 8: gyoza.storageledger.v1.CreateObjectResponse
+	(*GetObjectRequest)(nil),           // 9: gyoza.storageledger.v1.GetObjectRequest
+	(*GetObjectResponse)(nil),          // 10: gyoza.storageledger.v1.GetObjectResponse
+	(*ListObjectsRequest)(nil),         // 11: gyoza.storageledger.v1.ListObjectsRequest
+	(*ListObjectsResponse)(nil),        // 12: gyoza.storageledger.v1.ListObjectsResponse
+	(*MarkObjectDeletedRequest)(nil),   // 13: gyoza.storageledger.v1.MarkObjectDeletedRequest
+	(*MarkObjectDeletedResponse)(nil),  // 14: gyoza.storageledger.v1.MarkObjectDeletedResponse
+	(*ClearCreatedByRequest)(nil),      // 15: gyoza.storageledger.v1.ClearCreatedByRequest
+	(*ClearCreatedByResponse)(nil),     // 16: gyoza.storageledger.v1.ClearCreatedByResponse
+	(*ListDeletedObjectsRequest)(nil),  // 17: gyoza.storageledger.v1.ListDeletedObjectsRequest
+	(*ListDeletedObjectsResponse)(nil), // 18: gyoza.storageledger.v1.ListDeletedObjectsResponse
+	(*PurgeObjectRequest)(nil),         // 19: gyoza.storageledger.v1.PurgeObjectRequest
+	(*PurgeObjectResponse)(nil),        // 20: gyoza.storageledger.v1.PurgeObjectResponse
+	(*timestamppb.Timestamp)(nil),      // 21: google.protobuf.Timestamp
 }
 var file_gyoza_storageledger_v1_ledger_proto_depIdxs = []int32{
-	0,  // 0: gyoza.storageledger.v1.Owner.kind:type_name -> gyoza.storageledger.v1.OwnerKind
-	1,  // 1: gyoza.storageledger.v1.Object.owner:type_name -> gyoza.storageledger.v1.Owner
-	13, // 2: gyoza.storageledger.v1.Object.created_at:type_name -> google.protobuf.Timestamp
-	13, // 3: gyoza.storageledger.v1.Object.deleted_at:type_name -> google.protobuf.Timestamp
-	2,  // 4: gyoza.storageledger.v1.CreateObjectRequest.object:type_name -> gyoza.storageledger.v1.Object
-	2,  // 5: gyoza.storageledger.v1.CreateObjectResponse.object:type_name -> gyoza.storageledger.v1.Object
-	2,  // 6: gyoza.storageledger.v1.GetObjectResponse.object:type_name -> gyoza.storageledger.v1.Object
-	1,  // 7: gyoza.storageledger.v1.ListObjectsRequest.owner:type_name -> gyoza.storageledger.v1.Owner
-	2,  // 8: gyoza.storageledger.v1.ListObjectsResponse.objects:type_name -> gyoza.storageledger.v1.Object
-	3,  // 9: gyoza.storageledger.v1.LedgerService.CreateObject:input_type -> gyoza.storageledger.v1.CreateObjectRequest
-	5,  // 10: gyoza.storageledger.v1.LedgerService.GetObject:input_type -> gyoza.storageledger.v1.GetObjectRequest
-	7,  // 11: gyoza.storageledger.v1.LedgerService.ListObjects:input_type -> gyoza.storageledger.v1.ListObjectsRequest
-	9,  // 12: gyoza.storageledger.v1.LedgerService.MarkObjectDeleted:input_type -> gyoza.storageledger.v1.MarkObjectDeletedRequest
-	11, // 13: gyoza.storageledger.v1.LedgerService.ClearCreatedBy:input_type -> gyoza.storageledger.v1.ClearCreatedByRequest
-	4,  // 14: gyoza.storageledger.v1.LedgerService.CreateObject:output_type -> gyoza.storageledger.v1.CreateObjectResponse
-	6,  // 15: gyoza.storageledger.v1.LedgerService.GetObject:output_type -> gyoza.storageledger.v1.GetObjectResponse
-	8,  // 16: gyoza.storageledger.v1.LedgerService.ListObjects:output_type -> gyoza.storageledger.v1.ListObjectsResponse
-	10, // 17: gyoza.storageledger.v1.LedgerService.MarkObjectDeleted:output_type -> gyoza.storageledger.v1.MarkObjectDeletedResponse
-	12, // 18: gyoza.storageledger.v1.LedgerService.ClearCreatedBy:output_type -> gyoza.storageledger.v1.ClearCreatedByResponse
-	14, // [14:19] is the sub-list for method output_type
-	9,  // [9:14] is the sub-list for method input_type
-	9,  // [9:9] is the sub-list for extension type_name
-	9,  // [9:9] is the sub-list for extension extendee
-	0,  // [0:9] is the sub-list for field type_name
+	5,  // 0: gyoza.storageledger.v1.TransferOwnerRequest.from:type_name -> gyoza.storageledger.v1.Owner
+	5,  // 1: gyoza.storageledger.v1.TransferOwnerRequest.to:type_name -> gyoza.storageledger.v1.Owner
+	5,  // 2: gyoza.storageledger.v1.MarkDeletedByOwnerRequest.owner:type_name -> gyoza.storageledger.v1.Owner
+	0,  // 3: gyoza.storageledger.v1.Owner.kind:type_name -> gyoza.storageledger.v1.OwnerKind
+	5,  // 4: gyoza.storageledger.v1.Object.owner:type_name -> gyoza.storageledger.v1.Owner
+	21, // 5: gyoza.storageledger.v1.Object.created_at:type_name -> google.protobuf.Timestamp
+	21, // 6: gyoza.storageledger.v1.Object.deleted_at:type_name -> google.protobuf.Timestamp
+	6,  // 7: gyoza.storageledger.v1.CreateObjectRequest.object:type_name -> gyoza.storageledger.v1.Object
+	6,  // 8: gyoza.storageledger.v1.CreateObjectResponse.object:type_name -> gyoza.storageledger.v1.Object
+	6,  // 9: gyoza.storageledger.v1.GetObjectResponse.object:type_name -> gyoza.storageledger.v1.Object
+	5,  // 10: gyoza.storageledger.v1.ListObjectsRequest.owner:type_name -> gyoza.storageledger.v1.Owner
+	6,  // 11: gyoza.storageledger.v1.ListObjectsResponse.objects:type_name -> gyoza.storageledger.v1.Object
+	21, // 12: gyoza.storageledger.v1.ListDeletedObjectsRequest.before:type_name -> google.protobuf.Timestamp
+	6,  // 13: gyoza.storageledger.v1.ListDeletedObjectsResponse.objects:type_name -> gyoza.storageledger.v1.Object
+	7,  // 14: gyoza.storageledger.v1.LedgerService.CreateObject:input_type -> gyoza.storageledger.v1.CreateObjectRequest
+	9,  // 15: gyoza.storageledger.v1.LedgerService.GetObject:input_type -> gyoza.storageledger.v1.GetObjectRequest
+	11, // 16: gyoza.storageledger.v1.LedgerService.ListObjects:input_type -> gyoza.storageledger.v1.ListObjectsRequest
+	13, // 17: gyoza.storageledger.v1.LedgerService.MarkObjectDeleted:input_type -> gyoza.storageledger.v1.MarkObjectDeletedRequest
+	15, // 18: gyoza.storageledger.v1.LedgerService.ClearCreatedBy:input_type -> gyoza.storageledger.v1.ClearCreatedByRequest
+	1,  // 19: gyoza.storageledger.v1.LedgerService.TransferOwner:input_type -> gyoza.storageledger.v1.TransferOwnerRequest
+	3,  // 20: gyoza.storageledger.v1.LedgerService.MarkDeletedByOwner:input_type -> gyoza.storageledger.v1.MarkDeletedByOwnerRequest
+	17, // 21: gyoza.storageledger.v1.LedgerService.ListDeletedObjects:input_type -> gyoza.storageledger.v1.ListDeletedObjectsRequest
+	19, // 22: gyoza.storageledger.v1.LedgerService.PurgeObject:input_type -> gyoza.storageledger.v1.PurgeObjectRequest
+	8,  // 23: gyoza.storageledger.v1.LedgerService.CreateObject:output_type -> gyoza.storageledger.v1.CreateObjectResponse
+	10, // 24: gyoza.storageledger.v1.LedgerService.GetObject:output_type -> gyoza.storageledger.v1.GetObjectResponse
+	12, // 25: gyoza.storageledger.v1.LedgerService.ListObjects:output_type -> gyoza.storageledger.v1.ListObjectsResponse
+	14, // 26: gyoza.storageledger.v1.LedgerService.MarkObjectDeleted:output_type -> gyoza.storageledger.v1.MarkObjectDeletedResponse
+	16, // 27: gyoza.storageledger.v1.LedgerService.ClearCreatedBy:output_type -> gyoza.storageledger.v1.ClearCreatedByResponse
+	2,  // 28: gyoza.storageledger.v1.LedgerService.TransferOwner:output_type -> gyoza.storageledger.v1.TransferOwnerResponse
+	4,  // 29: gyoza.storageledger.v1.LedgerService.MarkDeletedByOwner:output_type -> gyoza.storageledger.v1.MarkDeletedByOwnerResponse
+	18, // 30: gyoza.storageledger.v1.LedgerService.ListDeletedObjects:output_type -> gyoza.storageledger.v1.ListDeletedObjectsResponse
+	20, // 31: gyoza.storageledger.v1.LedgerService.PurgeObject:output_type -> gyoza.storageledger.v1.PurgeObjectResponse
+	23, // [23:32] is the sub-list for method output_type
+	14, // [14:23] is the sub-list for method input_type
+	14, // [14:14] is the sub-list for extension type_name
+	14, // [14:14] is the sub-list for extension extendee
+	0,  // [0:14] is the sub-list for field type_name
 }
 
 func init() { file_gyoza_storageledger_v1_ledger_proto_init() }
@@ -920,7 +1325,7 @@ func file_gyoza_storageledger_v1_ledger_proto_init() {
 	if File_gyoza_storageledger_v1_ledger_proto != nil {
 		return
 	}
-	file_gyoza_storageledger_v1_ledger_proto_msgTypes[6].OneofWrappers = []any{
+	file_gyoza_storageledger_v1_ledger_proto_msgTypes[10].OneofWrappers = []any{
 		(*ListObjectsRequest_ProjectId)(nil),
 		(*ListObjectsRequest_Owner)(nil),
 	}
@@ -930,7 +1335,7 @@ func file_gyoza_storageledger_v1_ledger_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_gyoza_storageledger_v1_ledger_proto_rawDesc), len(file_gyoza_storageledger_v1_ledger_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   12,
+			NumMessages:   20,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

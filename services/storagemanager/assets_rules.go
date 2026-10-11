@@ -55,15 +55,29 @@ func normalizeTags(tags []string) ([]string, error) {
 }
 
 // normalizeName trims a name and checks it is non-empty and within MaxNameLen.
-func normalizeName(name string) (string, error) {
+// invalid is the error to wrap (ErrInvalidAsset or ErrInvalidFolder), so asset
+// and folder names share the rule but report their own error.
+func normalizeName(name string, invalid error) (string, error) {
 	name = strings.TrimSpace(name)
 	switch n := utf8.RuneCountInString(name); {
 	case n == 0:
-		return "", fmt.Errorf("%w: name is empty", ErrInvalidAsset)
+		return "", fmt.Errorf("%w: name is empty", invalid)
 	case n > MaxNameLen:
-		return "", fmt.Errorf("%w: name is %d characters, max %d", ErrInvalidAsset, n, MaxNameLen)
+		return "", fmt.Errorf("%w: name is %d characters, max %d", invalid, n, MaxNameLen)
 	}
 	return name, nil
+}
+
+// checkOptionalID accepts "" (none) or a well-formed ID. Whether the ID exists
+// is the Store's job; this only rejects garbage before it reaches a query.
+func checkOptionalID(id, what string, invalid error) error {
+	if id == "" {
+		return nil
+	}
+	if _, err := uuid.Parse(id); err != nil {
+		return fmt.Errorf("%w: %s %q is not a valid ID", invalid, what, id)
+	}
+	return nil
 }
 
 // checkDescription enforces MaxDescriptionLen. Descriptions are kept as typed.
@@ -93,6 +107,23 @@ func (v Version) validate() error {
 // ProjectID for project-owned assets, and ContentType, Category and
 // CurrentVersion from the first version. IDs and timestamps are left to the Store.
 func (a Asset) normalize(first Version) (Asset, error) {
+	a, err := a.normalizeFields()
+	if err != nil {
+		return a, err
+	}
+	if err := first.validate(); err != nil {
+		return a, err
+	}
+	a.ContentType = first.ContentType
+	a.Category = CategoryOf(first.ContentType)
+	a.CurrentVersion = 1
+	return a, nil
+}
+
+// normalizeFields validates and normalises the fields a caller sets on a new
+// asset (owner, project, name, folder, description, tags), without its first
+// version. Upload sessions use it to check a new asset before its file exists.
+func (a Asset) normalizeFields() (Asset, error) {
 	if err := a.Owner.Validate(); err != nil {
 		return a, fmt.Errorf("%w: %w", ErrInvalidAsset, err)
 	}
@@ -107,7 +138,10 @@ func (a Asset) normalize(first Version) (Asset, error) {
 		}
 	}
 	var err error
-	if a.Name, err = normalizeName(a.Name); err != nil {
+	if a.Name, err = normalizeName(a.Name, ErrInvalidAsset); err != nil {
+		return a, err
+	}
+	if err := checkOptionalID(a.FolderID, "folder", ErrInvalidAsset); err != nil {
 		return a, err
 	}
 	if err := checkDescription(a.Description); err != nil {
@@ -116,12 +150,6 @@ func (a Asset) normalize(first Version) (Asset, error) {
 	if a.Tags, err = normalizeTags(a.Tags); err != nil {
 		return a, err
 	}
-	if err := first.validate(); err != nil {
-		return a, err
-	}
-	a.ContentType = first.ContentType
-	a.Category = CategoryOf(first.ContentType)
-	a.CurrentVersion = 1
 	return a, nil
 }
 
@@ -140,11 +168,16 @@ func (a Asset) acceptsVersion(v Version) error {
 // normalize validates a partial update, normalising the fields it sets.
 func (u AssetUpdate) normalize() (AssetUpdate, error) {
 	if u.Name != nil {
-		name, err := normalizeName(*u.Name)
+		name, err := normalizeName(*u.Name, ErrInvalidAsset)
 		if err != nil {
 			return u, err
 		}
 		u.Name = &name
+	}
+	if u.FolderID != nil {
+		if err := checkOptionalID(*u.FolderID, "folder", ErrInvalidAsset); err != nil {
+			return u, err
+		}
 	}
 	if u.Description != nil {
 		if err := checkDescription(*u.Description); err != nil {
@@ -183,6 +216,14 @@ func (q AssetQuery) normalize() (AssetQuery, error) {
 		return q, fmt.Errorf("%w: unknown category %q", ErrInvalidQuery, q.Category)
 	}
 	q.Tag = normalizeTag(q.Tag)
+	if q.OnlyDeleted {
+		q.IncludeDeleted = true
+	}
+	if q.Folder != nil {
+		if err := checkOptionalID(*q.Folder, "folder", ErrInvalidQuery); err != nil {
+			return q, err
+		}
+	}
 	switch {
 	case q.PageSize < 0:
 		return q, fmt.Errorf("%w: negative PageSize", ErrInvalidQuery)

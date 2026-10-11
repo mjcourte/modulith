@@ -34,7 +34,11 @@ func (m *Memory) Create(ctx context.Context, obj Object) (Object, error) {
 	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	obj.ID = rand.Text()
+	if obj.ID == "" {
+		obj.ID = rand.Text()
+	} else if existing, ok := m.objects[obj.ID]; ok {
+		return existingOrTaken(existing, obj)
+	}
 	obj.CreatedAt = now()
 	m.objects[obj.ID] = obj
 	return obj, nil
@@ -126,4 +130,74 @@ func (m *Memory) ClearCreatedBy(ctx context.Context, userID string) (int, error)
 		}
 	}
 	return n, nil
+}
+
+func (m *Memory) TransferOwner(ctx context.Context, from, to Owner) (int, error) {
+	if err := checkTransfer(from, to); err != nil {
+		return 0, err
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	n := 0
+	for id, obj := range m.objects {
+		if obj.Owner == from {
+			obj.Owner = to
+			m.objects[id] = obj
+			n++
+		}
+	}
+	return n, nil
+}
+
+func (m *Memory) MarkDeletedByOwner(ctx context.Context, owner Owner) (int, error) {
+	if err := checkOwnerArg(owner); err != nil {
+		return 0, err
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	t := now()
+	n := 0
+	for id, obj := range m.objects {
+		if obj.Owner == owner && obj.DeletedAt == nil {
+			obj.DeletedAt = &t
+			m.objects[id] = obj
+			n++
+		}
+	}
+	return n, nil
+}
+
+func (m *Memory) ListDeleted(ctx context.Context, before time.Time, limit int) ([]Object, error) {
+	if err := checkLimit(limit); err != nil {
+		return nil, err
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var matches []Object
+	for _, obj := range m.objects {
+		if obj.DeletedAt != nil && obj.DeletedAt.Before(before) {
+			matches = append(matches, obj)
+		}
+	}
+	slices.SortFunc(matches, func(a, b Object) int {
+		if c := a.DeletedAt.Compare(*b.DeletedAt); c != 0 {
+			return c
+		}
+		return cmp.Compare(a.ID, b.ID)
+	})
+	return matches[:min(limit, len(matches))], nil
+}
+
+func (m *Memory) Purge(ctx context.Context, id string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	obj, ok := m.objects[id]
+	switch {
+	case !ok:
+		return nil // already gone
+	case obj.DeletedAt == nil:
+		return fmt.Errorf("%w: %s", ErrNotDeleted, id)
+	}
+	delete(m.objects, id)
+	return nil
 }

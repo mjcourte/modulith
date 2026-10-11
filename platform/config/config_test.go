@@ -98,3 +98,28 @@ func TestReportsEveryProblemAtOnce(t *testing.T) {
 		t.Errorf("want 3 joined errors, got %v", err)
 	}
 }
+
+func TestBool(t *testing.T) {
+	tests := []struct {
+		value   string
+		want    bool
+		wantErr bool
+	}{
+		{"", true, false}, // unset: default
+		{"false", false, false},
+		{"0", false, false},
+		{"TRUE", true, false},
+		{"yes", true, true}, // not a ParseBool form: error, default kept
+	}
+	for _, tt := range tests {
+		t.Run(tt.value, func(t *testing.T) {
+			env := mapEnv(map[string]string{"FLAG": tt.value})
+			if got := env.Bool("FLAG", true); got != tt.want {
+				t.Errorf("Bool = %v, want %v", got, tt.want)
+			}
+			if gotErr := env.Err() != nil; gotErr != tt.wantErr {
+				t.Errorf("Err() = %v, wantErr %v", env.Err(), tt.wantErr)
+			}
+		})
+	}
+}

@@ -20,3 +20,13 @@ Formerly "document server"; renamed to match the service naming scheme and avoid
 - reusable data structures/classes (eg limited debounce executor)
 - Rust-NATS integration, as a crate (in case we swap broker stack)
 - AWS SDKs managed by crates (in case we swap Postgres, Dynamo, S3 for something else)
+
+## What do we need to build here if GoLang
+
+Connections: REST, gRPC, NATS, monolith direct service calls
+
+### service method GetDocument
+
+- checks if doc already in RAM or pulls document snapshot from S3
+- check NATS jetstream for outstanding messages on this subject, process them if so, to bring local mem state up to latest
+- produce wire format (fbs?) for serving over whatever method (NATS, REST, gRPC, monolith)

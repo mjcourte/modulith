@@ -10,8 +10,9 @@ import (
 	"gyoza/services/storageledger"
 )
 
-// Errors returned by every Store. Check them with errors.Is: they are usually
-// wrapped with details about what was wrong.
+// Asset errors returned by every Store. Check them with errors.Is: they are
+// usually wrapped with details about what was wrong. Folder and upload errors
+// are at the top of folders.go and uploads.go.
 var (
 	ErrAssetNotFound   = errors.New("storagemanager: asset not found")
 	ErrVersionNotFound = errors.New("storagemanager: version not found")
@@ -19,7 +20,7 @@ var (
 	ErrInvalidQuery    = errors.New("storagemanager: invalid query")
 )
 
-// Limits enforced by every Store (the checks live in assets_rules.go).
+// Asset limits enforced by every Store (the checks live in assets_rules.go).
 // Lengths count characters, not bytes, so "ñ" is one.
 const (
 	// DefaultPageSize is used when a query doesn't set PageSize.
@@ -58,6 +59,9 @@ type Asset struct {
 	CreatedAt      time.Time
 	UpdatedAt      time.Time  // last change to the asset's fields or current version
 	DeletedAt      *time.Time // nil until soft-deleted
+	// DeletionID groups everything one DeleteFolderTree trashed, so undoing it
+	// restores exactly that set. "" for assets deleted on their own.
+	DeletionID string
 }
 
 // Version is one uploaded file of an asset. Versions are append-only: a new
@@ -126,6 +130,8 @@ type AssetUpdate struct {
 	Name        *string
 	Description *string
 	Tags        *[]string // replaces the whole tag set; normalised like on create
+	// FolderID moves the asset: a folder of the same owner, or "" for the top level.
+	FolderID *string
 }
 
 // AssetQuery selects assets within exactly one scope: a project or an owner.
@@ -136,9 +142,13 @@ type AssetQuery struct {
 	Owner     storageledger.Owner
 
 	// Optional filters.
-	Tag            string   // matched after normalising, so "LOGO" finds "logo"
-	Category       Category // "" means any
-	IncludeDeleted bool
+	Tag      string   // matched after normalising, so "LOGO" finds "logo"
+	Category Category // "" means any
+	// Folder: nil means any folder, a pointer to "" the top level only, and a
+	// pointer to an ID that folder only (direct contents, not sub-folders).
+	Folder         *string
+	IncludeDeleted bool // live and trashed assets
+	OnlyDeleted    bool // trashed assets only (the trash view); implies IncludeDeleted
 
 	// Pagination. PageSize 0 means the default; larger values are capped.
 	// PageToken is the NextPageToken from the previous page, or "" for the first.
@@ -153,7 +163,7 @@ type AssetPage struct {
 	NextPageToken string
 }
 
-// Store persists assets and their versions. It is pure data: it validates
+// Store persists assets, their versions and the folders they're organised in. It is pure data: it validates
 // shape (names, tags, owners, categories) but does no authorization; the
 // Manager checks permissions before calling it and is trusted. Every
 // implementation must pass the shared store test suite.
@@ -162,14 +172,25 @@ type AssetPage struct {
 // with IncludeDeleted) but not changed: UpdateAsset, AddVersion and
 // SetCurrentVersion treat them as missing and return ErrAssetNotFound.
 type Store interface {
+	// FolderStore and UploadStore are embedded: a Store also has all their
+	// methods (folders.go, uploads.go), so one value serves assets, the
+	// folders they live in and the uploads that create them.
+	FolderStore
+	UploadStore
+	OwnerStore // bulk operations for deleting owners and removing users (owners.go)
+	PurgeStore // permanent removal for the cleanup job (purge.go)
+
 	// CreateAsset stores a new asset with first as version 1, atomically.
 	// It assigns IDs and timestamps and derives Category from first.
+	// A non-empty FolderID must name a folder with the same owner, or
+	// ErrFolderNotFound.
 	CreateAsset(ctx context.Context, a Asset, first Version) (Asset, error)
 	// GetAsset returns the asset, including soft-deleted ones, or ErrAssetNotFound.
 	GetAsset(ctx context.Context, id string) (Asset, error)
 	// ListAssets returns one page of assets matching q.
 	ListAssets(ctx context.Context, q AssetQuery) (AssetPage, error)
 	// UpdateAsset applies the non-nil fields of u and returns the result.
+	// Moving to a folder follows the same rule as CreateAsset.
 	UpdateAsset(ctx context.Context, id string, u AssetUpdate) (Asset, error)
 	// AddVersion appends v as the next version and makes it current. v must
 	// have the asset's Category, or ErrInvalidAsset.
@@ -181,7 +202,14 @@ type Store interface {
 	SetCurrentVersion(ctx context.Context, assetID string, number int) (Asset, error)
 	// ListVersions returns every version of the asset, oldest first.
 	ListVersions(ctx context.Context, assetID string) ([]Version, error)
+	// GetVersion returns one version (trashed assets included), or
+	// ErrAssetNotFound / ErrVersionNotFound.
+	GetVersion(ctx context.Context, assetID string, number int) (Version, error)
 	// MarkAssetDeleted soft-deletes the asset. Deleting twice keeps the first
 	// deletion time; a missing asset is ErrAssetNotFound.
 	MarkAssetDeleted(ctx context.Context, id string) error
+	// RestoreAsset takes the asset out of the trash. If its folder is gone or
+	// still trashed, it lands at the top level. Restoring a live asset changes
+	// nothing.
+	RestoreAsset(ctx context.Context, id string) (Asset, error)
 }

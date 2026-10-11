@@ -46,6 +46,13 @@ one owner with 20k objects.
   an ordered index scan that stops at the limit: ~0.05ms at any page depth.
   Planning costs ~0.03ms per query.
 
+### Purge listing
+
+- **Done with the code:** `ListDeleted` (the cleanup job's work list) uses
+  migration 00003's partial index on `(deleted_at, id) WHERE deleted_at IS
+  NOT NULL`: only deleted rows, so it stays small however many objects are
+  live, and the oldest-first query stops at the batch size.
+
 ## Open
 
 ### Rare filter values scan the whole scope
@@ -62,10 +69,13 @@ one owner with 20k objects.
 
 - **Expected:** deleted rows are skipped by a filter, not by the index. If
   deletions pile up, every List reads and discards them.
-- **When to act:** a meaningful share of rows are deleted, or the hard-purge
-  question (README) is answered.
-- **Fix:** hard-purge after retention, or partial indexes `WHERE deleted_at IS NULL`
-  for the default (non-deleted) listing.
+- **Partly addressed:** storagemanager's cleanup job now purges deleted
+  objects after the retention period (7 days), so deleted rows can only pile
+  up for that long.
+- **When to act:** deletions within one retention period are a meaningful
+  share of the rows.
+- **Fix:** partial indexes `WHERE deleted_at IS NULL` for the default
+  (non-deleted) listing.
 
 ### Random IDs scatter primary-key inserts
 

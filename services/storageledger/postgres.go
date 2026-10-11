@@ -7,6 +7,7 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -40,8 +41,11 @@ func (p *Postgres) Create(ctx context.Context, obj Object) (Object, error) {
 	if err != nil {
 		return Object{}, err
 	}
+	if obj.ID == "" {
+		obj.ID = rand.Text()
+	}
 	row, err := p.q.CreateObject(ctx, db.CreateObjectParams{
-		ID:          rand.Text(),
+		ID:          obj.ID,
 		OwnerKind:   string(obj.Owner.Kind),
 		OwnerID:     obj.Owner.ID, // "" for gyoza
 		CreatedBy:   nullable(obj.CreatedBy),
@@ -52,6 +56,15 @@ func (p *Postgres) Create(ctx context.Context, obj Object) (Object, error) {
 		SizeBytes:   obj.SizeBytes,
 		ContentType: obj.ContentType,
 	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		// The ID is taken (ON CONFLICT DO NOTHING). The existing row can't
+		// vanish meanwhile: only Purge deletes rows, and only deleted ones.
+		existing, err := p.Get(ctx, obj.ID)
+		if err != nil {
+			return Object{}, err
+		}
+		return existingOrTaken(existing, obj)
+	}
 	if err != nil {
 		return Object{}, fmt.Errorf("create object: %w", err)
 	}
@@ -136,6 +149,31 @@ func (p *Postgres) ClearCreatedBy(ctx context.Context, userID string) (int, erro
 	return int(n), nil
 }
 
+func (p *Postgres) TransferOwner(ctx context.Context, from, to Owner) (int, error) {
+	if err := checkTransfer(from, to); err != nil {
+		return 0, err
+	}
+	n, err := p.q.TransferOwner(ctx, db.TransferOwnerParams{
+		FromKind: string(from.Kind), FromID: from.ID,
+		ToKind: string(to.Kind), ToID: to.ID,
+	})
+	if err != nil {
+		return 0, fmt.Errorf("transfer objects from %v to %v: %w", from, to, err)
+	}
+	return int(n), nil
+}
+
+func (p *Postgres) MarkDeletedByOwner(ctx context.Context, owner Owner) (int, error) {
+	if err := checkOwnerArg(owner); err != nil {
+		return 0, err
+	}
+	n, err := p.q.MarkDeletedByOwner(ctx, db.MarkDeletedByOwnerParams{OwnerKind: string(owner.Kind), OwnerID: owner.ID})
+	if err != nil {
+		return 0, fmt.Errorf("delete objects of %v: %w", owner, err)
+	}
+	return int(n), nil
+}
+
 // fromRow converts a database row to the domain type.
 // Times are returned in UTC, matching Memory.
 func fromRow(r db.LedgerObject) Object {
@@ -172,4 +210,36 @@ func deref(s *string) string {
 		return ""
 	}
 	return *s
+}
+
+func (p *Postgres) ListDeleted(ctx context.Context, before time.Time, limit int) ([]Object, error) {
+	if err := checkLimit(limit); err != nil {
+		return nil, err
+	}
+	rows, err := p.q.ListDeletedObjects(ctx, db.ListDeletedObjectsParams{Before: before, RowLimit: int32(limit)})
+	if err != nil {
+		return nil, fmt.Errorf("list deleted objects: %w", err)
+	}
+	objs := make([]Object, len(rows))
+	for i, row := range rows {
+		objs[i] = fromRow(row)
+	}
+	return objs, nil
+}
+
+func (p *Postgres) Purge(ctx context.Context, id string) error {
+	n, err := p.q.PurgeObject(ctx, id)
+	if err != nil {
+		return fmt.Errorf("purge object %s: %w", id, err)
+	}
+	if n == 1 {
+		return nil
+	}
+	// Nothing deleted: either the object is already gone (fine) or it's live.
+	if _, err := p.Get(ctx, id); errors.Is(err, ErrNotFound) {
+		return nil
+	} else if err != nil {
+		return err
+	}
+	return fmt.Errorf("%w: %s", ErrNotDeleted, id)
 }

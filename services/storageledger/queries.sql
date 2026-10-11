@@ -1,10 +1,13 @@
 -- name: CreateObject :one
+-- On an ID clash nothing is inserted and no row returned (pgx.ErrNoRows): the
+-- caller then reads the existing object and compares (Create is idempotent).
 INSERT INTO ledger.objects (
     id, owner_kind, owner_id, created_by, project_id, kind,
     bucket, key, size_bytes, content_type
 ) VALUES (
     $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 )
+ON CONFLICT (id) DO NOTHING
 RETURNING *;
 
 -- name: GetObject :one
@@ -48,3 +51,27 @@ WHERE id = $1;
 UPDATE ledger.objects
 SET created_by = NULL
 WHERE created_by = sqlc.arg(user_id)::text;
+
+-- name: TransferOwner :execrows
+-- Both owners are checked in Go (never projects, never equal), so the
+-- table's owner constraints hold after the update.
+UPDATE ledger.objects
+SET owner_kind = sqlc.arg(to_kind)::text, owner_id = sqlc.arg(to_id)::text
+WHERE owner_kind = sqlc.arg(from_kind)::text AND owner_id = sqlc.arg(from_id)::text;
+
+-- name: MarkDeletedByOwner :execrows
+UPDATE ledger.objects
+SET deleted_at = now()
+WHERE owner_kind = sqlc.arg(owner_kind)::text AND owner_id = sqlc.arg(owner_id)::text
+  AND deleted_at IS NULL;
+
+-- name: ListDeletedObjects :many
+-- Uses the partial index objects_deleted (migration 00003).
+SELECT * FROM ledger.objects
+WHERE deleted_at IS NOT NULL AND deleted_at < sqlc.arg(before)::timestamptz
+ORDER BY deleted_at, id
+LIMIT sqlc.arg(row_limit);
+
+-- name: PurgeObject :execrows
+-- Only deleted objects; 0 rows means missing or live (the caller tells which).
+DELETE FROM ledger.objects WHERE id = $1 AND deleted_at IS NOT NULL;

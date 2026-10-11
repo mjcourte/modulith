@@ -1,4 +1,4 @@
-package storagemanager
+package blob
 
 import (
 	"bytes"
@@ -22,31 +22,35 @@ type storedBlob struct {
 	contentType string
 }
 
-// grant is what presigned URL allows
+// grant is what a presigned URL allows.
 type grant struct {
 	method      string // PUT or GET
 	ref         blobRef
 	contentType string // PUT only
 	size        int64  // PUT only
+	filename    string // GET only: the name to save the download as ("" = none)
 	expires     time.Time
 }
 
-// MemoryBlobs is an in-memory Blobs for testing and local runs
-type MemoryBlobs struct {
+// Memory is an in-memory Store for tests and local runs. Presigned URLs use a
+// memory:// scheme no browser can open; PutSigned and GetSigned play the
+// browser instead, enforcing what each URL was signed for, as S3 would.
+type Memory struct {
 	mu     sync.Mutex
 	blobs  map[blobRef]storedBlob
 	grants map[string]grant // URL token -> grant
 }
 
-func NewMemoryBlobs() *MemoryBlobs {
-	return &MemoryBlobs{blobs: make(map[blobRef]storedBlob), grants: make(map[string]grant)}
+// NewMemory returns an empty Memory.
+func NewMemory() *Memory {
+	return &Memory{blobs: make(map[blobRef]storedBlob), grants: make(map[string]grant)}
 }
 
-// Compile-time check that *MemoryBlobs satisfies Blobs.
-var _ Blobs = (*MemoryBlobs)(nil)
+// Compile-time check that *Memory satisfies Store.
+var _ Store = (*Memory)(nil)
 
-// Grant helpers
-func (m *MemoryBlobs) sign(g grant) string {
+// sign records g under a new token and returns the URL that carries it.
+func (m *Memory) sign(g grant) string {
 	token := rand.Text()
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -60,8 +64,7 @@ func (m *MemoryBlobs) sign(g grant) string {
 	return u.String()
 }
 
-// Blobs methods
-func (m *MemoryBlobs) PresignPut(ctx context.Context, bucket, key, contentType string, size int64, ttl time.Duration) (string, error) {
+func (m *Memory) PresignPut(ctx context.Context, bucket, key, contentType string, size int64, ttl time.Duration) (string, error) {
 	return m.sign(grant{
 		method:      http.MethodPut,
 		ref:         blobRef{bucket: bucket, key: key},
@@ -71,25 +74,40 @@ func (m *MemoryBlobs) PresignPut(ctx context.Context, bucket, key, contentType s
 	}), nil
 }
 
-func (m *MemoryBlobs) PresignGet(ctx context.Context, bucket, key string, ttl time.Duration) (string, error) {
+func (m *Memory) PresignGet(ctx context.Context, bucket, key string, ttl time.Duration, filename string) (string, error) {
 	return m.sign(grant{
-		method:  http.MethodGet,
-		ref:     blobRef{bucket: bucket, key: key},
-		expires: time.Now().Add(ttl),
+		method:   http.MethodGet,
+		ref:      blobRef{bucket: bucket, key: key},
+		filename: filename,
+		expires:  time.Now().Add(ttl),
 	}), nil
 }
 
-func (m *MemoryBlobs) Stat(ctx context.Context, bucket, key string) (BlobInfo, error) {
+func (m *Memory) Stat(ctx context.Context, bucket, key string) (Info, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	b, ok := m.blobs[blobRef{bucket: bucket, key: key}]
 	if !ok {
-		return BlobInfo{}, ErrBlobNotFound
+		return Info{}, ErrNotFound
 	}
-	return BlobInfo{Size: int64(len(b.data)), ContentType: b.contentType}, nil
+	return Info{Size: int64(len(b.data)), ContentType: b.contentType}, nil
 }
 
-func (m *MemoryBlobs) Delete(ctx context.Context, bucket, key string) error {
+func (m *Memory) ReadPrefix(ctx context.Context, bucket, key string, n int) ([]byte, error) {
+	if n < 1 {
+		return nil, fmt.Errorf("read prefix: n must be positive, got %d", n)
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	b, ok := m.blobs[blobRef{bucket: bucket, key: key}]
+	if !ok {
+		return nil, ErrNotFound
+	}
+	// min is a built-in (Go 1.21+); a shorter file just returns all of it.
+	return bytes.Clone(b.data[:min(n, len(b.data))]), nil
+}
+
+func (m *Memory) Delete(ctx context.Context, bucket, key string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	delete(m.blobs, blobRef{bucket: bucket, key: key})
@@ -101,7 +119,7 @@ func (m *MemoryBlobs) Delete(ctx context.Context, bucket, key string) error {
 
 // PutSigned uploads data to a presigned PUT URL, enforcing what was signed:
 // the method, the expiry, the content type and the exact size.
-func (m *MemoryBlobs) PutSigned(rawURL, contentType string, data []byte) error {
+func (m *Memory) PutSigned(rawURL, contentType string, data []byte) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	g, err := m.lookupGrant(rawURL, http.MethodPut)
@@ -122,7 +140,7 @@ func (m *MemoryBlobs) PutSigned(rawURL, contentType string, data []byte) error {
 // lookupGrant returns the grant behind a presigned URL if it allows method
 // right now. The caller must hold m.mu (mutexes aren't re-entrant, so this
 // doesn't lock itself).
-func (m *MemoryBlobs) lookupGrant(rawURL, method string) (grant, error) {
+func (m *Memory) lookupGrant(rawURL, method string) (grant, error) {
 	u, err := url.Parse(rawURL)
 	if err != nil {
 		return grant{}, fmt.Errorf("parse presigned url: %w", err)
@@ -140,16 +158,19 @@ func (m *MemoryBlobs) lookupGrant(rawURL, method string) (grant, error) {
 	return g, nil
 }
 
-func (m *MemoryBlobs) GetSigned(rawURL string) ([]byte, error) {
+// GetSigned downloads from a presigned GET URL, enforcing its method and
+// expiry. It returns the bytes and the filename the browser would save them
+// under ("" if none was signed), or ErrNotFound, as S3 would 404.
+func (m *Memory) GetSigned(rawURL string) (data []byte, filename string, err error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	g, err := m.lookupGrant(rawURL, http.MethodGet)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	b, ok := m.blobs[g.ref]
 	if !ok {
-		return nil, ErrBlobNotFound
+		return nil, "", ErrNotFound
 	}
-	return bytes.Clone(b.data), nil
+	return bytes.Clone(b.data), g.filename, nil
 }

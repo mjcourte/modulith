@@ -64,6 +64,8 @@ const (
 
 // Object is one S3 object recorded in the ledger.
 type Object struct {
+	// ID is assigned by Create, or chosen by the caller so that retrying a
+	// Create can't record the same file twice (see Create).
 	ID          string
 	Owner       Owner
 	CreatedBy   string // user ID that uploaded/produced it; empty for platform-created objects
@@ -81,11 +83,52 @@ var (
 	ErrNotFound      = errors.New("storageledger: object not found")
 	ErrInvalidQuery  = errors.New("storageledger: invalid query")
 	ErrInvalidObject = errors.New("storageledger: invalid object")
+	// ErrAlreadyExists: Create was given an ID that already names a different file.
+	ErrAlreadyExists = errors.New("storageledger: object ID already in use")
+	// ErrNotDeleted: Purge was asked to remove an object that isn't deleted.
+	ErrNotDeleted = errors.New("storageledger: object not deleted")
 )
+
+// MaxIDLen is the longest object ID a caller may choose.
+const MaxIDLen = 128
+
+// checkID validates a caller-chosen object ID: short, printable ASCII, no spaces.
+func checkID(id string) error {
+	if len(id) > MaxIDLen {
+		return fmt.Errorf("%w: ID longer than %d bytes", ErrInvalidObject, MaxIDLen)
+	}
+	for _, r := range id {
+		if r <= ' ' || r > '~' {
+			return fmt.Errorf("%w: ID %q must be printable ASCII without spaces", ErrInvalidObject, id)
+		}
+	}
+	return nil
+}
+
+// sameFile reports whether existing, found under a caller-chosen ID,
+// describes the same stored file as obj: then Create returns it again
+// instead of failing. Owner and CreatedBy are left out, since transfers and
+// user removal may have changed them since the first Create.
+func sameFile(existing, obj Object) bool {
+	return existing.Bucket == obj.Bucket && existing.Key == obj.Key &&
+		existing.SizeBytes == obj.SizeBytes && existing.ContentType == obj.ContentType &&
+		existing.Kind == obj.Kind && existing.ProjectID == obj.ProjectID
+}
+
+// existingOrTaken is Create's answer when obj.ID is already used by existing.
+func existingOrTaken(existing, obj Object) (Object, error) {
+	if !sameFile(existing, obj) {
+		return Object{}, fmt.Errorf("%w: %s", ErrAlreadyExists, obj.ID)
+	}
+	return existing, nil
+}
 
 // normalize validates obj for Create and fills in ProjectID for
 // project-owned objects. Shared by every implementation.
 func (obj Object) normalize() (Object, error) {
+	if err := checkID(obj.ID); err != nil {
+		return obj, err
+	}
 	if err := obj.Owner.Validate(); err != nil {
 		// Two %w: the result matches both ErrInvalidObject and err with errors.Is.
 		return obj, fmt.Errorf("%w: %w", ErrInvalidObject, err)
@@ -135,6 +178,11 @@ type ListPage struct {
 }
 
 type Service interface {
+	// Create records a stored file. With obj.ID empty it assigns an ID. With
+	// an ID chosen by the caller it is idempotent: if that ID already records
+	// the same file (bucket, key, size, type, kind, project), it returns the
+	// existing object unchanged; if it records a different one,
+	// ErrAlreadyExists. Callers that may retry choose the ID up front.
 	Create(ctx context.Context, obj Object) (Object, error)
 	Get(ctx context.Context, id string) (Object, error)
 	List(ctx context.Context, q ListQuery) (ListPage, error)
@@ -143,6 +191,59 @@ type Service interface {
 	// ClearCreatedBy removes userID from CreatedBy on every object, deleted or not,
 	// when that user is deleted. It returns how many objects were changed.
 	ClearCreatedBy(ctx context.Context, userID string) (int, error)
+
+	// TransferOwner gives every object owned by from, deleted or not, to to:
+	// e.g. a departing user's files to their org. Neither side may be a
+	// project (a project-owned object belongs to its project for good), and
+	// they must differ (ErrInvalidQuery). It returns how many objects moved.
+	TransferOwner(ctx context.Context, from, to Owner) (int, error)
+
+	// MarkDeletedByOwner soft-deletes every live object owned by owner, e.g.
+	// when the owner itself is deleted. Objects already deleted keep their
+	// deletion time. It returns how many objects it newly deleted.
+	MarkDeletedByOwner(ctx context.Context, owner Owner) (int, error)
+
+	// ListDeleted returns up to limit objects deleted before the given time,
+	// longest-deleted first: the purge job's work list. limit must be between
+	// 1 and MaxPageSize (ErrInvalidQuery).
+	ListDeleted(ctx context.Context, before time.Time, limit int) ([]Object, error)
+
+	// Purge removes a deleted object's record for good, once its bytes are
+	// gone from S3. A live object is ErrNotDeleted; a missing one is not an
+	// error, so a purge job can simply retry.
+	Purge(ctx context.Context, id string) error
+}
+
+// checkLimit validates ListDeleted's limit.
+func checkLimit(limit int) error {
+	if limit < 1 || limit > MaxPageSize {
+		return fmt.Errorf("%w: limit %d must be between 1 and %d", ErrInvalidQuery, limit, MaxPageSize)
+	}
+	return nil
+}
+
+// checkTransfer validates TransferOwner's arguments. Shared by every implementation.
+func checkTransfer(from, to Owner) error {
+	for _, o := range []Owner{from, to} {
+		if err := o.Validate(); err != nil {
+			return fmt.Errorf("%w: %w", ErrInvalidQuery, err)
+		}
+		if o.Kind == OwnerProject {
+			return fmt.Errorf("%w: project-owned objects can't change owner", ErrInvalidQuery)
+		}
+	}
+	if from == to {
+		return fmt.Errorf("%w: transfer to the same owner", ErrInvalidQuery)
+	}
+	return nil
+}
+
+// checkOwnerArg validates an owner passed to a bulk operation.
+func checkOwnerArg(owner Owner) error {
+	if err := owner.Validate(); err != nil {
+		return fmt.Errorf("%w: %w", ErrInvalidQuery, err)
+	}
+	return nil
 }
 
 // normalize validates q and fills in the default page size.

@@ -6,7 +6,9 @@
       "PowerShell(foreach \\($d in 'cmd\\\\k2','cmd\\\\storage-catalogue','libs\\\\platform','services\\\\edge'\\) { $i = Get-Item $d -Force; \"$d  created=$\\($i.CreationTime\\)  items=\" + @\\(Get-ChildItem $d -Force -Recurse\\).Count })",
       "PowerShell(Get-ChildItem -Recurse -Force -Directory | Where-Object Name -match 'k2' | Select-Object -ExpandProperty FullName; \"cmd/k2 items: \" + @\\(Get-ChildItem cmd\\\\k2 -Force -Recurse\\).Count)",
       "PowerShell(Get-ChildItem *)",
-      "PowerShell(& \"C:\\\\Program Files\\\\Go\\\\bin\\\\go.exe\" test ./services/storagecatalogue -count=200)"
+      "PowerShell(& \"C:\\\\Program Files\\\\Go\\\\bin\\\\go.exe\" test ./services/storagecatalogue -count=200)",
+      "Bash(\"/c/Program Files/Go/bin/go\" vet ./services/usermanager)",
+      "Bash(\"/c/Program Files/Go/bin/gofmt.exe\" -l services/usermanager)"
     ]
   }
 }

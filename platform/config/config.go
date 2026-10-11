@@ -17,6 +17,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -103,6 +104,21 @@ func (e *Env) Duration(name string, def time.Duration) time.Duration {
 		return def
 	}
 	return d
+}
+
+// Bool returns the value of name parsed as a boolean ("true", "false", "1",
+// "0" and the other forms strconv.ParseBool accepts), or def if it is unset.
+func (e *Env) Bool(name string, def bool) bool {
+	v, ok := e.get(name)
+	if !ok {
+		return def
+	}
+	b, err := strconv.ParseBool(v)
+	if err != nil {
+		e.errs = append(e.errs, fmt.Errorf("%s: want true or false, got %q", name, v))
+		return def
+	}
+	return b
 }
 
 // Err returns every problem recorded so far, or nil.

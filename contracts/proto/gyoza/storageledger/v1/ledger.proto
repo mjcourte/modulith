@@ -7,7 +7,9 @@ package gyoza.storageledger.v1;
 import "google/protobuf/timestamp.proto";
 
 service LedgerService {
-  // Records a new object. The server assigns id and created_at.
+  // Records a new object. The server assigns created_at, and id unless the
+  // caller chose one. With a caller-chosen id it is idempotent: the same file
+  // again returns the existing object; a different file is ALREADY_EXISTS.
   rpc CreateObject(CreateObjectRequest) returns (CreateObjectResponse);
   // Fails with NOT_FOUND if there is no such object.
   rpc GetObject(GetObjectRequest) returns (GetObjectResponse);
@@ -17,6 +19,35 @@ service LedgerService {
   rpc MarkObjectDeleted(MarkObjectDeletedRequest) returns (MarkObjectDeletedResponse);
   // Removes a deleted user as creator from every object.
   rpc ClearCreatedBy(ClearCreatedByRequest) returns (ClearCreatedByResponse);
+  // Gives every object of one owner (deleted or not) to another, e.g. a
+  // departing user's files to their org. Never to or from a project.
+  rpc TransferOwner(TransferOwnerRequest) returns (TransferOwnerResponse);
+  // Soft-deletes every live object of an owner, e.g. a deleted project's.
+  rpc MarkDeletedByOwner(MarkDeletedByOwnerRequest) returns (MarkDeletedByOwnerResponse);
+  // Lists objects deleted before a time, longest-deleted first, for the purge job.
+  rpc ListDeletedObjects(ListDeletedObjectsRequest) returns (ListDeletedObjectsResponse);
+  // Removes a deleted object for good once its bytes are gone. Missing is
+  // fine; a live object is FAILED_PRECONDITION.
+  rpc PurgeObject(PurgeObjectRequest) returns (PurgeObjectResponse);
+}
+
+message TransferOwnerRequest {
+  Owner from = 1;
+  Owner to = 2;
+}
+
+message TransferOwnerResponse {
+  // How many objects moved.
+  int64 count = 1;
+}
+
+message MarkDeletedByOwnerRequest {
+  Owner owner = 1;
+}
+
+message MarkDeletedByOwnerResponse {
+  // How many objects were newly deleted.
+  int64 count = 1;
 }
 
 enum OwnerKind {
@@ -105,3 +136,19 @@ message ClearCreatedByResponse {
   // How many objects were changed.
   int64 count = 1;
 }
+
+message ListDeletedObjectsRequest {
+  google.protobuf.Timestamp before = 1;
+  // Between 1 and 500.
+  int32 limit = 2;
+}
+
+message ListDeletedObjectsResponse {
+  repeated Object objects = 1;
+}
+
+message PurgeObjectRequest {
+  string id = 1;
+}
+
+message PurgeObjectResponse {}
