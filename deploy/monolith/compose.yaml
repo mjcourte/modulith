@@ -12,6 +12,15 @@
 name: gyoza
 
 services:
+  app:
+    build:
+      context: ../..
+    environment:
+      NATS_URL: nats://nats-1:4222,nats-2:4222,nats-3:4222
+    depends_on:
+      - nats-1
+      - nats-2
+      - nats-3
   postgres:
     image: postgres:18.6-alpine
     environment:
@@ -52,6 +61,48 @@ services:
       timeout: 5s
       retries: 30
 
+  nats-1:
+    image: nats:2.14.6
+    command: ["-c", "/etc/nats/nats.conf"]
+    volumes:
+      - ../../platform/nats/nats-1.conf:/etc/nats/nats.conf:ro
+      - nats1-data:/data
+    healthcheck:
+      test: ["CMD", "nats-server", "--signal", "ldm"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  nats-2:
+    image: nats:2.14.6
+    command: ["-c", "/etc/nats/nats.conf"]
+    volumes:
+      - ../../platform/nats/nats-2.conf:/etc/nats/nats.conf:ro
+      - nats2-data:/data
+    healthcheck:
+      test: ["CMD", "nats-server", "--signal", "ldm"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  nats-3:
+    image: nats:2.14.6
+    command: ["-c", "/etc/nats/nats.conf"]
+    volumes:
+      - ../../platform/nats/nats-3.conf:/etc/nats/nats.conf:ro
+      - nats3-data:/data
+    healthcheck:
+      test: ["CMD", "nats-server", "--signal", "ldm"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
 volumes:
   postgres-data:
   s3-data:
+  nats1-data:
+  nats2-data:
+  nats3-data:
