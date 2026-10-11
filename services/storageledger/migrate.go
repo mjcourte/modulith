@@ -1,4 +1,4 @@
-package storagecatalogue
+package storageledger
 
 import (
 	"context"
@@ -18,13 +18,13 @@ import (
 //go:embed migrations/*.sql
 var migrations embed.FS
 
-// Migrate brings the catalogue schema up to date. It is safe to call on
+// Migrate brings the ledger schema up to date. It is safe to call on
 // every startup, and from several replicas at once.
 func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
-	// goose keeps its version table inside the catalogue schema, so the
+	// goose keeps its version table inside the ledger schema, so the
 	// schema has to exist before goose runs.
-	if _, err := pool.Exec(ctx, `CREATE SCHEMA IF NOT EXISTS catalogue`); err != nil {
-		return fmt.Errorf("create catalogue schema: %w", err)
+	if _, err := pool.Exec(ctx, `CREATE SCHEMA IF NOT EXISTS ledger`); err != nil {
+		return fmt.Errorf("create ledger schema: %w", err)
 	}
 
 	sqlDB := stdlib.OpenDBFromPool(pool) // goose needs database/sql; closing this leaves the pool open
@@ -39,14 +39,14 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 		return err
 	}
 	provider, err := goose.NewProvider(goose.DialectPostgres, sqlDB, fsys,
-		goose.WithTableName("catalogue.goose_db_version"),
+		goose.WithTableName("ledger.goose_db_version"),
 		goose.WithSessionLocker(locker),
 	)
 	if err != nil {
 		return fmt.Errorf("create migration provider: %w", err)
 	}
 	if _, err := provider.Up(ctx); err != nil {
-		return fmt.Errorf("migrate catalogue: %w", err)
+		return fmt.Errorf("migrate ledger: %w", err)
 	}
 	return nil
 }

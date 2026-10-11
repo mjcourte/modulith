@@ -1,0 +1,16 @@
+# Regenerate after editing proto/: go generate ./contracts
+version: v2
+managed:
+  enabled: true
+  override:
+    # gyoza/storageledger/v1/x.proto -> package gyoza/contracts/gen/go/gyoza/storageledger/v1
+    - file_option: go_package_prefix
+      value: gyoza/contracts/gen/go
+plugins:
+  # The generators are Go tool dependencies (see go.mod), so no separate install.
+  - local: ["go", "tool", "protoc-gen-go"]
+    out: gen/go
+    opt: paths=source_relative
+  - local: ["go", "tool", "protoc-gen-go-grpc"]
+    out: gen/go
+    opt: paths=source_relative

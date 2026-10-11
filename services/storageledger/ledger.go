@@ -1,4 +1,4 @@
-package storagecatalogue
+package storageledger
 
 import (
 	"context"
@@ -55,9 +55,9 @@ type Object struct {
 }
 
 var (
-	ErrNotFound      = errors.New("storagecatalogue: object not found")
-	ErrInvalidQuery  = errors.New("storagecatalogue: invalid query")
-	ErrInvalidObject = errors.New("storagecatalogue: invalid object")
+	ErrNotFound      = errors.New("storageledger: object not found")
+	ErrInvalidQuery  = errors.New("storageledger: invalid query")
+	ErrInvalidObject = errors.New("storageledger: invalid object")
 )
 
 // normalize validates obj for Create and fills in ProjectID for

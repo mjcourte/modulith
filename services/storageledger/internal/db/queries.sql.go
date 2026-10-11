@@ -11,7 +11,7 @@ import (
 )
 
 const clearCreatedBy = `-- name: ClearCreatedBy :execrows
-UPDATE catalogue.objects
+UPDATE ledger.objects
 SET created_by = NULL
 WHERE created_by = $1::text
 `
@@ -25,7 +25,7 @@ func (q *Queries) ClearCreatedBy(ctx context.Context, userID string) (int64, err
 }
 
 const createObject = `-- name: CreateObject :one
-INSERT INTO catalogue.objects (
+INSERT INTO ledger.objects (
     id, owner_kind, owner_id, created_by, project_id, kind,
     bucket, key, size_bytes, content_type
 ) VALUES (
@@ -47,7 +47,7 @@ type CreateObjectParams struct {
 	ContentType string
 }
 
-func (q *Queries) CreateObject(ctx context.Context, arg CreateObjectParams) (CatalogueObject, error) {
+func (q *Queries) CreateObject(ctx context.Context, arg CreateObjectParams) (LedgerObject, error) {
 	row := q.db.QueryRow(ctx, createObject,
 		arg.ID,
 		arg.OwnerKind,
@@ -60,7 +60,7 @@ func (q *Queries) CreateObject(ctx context.Context, arg CreateObjectParams) (Cat
 		arg.SizeBytes,
 		arg.ContentType,
 	)
-	var i CatalogueObject
+	var i LedgerObject
 	err := row.Scan(
 		&i.ID,
 		&i.OwnerKind,
@@ -79,12 +79,12 @@ func (q *Queries) CreateObject(ctx context.Context, arg CreateObjectParams) (Cat
 }
 
 const getObject = `-- name: GetObject :one
-SELECT id, owner_kind, owner_id, created_by, project_id, kind, bucket, key, size_bytes, content_type, created_at, deleted_at FROM catalogue.objects WHERE id = $1
+SELECT id, owner_kind, owner_id, created_by, project_id, kind, bucket, key, size_bytes, content_type, created_at, deleted_at FROM ledger.objects WHERE id = $1
 `
 
-func (q *Queries) GetObject(ctx context.Context, id string) (CatalogueObject, error) {
+func (q *Queries) GetObject(ctx context.Context, id string) (LedgerObject, error) {
 	row := q.db.QueryRow(ctx, getObject, id)
-	var i CatalogueObject
+	var i LedgerObject
 	err := row.Scan(
 		&i.ID,
 		&i.OwnerKind,
@@ -104,7 +104,7 @@ func (q *Queries) GetObject(ctx context.Context, id string) (CatalogueObject, er
 
 const listObjectsByOwner = `-- name: ListObjectsByOwner :many
 
-SELECT id, owner_kind, owner_id, created_by, project_id, kind, bucket, key, size_bytes, content_type, created_at, deleted_at FROM catalogue.objects
+SELECT id, owner_kind, owner_id, created_by, project_id, kind, bucket, key, size_bytes, content_type, created_at, deleted_at FROM ledger.objects
 WHERE owner_kind = $1
   AND owner_id = $2
   AND (created_at, id) > ($3::timestamptz, $4::text)
@@ -132,7 +132,7 @@ type ListObjectsByOwnerParams struct {
 // passes the zero cursor. Optional filters are NULL when unset and are
 // checked on the rows the index returns. Fetch one row more than the page
 // size to know whether there is a next page.
-func (q *Queries) ListObjectsByOwner(ctx context.Context, arg ListObjectsByOwnerParams) ([]CatalogueObject, error) {
+func (q *Queries) ListObjectsByOwner(ctx context.Context, arg ListObjectsByOwnerParams) ([]LedgerObject, error) {
 	rows, err := q.db.Query(ctx, listObjectsByOwner,
 		arg.OwnerKind,
 		arg.OwnerID,
@@ -147,9 +147,9 @@ func (q *Queries) ListObjectsByOwner(ctx context.Context, arg ListObjectsByOwner
 		return nil, err
 	}
 	defer rows.Close()
-	var items []CatalogueObject
+	var items []LedgerObject
 	for rows.Next() {
-		var i CatalogueObject
+		var i LedgerObject
 		if err := rows.Scan(
 			&i.ID,
 			&i.OwnerKind,
@@ -175,7 +175,7 @@ func (q *Queries) ListObjectsByOwner(ctx context.Context, arg ListObjectsByOwner
 }
 
 const listObjectsByProject = `-- name: ListObjectsByProject :many
-SELECT id, owner_kind, owner_id, created_by, project_id, kind, bucket, key, size_bytes, content_type, created_at, deleted_at FROM catalogue.objects
+SELECT id, owner_kind, owner_id, created_by, project_id, kind, bucket, key, size_bytes, content_type, created_at, deleted_at FROM ledger.objects
 WHERE project_id = $1::text
   AND (created_at, id) > ($2::timestamptz, $3::text)
   AND ($4::text IS NULL OR created_by = $4)
@@ -195,7 +195,7 @@ type ListObjectsByProjectParams struct {
 	RowLimit       int32
 }
 
-func (q *Queries) ListObjectsByProject(ctx context.Context, arg ListObjectsByProjectParams) ([]CatalogueObject, error) {
+func (q *Queries) ListObjectsByProject(ctx context.Context, arg ListObjectsByProjectParams) ([]LedgerObject, error) {
 	rows, err := q.db.Query(ctx, listObjectsByProject,
 		arg.ProjectID,
 		arg.AfterCreatedAt,
@@ -209,9 +209,9 @@ func (q *Queries) ListObjectsByProject(ctx context.Context, arg ListObjectsByPro
 		return nil, err
 	}
 	defer rows.Close()
-	var items []CatalogueObject
+	var items []LedgerObject
 	for rows.Next() {
-		var i CatalogueObject
+		var i LedgerObject
 		if err := rows.Scan(
 			&i.ID,
 			&i.OwnerKind,
@@ -237,7 +237,7 @@ func (q *Queries) ListObjectsByProject(ctx context.Context, arg ListObjectsByPro
 }
 
 const markObjectDeleted = `-- name: MarkObjectDeleted :execrows
-UPDATE catalogue.objects
+UPDATE ledger.objects
 SET deleted_at = COALESCE(deleted_at, now())
 WHERE id = $1
 `

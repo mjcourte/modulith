@@ -1,0 +1,36 @@
+# Local dependencies for running the monolith (go run ./cmd/gyoza) on any
+# machine. From the repo root:
+#
+#   docker compose -f deploy/monolith/compose.yaml up -d --wait
+#   docker compose -f deploy/monolith/compose.yaml down        # keeps data
+#   docker compose -f deploy/monolith/compose.yaml down -v     # deletes data
+#
+# Then point the binaries and tests at it:
+#   GYOZA_DATABASE_URL=postgres://gyoza:gyoza@localhost:5433/gyoza
+
+name: gyoza
+
+services:
+  postgres:
+    image: postgres:18.6-alpine
+    environment:
+      POSTGRES_USER: gyoza
+      POSTGRES_PASSWORD: gyoza # local development only
+      POSTGRES_DB: gyoza
+    ports:
+      # 5433 on the host so it can run next to a locally installed Postgres on 5432.
+      # Bound to localhost so the database isn't reachable from the network.
+      - "127.0.0.1:5433:5432"
+    volumes:
+      # Postgres 18 images keep data under /var/lib/postgresql/18/docker,
+      # so the volume goes on the parent directory.
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      # `up --wait` blocks until this passes, so the database is ready to use.
+      test: ["CMD", "pg_isready", "-U", "gyoza", "-d", "gyoza"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+
+volumes:
+  postgres-data:

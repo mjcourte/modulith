@@ -1,4 +1,4 @@
-# Storage Catalogue: Optimizations
+# Storage Ledger: Optimizations
 
 Known performance issues, what was done about them, and what is deliberately
 left until it matters. Add an entry whenever you find or defer one, with the
@@ -79,7 +79,7 @@ one owner with 20k objects.
 ### force_custom_plan applies to every query on the pool
 
 - **Expected:** in the monolith all services share one pool, so every query
-  is re-planned on each run, not only the catalogue's List.
+  is re-planned on each run, not only the ledger's List.
 - **When to act:** planning time shows up in profiles for some other
   service's hot query.
 - **Fix:** give that service's statements a different exec mode, or set

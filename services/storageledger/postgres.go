@@ -1,4 +1,4 @@
-package storagecatalogue
+package storageledger
 
 //go:generate go tool sqlc generate
 
@@ -11,7 +11,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 
-	"gyoza/services/storagecatalogue/internal/db"
+	"gyoza/services/storageledger/internal/db"
 )
 
 // DB is the connection Postgres runs queries on.
@@ -22,7 +22,7 @@ type DB interface {
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
 }
 
-// Postgres is the production Service, backed by the catalogue schema.
+// Postgres is the production Service, backed by the ledger schema.
 // Run Migrate before using it.
 type Postgres struct {
 	q *db.Queries
@@ -80,7 +80,7 @@ func (p *Postgres) List(ctx context.Context, q ListQuery) (ListPage, error) {
 	}
 	limit := int32(q.PageSize + 1) // one extra row says whether there is a next page
 
-	var rows []db.CatalogueObject
+	var rows []db.LedgerObject
 	if q.ProjectID != "" {
 		rows, err = p.q.ListObjectsByProject(ctx, db.ListObjectsByProjectParams{
 			ProjectID:      q.ProjectID,
@@ -138,7 +138,7 @@ func (p *Postgres) ClearCreatedBy(ctx context.Context, userID string) (int, erro
 
 // fromRow converts a database row to the domain type.
 // Times are returned in UTC, matching Memory.
-func fromRow(r db.CatalogueObject) Object {
+func fromRow(r db.LedgerObject) Object {
 	obj := Object{
 		ID:          r.ID,
 		Owner:       Owner{Kind: OwnerKind(r.OwnerKind), ID: r.OwnerID},

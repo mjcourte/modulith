@@ -1,6 +1,6 @@
-// storagecatalogue Memory implements the Go Service interface
+// storageledger Memory implements the Go Service interface
 // that for now "mocks" what we will do with some external Postgres.
-package storagecatalogue
+package storageledger
 
 import (
 	"cmp"

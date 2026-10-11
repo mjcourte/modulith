@@ -25,7 +25,7 @@ func Connect(ctx context.Context, url, appName string) (*pgxpool.Pool, error) {
 	// keyset-paginated List queries that turns an index scan that stops at the
 	// page limit into reading and sorting the whole scope. Planning with the
 	// real values each time costs microseconds. See
-	// services/storagecatalogue/OPTIMIZATIONS.md.
+	// services/storageledger/OPTIMIZATIONS.md.
 	params["plan_cache_mode"] = "force_custom_plan"
 
 	pool, err := pgxpool.NewWithConfig(ctx, cfg)

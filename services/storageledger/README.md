@@ -1,4 +1,4 @@
-# Storage Catalogue
+# Storage Ledger
 
 - A PostGreSQL ledger for all uploads to S3
 - Relates to user DB as needed eg. GDPR deletion
@@ -21,6 +21,13 @@
 
 - performance findings and known things to optimize: [OPTIMIZATIONS.md](OPTIMIZATIONS.md)
 
+## API
+
+- in-process: the `Service` interface (`Memory`, `Postgres`)
+- over the network: `LedgerService` in `contracts/proto/gyoza/storageledger/v1/ledger.proto`. `GRPCServer` exposes any `Service`; `GRPCClient` is a `Service` that calls one remotely, returning the same types and sentinel errors (`errors.Is(err, ErrNotFound)` works across the wire)
+- error mapping: `ErrNotFound` -> NOT_FOUND, `ErrInvalidQuery`/`ErrInvalidObject` -> INVALID_ARGUMENT, anything else -> INTERNAL with the details logged server-side only
+- the monolith uses `Postgres` directly; `cmd/storage-ledger` serves it on `GYOZA_GRPC_ADDR`
+
 ## Project deletion
 
 - delete everything owned by the project (`List{Owner: project}`); objects owned by others but associated with the project survive
@@ -29,11 +36,11 @@
 
 ## User deletion (GDPR)
 
-Orchestrated by user-manager; the catalogue only provides the queries.
+Orchestrated by user-manager; the ledger only provides the queries.
 
 - user leaves: delete everything the user owns, whoever created it (`List{Owner: user}`)
 - objects owned by someone else (e.g. org assets) stay, and the user is cleared as their creator (`ClearCreatedBy`, which also covers soft-deleted rows)
 - orgs are optional; an org-less user only has user-owned objects
 - last user leaves an org: clean up the org's objects too
 - open: soft-deleted rows still hold metadata; when are they hard-purged?
-- open: S3 keys must not embed user IDs for objects that outlive the user (e.g. org assets)
+- resolved: S3 keys never embed user or org IDs; see the key layout in services/storagemanager/README.md

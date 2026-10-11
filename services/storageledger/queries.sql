@@ -1,5 +1,5 @@
 -- name: CreateObject :one
-INSERT INTO catalogue.objects (
+INSERT INTO ledger.objects (
     id, owner_kind, owner_id, created_by, project_id, kind,
     bucket, key, size_bytes, content_type
 ) VALUES (
@@ -8,7 +8,7 @@ INSERT INTO catalogue.objects (
 RETURNING *;
 
 -- name: GetObject :one
-SELECT * FROM catalogue.objects WHERE id = $1;
+SELECT * FROM ledger.objects WHERE id = $1;
 
 -- List queries: one per scope so each uses its own index. The scope and the
 -- cursor are plain comparisons so they become index conditions: Postgres
@@ -18,7 +18,7 @@ SELECT * FROM catalogue.objects WHERE id = $1;
 -- size to know whether there is a next page.
 
 -- name: ListObjectsByOwner :many
-SELECT * FROM catalogue.objects
+SELECT * FROM ledger.objects
 WHERE owner_kind = sqlc.arg(owner_kind)
   AND owner_id = sqlc.arg(owner_id)
   AND (created_at, id) > (sqlc.arg(after_created_at)::timestamptz, sqlc.arg(after_id)::text)
@@ -29,7 +29,7 @@ ORDER BY created_at, id
 LIMIT sqlc.arg(row_limit);
 
 -- name: ListObjectsByProject :many
-SELECT * FROM catalogue.objects
+SELECT * FROM ledger.objects
 WHERE project_id = sqlc.arg(project_id)::text
   AND (created_at, id) > (sqlc.arg(after_created_at)::timestamptz, sqlc.arg(after_id)::text)
   AND (sqlc.narg(created_by)::text IS NULL OR created_by = sqlc.narg(created_by))
@@ -40,11 +40,11 @@ LIMIT sqlc.arg(row_limit);
 
 -- name: MarkObjectDeleted :execrows
 -- Keeps the original deletion time if already deleted; 0 rows means not found.
-UPDATE catalogue.objects
+UPDATE ledger.objects
 SET deleted_at = COALESCE(deleted_at, now())
 WHERE id = $1;
 
 -- name: ClearCreatedBy :execrows
-UPDATE catalogue.objects
+UPDATE ledger.objects
 SET created_by = NULL
 WHERE created_by = sqlc.arg(user_id)::text;

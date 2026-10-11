@@ -1,18 +1,18 @@
-package storagecatalogue_test
+package storageledger_test
 
 import (
 	"errors"
 	"testing"
 
-	catalogue "gyoza/services/storagecatalogue"
+	ledger "gyoza/services/storageledger"
 )
 
 // runServiceTests checks the behaviour every Service implementation must
 // share. newService must return an empty service for each call.
-func runServiceTests(t *testing.T, newService func(t *testing.T) catalogue.Service) {
+func runServiceTests(t *testing.T, newService func(t *testing.T) ledger.Service) {
 	tests := []struct {
 		name string
-		fn   func(*testing.T, catalogue.Service)
+		fn   func(*testing.T, ledger.Service)
 	}{
 		{"CreateThenGet", testCreateThenGet},
 		{"GetMissing", testGetMissing},
@@ -31,12 +31,12 @@ func runServiceTests(t *testing.T, newService func(t *testing.T) catalogue.Servi
 }
 
 var (
-	alice = catalogue.Owner{Kind: catalogue.OwnerUser, ID: "alice"}
-	acme  = catalogue.Owner{Kind: catalogue.OwnerOrg, ID: "acme"}
+	alice = ledger.Owner{Kind: ledger.OwnerUser, ID: "alice"}
+	acme  = ledger.Owner{Kind: ledger.OwnerOrg, ID: "acme"}
 )
 
 // mustCreate creates obj or fails the test.
-func mustCreate(t *testing.T, svc catalogue.Service, obj catalogue.Object) catalogue.Object {
+func mustCreate(t *testing.T, svc ledger.Service, obj ledger.Object) ledger.Object {
 	t.Helper() // report failures at the caller's line, not here
 	created, err := svc.Create(t.Context(), obj)
 	if err != nil {
@@ -46,7 +46,7 @@ func mustCreate(t *testing.T, svc catalogue.Service, obj catalogue.Object) catal
 }
 
 // ids lists the IDs of objs, for readable comparisons.
-func ids(objs []catalogue.Object) []string {
+func ids(objs []ledger.Object) []string {
 	out := make([]string, len(objs))
 	for i, o := range objs {
 		out[i] = o.ID
@@ -54,12 +54,12 @@ func ids(objs []catalogue.Object) []string {
 	return out
 }
 
-func testCreateThenGet(t *testing.T, svc catalogue.Service) {
+func testCreateThenGet(t *testing.T, svc ledger.Service) {
 
-	created := mustCreate(t, svc, catalogue.Object{
+	created := mustCreate(t, svc, ledger.Object{
 		Owner:       alice,
 		CreatedBy:   "alice",
-		Kind:        catalogue.KindAsset,
+		Kind:        ledger.KindAsset,
 		Bucket:      "gyoza-assets",
 		Key:         "users/alice/avatar.png",
 		SizeBytes:   2048,
@@ -81,57 +81,57 @@ func testCreateThenGet(t *testing.T, svc catalogue.Service) {
 	}
 }
 
-func testGetMissing(t *testing.T, svc catalogue.Service) {
+func testGetMissing(t *testing.T, svc ledger.Service) {
 	_, err := svc.Get(t.Context(), "nope")
-	if !errors.Is(err, catalogue.ErrNotFound) {
+	if !errors.Is(err, ledger.ErrNotFound) {
 		t.Fatalf("got %v, want ErrNotFound", err)
 	}
 }
 
-func testListRejectsInvalidQueries(t *testing.T, svc catalogue.Service) {
+func testListRejectsInvalidQueries(t *testing.T, svc ledger.Service) {
 	tests := []struct {
 		name string
-		q    catalogue.ListQuery
+		q    ledger.ListQuery
 	}{
-		{"no scope", catalogue.ListQuery{}},
-		{"two scopes", catalogue.ListQuery{ProjectID: "p1", Owner: alice}},
-		{"filter without scope", catalogue.ListQuery{CreatedBy: "alice"}},
-		{"negative page size", catalogue.ListQuery{ProjectID: "p1", PageSize: -1}},
-		{"garbage page token", catalogue.ListQuery{ProjectID: "p1", PageToken: "!!"}},
+		{"no scope", ledger.ListQuery{}},
+		{"two scopes", ledger.ListQuery{ProjectID: "p1", Owner: alice}},
+		{"filter without scope", ledger.ListQuery{CreatedBy: "alice"}},
+		{"negative page size", ledger.ListQuery{ProjectID: "p1", PageSize: -1}},
+		{"garbage page token", ledger.ListQuery{ProjectID: "p1", PageToken: "!!"}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := svc.List(t.Context(), tt.q)
-			if !errors.Is(err, catalogue.ErrInvalidQuery) {
+			if !errors.Is(err, ledger.ErrInvalidQuery) {
 				t.Errorf("got %v, want ErrInvalidQuery", err)
 			}
 		})
 	}
 }
 
-func testListFilters(t *testing.T, svc catalogue.Service) {
+func testListFilters(t *testing.T, svc ledger.Service) {
 	// Alice's personal upload, an org asset Alice uploaded, and a snapshot in a project.
-	personal := mustCreate(t, svc, catalogue.Object{Owner: alice, CreatedBy: "alice", Kind: catalogue.KindAsset})
-	orgAsset := mustCreate(t, svc, catalogue.Object{Owner: acme, CreatedBy: "alice", Kind: catalogue.KindAsset, ProjectID: "p1"})
-	snapshot := mustCreate(t, svc, catalogue.Object{Owner: acme, Kind: catalogue.KindSnapshot, ProjectID: "p1"})
-	deleted := mustCreate(t, svc, catalogue.Object{Owner: acme, CreatedBy: "alice", Kind: catalogue.KindAsset, ProjectID: "p1"})
-	shared := mustCreate(t, svc, catalogue.Object{Owner: catalogue.Owner{Kind: catalogue.OwnerGyoza}, Kind: catalogue.KindAsset})
+	personal := mustCreate(t, svc, ledger.Object{Owner: alice, CreatedBy: "alice", Kind: ledger.KindAsset})
+	orgAsset := mustCreate(t, svc, ledger.Object{Owner: acme, CreatedBy: "alice", Kind: ledger.KindAsset, ProjectID: "p1"})
+	snapshot := mustCreate(t, svc, ledger.Object{Owner: acme, Kind: ledger.KindSnapshot, ProjectID: "p1"})
+	deleted := mustCreate(t, svc, ledger.Object{Owner: acme, CreatedBy: "alice", Kind: ledger.KindAsset, ProjectID: "p1"})
+	shared := mustCreate(t, svc, ledger.Object{Owner: ledger.Owner{Kind: ledger.OwnerGyoza}, Kind: ledger.KindAsset})
 	if err := svc.MarkDeleted(t.Context(), deleted.ID); err != nil {
 		t.Fatalf("MarkDeleted: %v", err)
 	}
 
 	tests := []struct {
 		name string
-		q    catalogue.ListQuery
-		want []catalogue.Object
+		q    ledger.ListQuery
+		want []ledger.Object
 	}{
-		{"by project", catalogue.ListQuery{ProjectID: "p1"}, []catalogue.Object{orgAsset, snapshot}},
-		{"by project and kind", catalogue.ListQuery{ProjectID: "p1", Kind: catalogue.KindSnapshot}, []catalogue.Object{snapshot}},
-		{"by owner", catalogue.ListQuery{Owner: alice}, []catalogue.Object{personal}},
-		{"gyoza-owned", catalogue.ListQuery{Owner: catalogue.Owner{Kind: catalogue.OwnerGyoza}}, []catalogue.Object{shared}},
-		{"by owner and creator", catalogue.ListQuery{Owner: alice, CreatedBy: "alice"}, []catalogue.Object{personal}},
-		{"org assets alice created", catalogue.ListQuery{Owner: acme, CreatedBy: "alice"}, []catalogue.Object{orgAsset}},
-		{"including deleted", catalogue.ListQuery{Owner: acme, CreatedBy: "alice", IncludeDeleted: true}, []catalogue.Object{orgAsset, deleted}},
+		{"by project", ledger.ListQuery{ProjectID: "p1"}, []ledger.Object{orgAsset, snapshot}},
+		{"by project and kind", ledger.ListQuery{ProjectID: "p1", Kind: ledger.KindSnapshot}, []ledger.Object{snapshot}},
+		{"by owner", ledger.ListQuery{Owner: alice}, []ledger.Object{personal}},
+		{"gyoza-owned", ledger.ListQuery{Owner: ledger.Owner{Kind: ledger.OwnerGyoza}}, []ledger.Object{shared}},
+		{"by owner and creator", ledger.ListQuery{Owner: alice, CreatedBy: "alice"}, []ledger.Object{personal}},
+		{"org assets alice created", ledger.ListQuery{Owner: acme, CreatedBy: "alice"}, []ledger.Object{orgAsset}},
+		{"including deleted", ledger.ListQuery{Owner: acme, CreatedBy: "alice", IncludeDeleted: true}, []ledger.Object{orgAsset, deleted}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -146,22 +146,22 @@ func testListFilters(t *testing.T, svc catalogue.Service) {
 	}
 }
 
-func testCreateRejectsInvalidObjects(t *testing.T, svc catalogue.Service) {
+func testCreateRejectsInvalidObjects(t *testing.T, svc ledger.Service) {
 	tests := []struct {
 		name  string
-		owner catalogue.Owner
+		owner ledger.Owner
 		proj  string
 	}{
-		{"no owner", catalogue.Owner{}, ""},
-		{"unknown owner kind", catalogue.Owner{Kind: "team", ID: "t1"}, ""},
-		{"user without ID", catalogue.Owner{Kind: catalogue.OwnerUser}, ""},
-		{"gyoza with ID", catalogue.Owner{Kind: catalogue.OwnerGyoza, ID: "x"}, ""},
-		{"project owner, other ProjectID", catalogue.Owner{Kind: catalogue.OwnerProject, ID: "p1"}, "p2"},
+		{"no owner", ledger.Owner{}, ""},
+		{"unknown owner kind", ledger.Owner{Kind: "team", ID: "t1"}, ""},
+		{"user without ID", ledger.Owner{Kind: ledger.OwnerUser}, ""},
+		{"gyoza with ID", ledger.Owner{Kind: ledger.OwnerGyoza, ID: "x"}, ""},
+		{"project owner, other ProjectID", ledger.Owner{Kind: ledger.OwnerProject, ID: "p1"}, "p2"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := svc.Create(t.Context(), catalogue.Object{Owner: tt.owner, ProjectID: tt.proj})
-			if !errors.Is(err, catalogue.ErrInvalidObject) {
+			_, err := svc.Create(t.Context(), ledger.Object{Owner: tt.owner, ProjectID: tt.proj})
+			if !errors.Is(err, ledger.ErrInvalidObject) {
 				t.Errorf("got %v, want ErrInvalidObject", err)
 			}
 		})
@@ -170,55 +170,55 @@ func testCreateRejectsInvalidObjects(t *testing.T, svc catalogue.Service) {
 
 // TestProjectDeletion: listing by owner finds what dies with the project;
 // listing by ProjectID finds everything associated with it.
-func testProjectDeletion(t *testing.T, svc catalogue.Service) {
-	p1 := catalogue.Owner{Kind: catalogue.OwnerProject, ID: "p1"}
+func testProjectDeletion(t *testing.T, svc ledger.Service) {
+	p1 := ledger.Owner{Kind: ledger.OwnerProject, ID: "p1"}
 
-	snapshot := mustCreate(t, svc, catalogue.Object{Owner: p1, Kind: catalogue.KindSnapshot})
-	upload := mustCreate(t, svc, catalogue.Object{Owner: p1, CreatedBy: "alice", Kind: catalogue.KindAsset})
-	library := mustCreate(t, svc, catalogue.Object{Owner: acme, CreatedBy: "alice", Kind: catalogue.KindAsset, ProjectID: "p1"})
+	snapshot := mustCreate(t, svc, ledger.Object{Owner: p1, Kind: ledger.KindSnapshot})
+	upload := mustCreate(t, svc, ledger.Object{Owner: p1, CreatedBy: "alice", Kind: ledger.KindAsset})
+	library := mustCreate(t, svc, ledger.Object{Owner: acme, CreatedBy: "alice", Kind: ledger.KindAsset, ProjectID: "p1"})
 
 	if snapshot.ProjectID != "p1" {
 		t.Errorf("project-owned object ProjectID = %q, want p1 filled in", snapshot.ProjectID)
 	}
 
-	owned, err := svc.List(t.Context(), catalogue.ListQuery{Owner: p1})
+	owned, err := svc.List(t.Context(), ledger.ListQuery{Owner: p1})
 	if err != nil {
 		t.Fatalf("List by owner: %v", err)
 	}
-	if want := []catalogue.Object{snapshot, upload}; !sameIDs(ids(owned.Objects), ids(want)) {
+	if want := []ledger.Object{snapshot, upload}; !sameIDs(ids(owned.Objects), ids(want)) {
 		t.Errorf("owned by p1: got %v, want %v", ids(owned.Objects), ids(want))
 	}
 
-	all, err := svc.List(t.Context(), catalogue.ListQuery{ProjectID: "p1"})
+	all, err := svc.List(t.Context(), ledger.ListQuery{ProjectID: "p1"})
 	if err != nil {
 		t.Fatalf("List by project: %v", err)
 	}
-	if want := []catalogue.Object{snapshot, upload, library}; !sameIDs(ids(all.Objects), ids(want)) {
+	if want := []ledger.Object{snapshot, upload, library}; !sameIDs(ids(all.Objects), ids(want)) {
 		t.Errorf("associated with p1: got %v, want %v", ids(all.Objects), ids(want))
 	}
 }
 
-// TestUserDeletion walks the catalogue's part of deleting a user:
+// TestUserDeletion walks the ledger's part of deleting a user:
 // everything they own is listed for deletion, and they are removed as
 // creator from everything else.
-func testUserDeletion(t *testing.T, svc catalogue.Service) {
+func testUserDeletion(t *testing.T, svc ledger.Service) {
 	ctx := t.Context()
 
-	personal := mustCreate(t, svc, catalogue.Object{Owner: alice, CreatedBy: "alice", Kind: catalogue.KindAsset})
-	export := mustCreate(t, svc, catalogue.Object{Owner: alice, Kind: catalogue.KindExport}) // platform-created
-	orgAsset := mustCreate(t, svc, catalogue.Object{Owner: acme, CreatedBy: "alice", ProjectID: "p1"})
-	oldOrgAsset := mustCreate(t, svc, catalogue.Object{Owner: acme, CreatedBy: "alice", ProjectID: "p1"})
-	bobsAsset := mustCreate(t, svc, catalogue.Object{Owner: acme, CreatedBy: "bob", ProjectID: "p1"})
+	personal := mustCreate(t, svc, ledger.Object{Owner: alice, CreatedBy: "alice", Kind: ledger.KindAsset})
+	export := mustCreate(t, svc, ledger.Object{Owner: alice, Kind: ledger.KindExport}) // platform-created
+	orgAsset := mustCreate(t, svc, ledger.Object{Owner: acme, CreatedBy: "alice", ProjectID: "p1"})
+	oldOrgAsset := mustCreate(t, svc, ledger.Object{Owner: acme, CreatedBy: "alice", ProjectID: "p1"})
+	bobsAsset := mustCreate(t, svc, ledger.Object{Owner: acme, CreatedBy: "bob", ProjectID: "p1"})
 	if err := svc.MarkDeleted(ctx, oldOrgAsset.ID); err != nil {
 		t.Fatalf("MarkDeleted: %v", err)
 	}
 
 	// 1. Everything alice owns is deleted, whoever created it.
-	page, err := svc.List(ctx, catalogue.ListQuery{Owner: alice})
+	page, err := svc.List(ctx, ledger.ListQuery{Owner: alice})
 	if err != nil {
 		t.Fatalf("List: %v", err)
 	}
-	if want := []catalogue.Object{personal, export}; !sameIDs(ids(page.Objects), ids(want)) {
+	if want := []ledger.Object{personal, export}; !sameIDs(ids(page.Objects), ids(want)) {
 		t.Errorf("owned by alice: got %v, want %v", ids(page.Objects), ids(want))
 	}
 
@@ -244,7 +244,7 @@ func testUserDeletion(t *testing.T, svc catalogue.Service) {
 		t.Errorf("bob's asset CreatedBy = %q, want bob", got.CreatedBy)
 	}
 
-	if _, err := svc.ClearCreatedBy(ctx, ""); !errors.Is(err, catalogue.ErrInvalidQuery) {
+	if _, err := svc.ClearCreatedBy(ctx, ""); !errors.Is(err, ledger.ErrInvalidQuery) {
 		t.Errorf("ClearCreatedBy(\"\"): got %v, want ErrInvalidQuery", err)
 	}
 }
@@ -271,16 +271,16 @@ func sameIDs(a, b []string) bool {
 	return true
 }
 
-func testListPagination(t *testing.T, svc catalogue.Service) {
+func testListPagination(t *testing.T, svc ledger.Service) {
 	var want []string
 	for range 7 {
-		want = append(want, mustCreate(t, svc, catalogue.Object{Owner: acme, ProjectID: "p1"}).ID)
+		want = append(want, mustCreate(t, svc, ledger.Object{Owner: acme, ProjectID: "p1"}).ID)
 	}
 
 	// Page through with size 3: expect pages of 3, 3, 1.
 	var got []string
 	var sizes []int
-	q := catalogue.ListQuery{ProjectID: "p1", PageSize: 3}
+	q := ledger.ListQuery{ProjectID: "p1", PageSize: 3}
 	for {
 		page, err := svc.List(t.Context(), q)
 		if err != nil {

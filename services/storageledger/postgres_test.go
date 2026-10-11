@@ -1,4 +1,4 @@
-package storagecatalogue_test
+package storageledger_test
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"gyoza/platform/postgres"
-	catalogue "gyoza/services/storagecatalogue"
+	ledger "gyoza/services/storageledger"
 )
 
 // TestPostgres runs the shared suite against a real database, e.g.
@@ -19,22 +19,22 @@ func TestPostgres(t *testing.T) {
 	if url == "" {
 		t.Skip("set GYOZA_TEST_DATABASE_URL to run against Postgres")
 	}
-	pool, err := postgres.Connect(t.Context(), url, "storagecatalogue-test") // same settings as production
+	pool, err := postgres.Connect(t.Context(), url, "storageledger-test") // same settings as production
 	if err != nil {
 		t.Fatalf("connect: %v", err)
 	}
 	t.Cleanup(pool.Close)
-	if err := catalogue.Migrate(t.Context(), pool); err != nil {
+	if err := ledger.Migrate(t.Context(), pool); err != nil {
 		t.Fatalf("migrate: %v", err)
 	}
 
-	runServiceTests(t, func(t *testing.T) catalogue.Service {
+	runServiceTests(t, func(t *testing.T) ledger.Service {
 		tx, err := pool.Begin(t.Context())
 		if err != nil {
 			t.Fatalf("begin: %v", err)
 		}
 		// t.Context() is already cancelled when cleanups run, so roll back with a fresh one.
 		t.Cleanup(func() { _ = tx.Rollback(context.Background()) })
-		return catalogue.NewPostgres(tx)
+		return ledger.NewPostgres(tx)
 	})
 }

@@ -1,5 +1,5 @@
 # Regenerate internal/db after changing migrations/ or queries.sql:
-#   go generate ./services/storagecatalogue
+#   go generate ./services/storageledger
 version: "2"
 sql:
   - engine: postgresql

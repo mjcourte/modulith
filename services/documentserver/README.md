@@ -5,7 +5,7 @@
 - transacts/log rolls snapshots in S3
 - server side rendering
 - does load balancing
-- Document puts to S3 might want to be storage-catalogue transacted, so the files are in pgSQL ledger
+- Document puts to S3 might want to be storage-ledger transacted, so the files are in pgSQL ledger
 - This was previously build on Axum. But we could look at Dioxus or Leptos for consistency
 
 ## Crates, from memory

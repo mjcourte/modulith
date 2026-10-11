@@ -11,7 +11,7 @@ import (
 	"gyoza/platform/config"
 	"gyoza/platform/postgres"
 	"gyoza/platform/shutdown"
-	storagecatalogue "gyoza/services/storagecatalogue"
+	storageledger "gyoza/services/storageledger"
 )
 
 func main() {
@@ -43,12 +43,12 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	if err := storagecatalogue.Migrate(ctx, pool); err != nil {
+	if err := storageledger.Migrate(ctx, pool); err != nil {
 		pool.Close() // nothing is running yet, so this returns promptly
 		return err
 	}
-	catalogue := storagecatalogue.NewPostgres(pool)
-	_ = catalogue // nothing consumes it yet; storage-manager will take it directly
+	ledger := storageledger.NewPostgres(pool)
+	_ = ledger // nothing consumes it yet; storage-manager will take it directly
 
 	slog.Info("gyoza started")
 	<-ctx.Done()

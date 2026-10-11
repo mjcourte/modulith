@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-type CatalogueObject struct {
+type LedgerObject struct {
 	ID          string
 	OwnerKind   string
 	OwnerID     string

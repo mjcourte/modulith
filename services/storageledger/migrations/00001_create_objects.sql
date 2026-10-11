@@ -1,7 +1,7 @@
 -- +goose Up
-CREATE SCHEMA IF NOT EXISTS catalogue;
+CREATE SCHEMA IF NOT EXISTS ledger;
 
-CREATE TABLE catalogue.objects (
+CREATE TABLE ledger.objects (
     -- COLLATE "C" compares bytes, matching Go's string ordering, so keyset
     -- pagination on (created_at, id) agrees with the in-memory implementation.
     id           text COLLATE "C" PRIMARY KEY,
@@ -22,9 +22,9 @@ CREATE TABLE catalogue.objects (
 );
 
 -- One index per List scope, in page order, plus one for ClearCreatedBy.
-CREATE INDEX objects_owner_page   ON catalogue.objects (owner_kind, owner_id, created_at, id);
-CREATE INDEX objects_project_page ON catalogue.objects (project_id, created_at, id) WHERE project_id IS NOT NULL;
-CREATE INDEX objects_created_by   ON catalogue.objects (created_by) WHERE created_by IS NOT NULL;
+CREATE INDEX objects_owner_page   ON ledger.objects (owner_kind, owner_id, created_at, id);
+CREATE INDEX objects_project_page ON ledger.objects (project_id, created_at, id) WHERE project_id IS NOT NULL;
+CREATE INDEX objects_created_by   ON ledger.objects (created_by) WHERE created_by IS NOT NULL;
 
 -- +goose Down
-DROP TABLE catalogue.objects;
+DROP TABLE ledger.objects;

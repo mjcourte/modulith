@@ -32,7 +32,7 @@ Largely to be written in Go.
 - `document-server` - document/rendering server (Rust or Go)
 - `user-manager` - user db service (Go)
 - `storage-manager` - s3 object service (Go)
-- `storage-catalogue` - s3 object ledger service (Go)
+- `storage-ledger` - s3 object ledger service (Go)
 - `gateway` - REST + WS middlewares merged, SuperTokens auth (Go)
 - `creator-agent` - agent/genai service (Python, can defer for MVP)
 - `media-processor` - media processing service (Go)
