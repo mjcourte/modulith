@@ -45,3 +45,10 @@ The Go services are divided into approximate microservices, but can be run initi
 - OpenTelemetry/DataDog - Tracing/logging/metrics. Try SigNoz?
 
 Some imaginary future where this becomes a real thing, this could be microserviced with vendor outsourcing for the above.
+
+## Non-goals / exclusions
+
+- agent stuff is basically deferred to MCP BYOA
+- all downstream stuff like brand guides and whatever dropped in aid of BYOA
+- agent layout 1 shots should be wired via MCP, but thats like a capstone on having a platform that works without agent
+- import from any other design suite sod it who needs em.
