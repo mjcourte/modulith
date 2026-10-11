@@ -41,3 +41,21 @@ type shareKey struct{ projectID, userID string }
 
 // Compile-time check that *MemoryStore satisfies Store.
 var _ Store = (*MemoryStore)(nil)
+
+// liveUser, liveOrg and liveProject report whether a row exists and isn't
+// being deleted: only live rows take new references (see DeletionStore).
+// The caller must hold m.mu.
+func (m *MemoryStore) liveUser(id string) bool {
+	u, ok := m.users[id]
+	return ok && u.DeletingAt == nil
+}
+
+func (m *MemoryStore) liveOrg(id string) bool {
+	o, ok := m.orgs[id]
+	return ok && o.DeletingAt == nil
+}
+
+func (m *MemoryStore) liveProject(id string) bool {
+	p, ok := m.projects[id]
+	return ok && p.DeletingAt == nil
+}

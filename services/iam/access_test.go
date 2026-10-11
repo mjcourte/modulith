@@ -1,6 +1,7 @@
 package iam
 
 import (
+	"errors"
 	"testing"
 
 	"gyoza/services/storageledger"
@@ -71,5 +72,31 @@ func TestProjectAccessUnknownOwner(t *testing.T) {
 	p := Project{Owner: storageledger.Owner{Kind: storageledger.OwnerProject, ID: "p1"}, State: ProjectReady}
 	if got := projectAccess(p, "ann", "acme", AccessNone); got != AccessNone {
 		t.Errorf("project-owned project: %q, want none", got)
+	}
+}
+
+// accessTo gathers the facts from a Store. The Manager calls it directly (the
+// authorizer checks the actor first), so its own checks are tested here.
+func TestAccessTo(t *testing.T) {
+	ctx := t.Context()
+	s := NewMemoryStore()
+	if _, _, err := s.UpsertUser(ctx, Identity{UserID: "ann", Email: "ann@example.com"}); err != nil {
+		t.Fatalf("UpsertUser: %v", err)
+	}
+	tmpl, err := s.CreateProject(ctx, Project{Owner: ruleGyoza, Name: "T"})
+	if err != nil {
+		t.Fatalf("CreateProject: %v", err)
+	}
+
+	if _, a, err := accessTo(ctx, s, "ann", tmpl.ID); err != nil || a != AccessViewer {
+		t.Errorf("signed-in user on a template = %q, %v; want viewer", a, err)
+	}
+	for _, actor := range []string{"ghost", ""} {
+		if _, a, err := accessTo(ctx, s, actor, tmpl.ID); err != nil || a != AccessNone {
+			t.Errorf("actor %q on a template = %q, %v; want none (unknown users get nothing)", actor, a, err)
+		}
+	}
+	if _, _, err := accessTo(ctx, s, "ann", newID()); !errors.Is(err, ErrProjectNotFound) {
+		t.Errorf("missing project = %v, want ErrProjectNotFound", err)
 	}
 }

@@ -15,7 +15,7 @@ func (m *MemoryStore) CreateInvite(ctx context.Context, inv Invite) (Invite, err
 	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if _, ok := m.orgs[inv.OrgID]; !ok {
+	if !m.liveOrg(inv.OrgID) {
 		return Invite{}, ErrOrgNotFound
 	}
 	// Inviting the same address again refreshes the existing invite (role,
@@ -82,10 +82,10 @@ func (m *MemoryStore) AcceptInvite(ctx context.Context, inviteID, userID string)
 	case inv.expired(now()):
 		return Member{}, fmt.Errorf("%w: expired at %s", ErrInviteExpired, inv.ExpiresAt.Format(time.RFC3339))
 	}
-	if _, ok := m.orgs[inv.OrgID]; !ok {
+	if !m.liveOrg(inv.OrgID) {
 		return Member{}, ErrOrgNotFound
 	}
-	if _, ok := m.users[userID]; !ok {
+	if !m.liveUser(userID) {
 		return Member{}, ErrUserNotFound
 	}
 	if _, ok := m.members[userID]; ok {

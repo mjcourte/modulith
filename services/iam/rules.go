@@ -47,3 +47,11 @@ func normalizeName(name string, optional bool, invalid error) (string, error) {
 	}
 	return name, nil
 }
+
+// checkLimit validates the batch size of the cleanup listings.
+func checkLimit(limit int) error {
+	if limit < 1 || limit > MaxPageSize {
+		return fmt.Errorf("%w: limit %d, want 1 to %d", ErrInvalidQuery, limit, MaxPageSize)
+	}
+	return nil
+}

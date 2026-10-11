@@ -9,8 +9,9 @@ Single source of truth for service APIs.
 
 ## Regenerate
 
-```
+```sh
 go generate ./contracts
+
 ```
 
 `buf`, `protoc-gen-go` and `protoc-gen-go-grpc` are Go tool dependencies (pinned in `go.mod`), so nothing to install. `buf` runs the generators via `go tool`, so `go` must be on PATH.
@@ -26,22 +27,28 @@ go generate ./contracts
 
 ## Calling a running service by hand
 
-```
+```sh
+
 go tool buf curl --schema contracts/proto --protocol grpc --http2-prior-knowledge \
-  -d '{"projectId":"p1"}' \
-  http://localhost:9090/gyoza.storageledger.v1.LedgerService/ListObjects
+ -d '{"projectId":"p1"}' \
+ http://localhost:9090/gyoza.storageledger.v1.LedgerService/ListObjects
+
 ```
 
 A full upload against the monolith (`go run ./cmd/gyoza`, which serves both services on `localhost:9090`), from bash:
 
-```
+```sh
+
 go tool buf curl --schema contracts/proto --protocol grpc --http2-prior-knowledge \
-  -d '{"actorId":"alice","owner":{"kind":"OWNER_KIND_USER","id":"alice"},"name":"Logo","contentType":"image/png","sizeBytes":64}' \
-  http://localhost:9090/gyoza.storagemanager.v1.StorageManagerService/BeginUpload
+ -d '{"actorId":"alice","owner":{"kind":"OWNER_KIND_USER","id":"alice"},"name":"Logo","contentType":"image/png","sizeBytes":64}' \
+ http://localhost:9090/gyoza.storagemanager.v1.StorageManagerService/BeginUpload
+
 # PUT the file to the returned url with the returned Content-Type header, then:
+
 go tool buf curl --schema contracts/proto --protocol grpc --http2-prior-knowledge \
-  -d '{"actorId":"alice","uploadId":"<uploadId>"}' \
-  http://localhost:9090/gyoza.storagemanager.v1.StorageManagerService/CompleteUpload
+ -d '{"actorId":"alice","uploadId":"<uploadId>"}' \
+ http://localhost:9090/gyoza.storagemanager.v1.StorageManagerService/CompleteUpload
+
 ```
 
 Windows PowerShell 5.1 strips the double quotes from JSON arguments to native programs; use bash (Git Bash) for these.

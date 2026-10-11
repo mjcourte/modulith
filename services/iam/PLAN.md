@@ -4,9 +4,14 @@ Identity and access management: users, orgs, projects, sharing and access decisi
 Formerly usermanager; renamed 2026-10-11 after step 1 (`services/iam`, package `iam`,
 `cmd/iam`, schema `iam`).
 
-Status: **steps 1-2 done** (users, orgs, membership, invites, projects, shares, org-lock:
-types, rules, MemoryStore, 29-case store suite; mutation-checked: step 1 rules 21/21 and
-MemoryStore 25/25, step 2 rules 21/21 and MemoryStore + lock rules 29/29). Next: step 3.
+Status: **steps 1-5 done** (users, orgs, membership, invites, projects, shares, org-lock:
+types, rules, MemoryStore, 29-case store suite; access rules and `StorageAuthorizer`;
+Manager for users, orgs, invites, projects and sharing. Mutation-checked: step 1 rules 21/21 and
+MemoryStore 25/25, step 2 rules 21/21 and MemoryStore + lock rules 29/29, step 3 access
++ authorizer 21/21, step 4 Manager 26/27 (the survivor, `member()` re-checking the
+actor, becomes observable in step 6 with users being deleted), step 5 projects 24/24, 6a deletion store 34/34).
+Step 6 in progress: 6a (Store markers, bulk steps, hard deletes, guards) done; next 6b
+(access rules respect the markers).
 
 ## Context
 
@@ -146,10 +151,39 @@ shared suite) and `Manager` (rules, permission checks, cascades) behind a `Servi
    viewers don't, self-removal), org-lock toggled by org admins (outside shares refused
    while locked), transfer my project to my org;
    service-level create/delete for gyoza projects.
-6. **Cascades**: delete project (storagemanager `DeleteOwned(project)`), delete org,
-   delete account (`RemoveUser` with the org, move projects or delete them, drop shares
-   and invites, `Identity.DeleteUser`, delete the row); deletion markers + resumable
-   cleanup loop; tests with storagemanager's memory fakes.
+6. **Cascades** (design agreed 2026-10-11):
+   - **Deletion markers first**: users, orgs and projects get `DeletingAt`; setting it
+     is the first step of every deletion and cuts access at once: `actor()` refuses a
+     user being deleted, `accessTo`/`projectAccess` grant nothing on a project being
+     deleted and treat an org being deleted as no org, listings hide them.
+   - **Delete a project** (owner or org admin; templates via service-only
+     `DeleteTemplate`); final, no project trash (decided): mark deleting ->
+     storagemanager `DeleteOwned(project)` (files and document snapshots to the storage
+     trash, purged after 7 days) -> delete its shares and the row.
+   - **Delete an org**: an admin may delete it even with other members (decided, with
+     confirmation in the UI), or it goes when its last member leaves. Mark the org and
+     all its projects deleting (one transaction) -> project cascade for each ->
+     `DeleteOwned(org)` -> delete invites and memberships -> delete the row. Members keep
+     their personal files and projects.
+   - **Delete my account** (GDPR): refused with `ErrLastAdmin` while they're their org's
+     only admin and others remain (decided: they promote someone first, as when
+     leaving). Mark the user deleting, recording the destination org (or none) so a
+     resumed deletion can't mistake "membership already removed" for "had no org". With
+     an org: move personal projects to it (unlocked), `RemoveUser(user, org)` (library
+     moves, creator cleared), then remove the membership (last member: delete the org
+     and continue as org-less). Without: project cascade for each personal project,
+     `RemoveUser(user, "")`. Then forget them in iam (delete shares to them and invites to
+     their email; clear `CreatedBy`, `SharedBy`, `InvitedBy`), `IdentityProvider.DeleteUser`
+     (SuperTokens, via the gateway), delete the row (frees the email).
+   - **Resumable loop**: `Cleanup`/`RunCleanup` finishes everything marked deleting
+     (each step idempotent) and removes expired invites.
+   - **Dependencies**, declared in iam (consumer-side interfaces): `Storage`
+     (`DeleteOwned`, `RemoveUser`; `storagemanager.Service` satisfies it) and
+     `IdentityProvider` (`DeleteUser`). `NewManager(store, storage, idp, cfg)`.
+   - **Store**: mark deleting (user with destination org; org with its projects;
+     project), list what's deleting, transfer a user's projects to an org, hard deletes
+     (refused unless marked), forget a user; shared suite + mutation check. Tests run the
+     cascades against storagemanager's memory fakes.
 7. **Cloning**: `CloneProject` and the `cloning` state as above. Needs storagemanager's
    phase 2 steps 1-5 (asset refs, usage, `CopyProjectFiles`) first. Tests: clone visible
    only when ready; files readable/writable by the new owner; source untouched; a clone

@@ -11,16 +11,16 @@ import (
 	"gyoza/services/storageledger"
 )
 
-// ownerExists reports whether o names an existing user or org; gyoza always
-// exists. The caller must hold m.mu.
+// ownerExists reports whether o names a live (existing, not being deleted)
+// user or org; gyoza always exists. The caller must hold m.mu.
 func (m *MemoryStore) ownerExists(o storageledger.Owner) error {
 	switch o.Kind {
 	case storageledger.OwnerUser:
-		if _, ok := m.users[o.ID]; !ok {
+		if !m.liveUser(o.ID) {
 			return ErrUserNotFound
 		}
 	case storageledger.OwnerOrg:
-		if _, ok := m.orgs[o.ID]; !ok {
+		if !m.liveOrg(o.ID) {
 			return ErrOrgNotFound
 		}
 	}
@@ -44,7 +44,7 @@ func (m *MemoryStore) CreateProject(ctx context.Context, p Project) (Project, er
 		return Project{}, err
 	}
 	if p.ClonedFrom != "" {
-		if _, ok := m.projects[p.ClonedFrom]; !ok {
+		if !m.liveProject(p.ClonedFrom) {
 			return Project{}, fmt.Errorf("clone source: %w", ErrProjectNotFound)
 		}
 	}
@@ -95,7 +95,7 @@ func (m *MemoryStore) ListProjects(ctx context.Context, q ProjectQuery) (Project
 	}
 	var matches []Project
 	for _, p := range m.projects {
-		if p.State == ProjectReady && p.ID > after && inScope(p) {
+		if p.State == ProjectReady && p.DeletingAt == nil && p.ID > after && inScope(p) {
 			matches = append(matches, p)
 		}
 	}
@@ -179,13 +179,13 @@ func (m *MemoryStore) ShareProject(ctx context.Context, s Share) (Share, error) 
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	p, ok := m.projects[s.ProjectID]
-	if !ok {
+	if !ok || p.DeletingAt != nil {
 		return Share{}, ErrProjectNotFound
 	}
 	if err := checkShareable(p); err != nil {
 		return Share{}, err
 	}
-	if _, ok := m.users[s.UserID]; !ok {
+	if !m.liveUser(s.UserID) {
 		return Share{}, ErrUserNotFound
 	}
 	if !shareActive(p, m.orgOf(s.UserID)) {

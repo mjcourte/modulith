@@ -49,9 +49,11 @@ func (a *StorageAuthorizer) check(ctx context.Context, actorID string, owner sto
 	if actorID == "" {
 		return fmt.Errorf("%w: no acting user", storagemanager.ErrForbidden)
 	}
-	if _, err := a.store.GetUser(ctx, actorID); errors.Is(err, ErrUserNotFound) {
-		return forbidden
-	} else if err != nil {
+	u, err := a.store.GetUser(ctx, actorID)
+	if errors.Is(err, ErrUserNotFound) || (err == nil && u.DeletingAt != nil) {
+		return forbidden // unknown, or their account is being deleted
+	}
+	if err != nil {
 		return err
 	}
 

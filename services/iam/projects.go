@@ -50,6 +50,9 @@ type Project struct {
 	CreatedBy string // user ID; "" for gyoza projects made by tooling
 	CreatedAt time.Time
 	UpdatedAt time.Time // last rename, transfer, lock or state change
+	// DeletingAt is set when the project's deletion starts (see DeletionStore):
+	// from then on it's hidden and grants nothing.
+	DeletingAt *time.Time
 }
 
 // Access is a level of access to a project. Shares carry one; step 3's

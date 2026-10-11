@@ -41,10 +41,11 @@ func greatest(a, b Access) Access {
 //   - a share: its level, unless the project is org-locked and they're not in
 //     its org (then the share is suspended)
 //
-// A project that's still cloning grants nothing. actorOrg is the ID of the
-// actor's org ("" if none); share is their share's level (AccessNone if none).
+// A project that's still cloning, or being deleted, grants nothing. actorOrg is
+// the ID of the actor's org ("" if none); share is their share's level
+// (AccessNone if none).
 func projectAccess(p Project, actorID, actorOrg string, share Access) Access {
-	if actorID == "" || p.State != ProjectReady {
+	if actorID == "" || p.State != ProjectReady || p.DeletingAt != nil {
 		return AccessNone
 	}
 	access := AccessNone
@@ -66,17 +67,29 @@ func projectAccess(p Project, actorID, actorOrg string, share Access) Access {
 	return access
 }
 
-// actorOrg returns the ID of actorID's org, or "" if they're in none.
+// actorOrg returns the ID of actorID's org, or "" if they're in none. An org
+// being deleted counts as none: membership of it grants nothing any more.
 func actorOrg(ctx context.Context, s Store, actorID string) (string, error) {
 	m, err := s.GetMembership(ctx, actorID)
 	if errors.Is(err, ErrNotMember) {
 		return "", nil
 	}
-	return m.OrgID, err
+	if err != nil {
+		return "", err
+	}
+	o, err := s.GetOrg(ctx, m.OrgID)
+	if err != nil {
+		return "", err
+	}
+	if o.DeletingAt != nil {
+		return "", nil
+	}
+	return o.ID, nil
 }
 
 // accessTo returns the project and actorID's access to it, from the Store.
-// An unknown actor has no access; a missing project is ErrProjectNotFound.
+// An unknown actor, or one whose account is being deleted, has no access; a
+// missing project is ErrProjectNotFound.
 // Store failures are returned as errors, never mistaken for "no access".
 func accessTo(ctx context.Context, s Store, actorID, projectID string) (Project, Access, error) {
 	p, err := s.GetProject(ctx, projectID)
@@ -86,9 +99,11 @@ func accessTo(ctx context.Context, s Store, actorID, projectID string) (Project,
 	if actorID == "" {
 		return p, AccessNone, nil
 	}
-	if _, err := s.GetUser(ctx, actorID); errors.Is(err, ErrUserNotFound) {
-		return p, AccessNone, nil
-	} else if err != nil {
+	u, err := s.GetUser(ctx, actorID)
+	if errors.Is(err, ErrUserNotFound) || (err == nil && u.DeletingAt != nil) {
+		return p, AccessNone, nil // unknown, or their account is being deleted
+	}
+	if err != nil {
 		return Project{}, AccessNone, err
 	}
 	org, err := actorOrg(ctx, s, actorID)

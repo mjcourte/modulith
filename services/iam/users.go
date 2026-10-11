@@ -34,6 +34,12 @@ type User struct {
 	ProviderAvatarURL string // the identity provider's picture (Google's), https; "" if none
 	CreatedAt         time.Time
 	UpdatedAt         time.Time // last profile change
+	// DeletingAt is set when account deletion starts (see DeletionStore); from
+	// then on the user counts as gone. DeletingToOrg is the org their files
+	// and projects move to ("" if they had none), fixed at that moment so a
+	// resumed deletion makes the same choice.
+	DeletingAt    *time.Time
+	DeletingToOrg string
 }
 
 // Identity is what the gateway learns about a user at sign-in.

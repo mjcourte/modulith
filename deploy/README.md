@@ -11,7 +11,7 @@ How the system is packaged and run. Cloud resources themselves live in `infra/`.
 `go run ./cmd/gyoza` works on any machine with Docker. The Go binaries run on
 the host, not in containers, for fast rebuilds.
 
-```
+```sh
 docker compose -f deploy/monolith/compose.yaml up -d --wait   # start, wait until healthy
 docker compose -f deploy/monolith/compose.yaml down           # stop, keep data
 docker compose -f deploy/monolith/compose.yaml down -v        # stop, delete data

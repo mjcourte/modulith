@@ -10,8 +10,9 @@ package iam
 //
 // The parts are embedded, so one Store value has all their methods.
 type Store interface {
-	UserStore    // users.go
-	OrgStore     // orgs.go
-	InviteStore  // invites.go
-	ProjectStore // projects.go: projects and their shares
+	UserStore     // users.go
+	OrgStore      // orgs.go
+	InviteStore   // invites.go
+	ProjectStore  // projects.go: projects and their shares
+	DeletionStore // deletions.go: markers and the steps of the deletion cascades
 }

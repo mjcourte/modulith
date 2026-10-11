@@ -11,7 +11,7 @@ func (m *MemoryStore) CreateOrg(ctx context.Context, o Org, creatorID string) (O
 	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if _, ok := m.users[creatorID]; !ok {
+	if !m.liveUser(creatorID) {
 		return Org{}, Member{}, ErrUserNotFound
 	}
 	if _, ok := m.members[creatorID]; ok {

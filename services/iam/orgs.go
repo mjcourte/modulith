@@ -28,10 +28,11 @@ const (
 
 // Org is a team of users that can own files and projects together.
 type Org struct {
-	ID        string // UUIDv7
-	Name      string // not unique: orgs are found through their members, not by name
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID         string // UUIDv7
+	Name       string // not unique: orgs are found through their members, not by name
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+	DeletingAt *time.Time // set when the org's deletion starts (see DeletionStore)
 }
 
 // Member is one user's membership of an org.

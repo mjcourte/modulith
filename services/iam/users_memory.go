@@ -2,7 +2,10 @@ package iam
 
 // MemoryStore's UserStore methods (struct and lock in memory.go).
 
-import "context"
+import (
+	"context"
+	"fmt"
+)
 
 func (m *MemoryStore) UpsertUser(ctx context.Context, id Identity) (User, bool, error) {
 	id, err := id.normalize() // no shared state needed, so before taking the lock
@@ -16,6 +19,9 @@ func (m *MemoryStore) UpsertUser(ctx context.Context, id Identity) (User, bool, 
 		return User{}, false, ErrEmailTaken
 	}
 	u, exists := m.users[id.UserID]
+	if exists && u.DeletingAt != nil {
+		return User{}, false, fmt.Errorf("%w: account being deleted", ErrUserNotFound)
+	}
 	profile := User{
 		ID: id.UserID, Email: id.Email, EmailVerified: id.EmailVerified,
 		Name: id.Name, ProviderAvatarURL: id.ProviderAvatarURL,

@@ -7,11 +7,25 @@ Not started. UI details the backend plans rely on (2026-10-11). Related:
 
 ## Sign-in and orgs
 
+- All data calls go to the gateway's REST/JSON API (see gateway/PLAN.md); files go
+  straight to and from S3 with presigned URLs.
 - Google sign-in via SuperTokens' React SDK (`supertokens-auth-react`, ThirdParty
   recipe), cookie sessions with the gateway.
 - After sign-in, show pending org invites (returned by iam `SignIn`) to accept
   or decline. Admins invite by email; no email is sent in the MVP, so the UI says "tell
   them to sign in with this address".
+
+## Workspace switcher
+
+- A selector for the active workspace: "Personal" (the user) or their org (a user has at
+  most one, so at most two entries; `GetMe` returns the org). It scopes what the app
+  shows (library, folders, trash, projects) and is the default owner for new projects
+  and uploads (the create-project widget starts on it).
+- It changes the owner the UI passes to the APIs, never who is acting: `actor_id` is
+  always the signed-in user, so permissions, `CreatedBy` and sharing stay personal
+  (recommended 2026-10-11, to confirm). The backend needs nothing new: every owner-scoped call already
+  takes the owner explicitly and checks the user may act for it.
+- Remember the last choice per browser.
 
 ## Projects
 

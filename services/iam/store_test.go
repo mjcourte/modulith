@@ -52,6 +52,19 @@ func runStoreTests(t *testing.T, newStore func(t *testing.T) iam.Store) {
 		{"ShareProject", testShareProject},
 		{"ShareLockedProject", testShareLockedProject},
 		{"Unshare", testUnshare},
+
+		// Deletions: store_deletions_test.go
+		{"MarkProjectDeleting", testMarkProjectDeleting},
+		{"DeleteProject", testDeleteProject},
+		{"MarkOrgDeleting", testMarkOrgDeleting},
+		{"AcceptInviteToDeletingOrg", testAcceptInviteToDeletingOrg},
+		{"DeleteOrg", testDeleteOrg},
+		{"MarkUserDeleting", testMarkUserDeleting},
+		{"TransferUserProjects", testTransferUserProjects},
+		{"ForgetUser", testForgetUser},
+		{"DeleteUser", testDeleteUser},
+		{"ListDeleting", testListDeleting},
+		{"DeleteExpiredInvites", testDeleteExpiredInvites},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

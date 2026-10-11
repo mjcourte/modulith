@@ -30,6 +30,29 @@ Not started. Decided while planning iam (2026-10-11). Related:
 - Internal services trust `actor_id`; verifying the forwarded access token in a
   `platform/auth` gRPC interceptor (defence in depth) is deferred.
 
+## Browser-facing API (decided 2026-10-11)
+
+- The browser talks only to the gateway: REST/JSON for CRUD (projects, assets,
+  folders, shares, invites, orgs) plus the WebSocket. Files never pass through it
+  (presigned S3 URLs), so the API carries metadata only.
+- Hand-written handlers on the standard library (`net/http`, Go 1.22+ method and path
+  patterns such as `GET /projects/{id}`), JSON request and response types owned by the
+  gateway, and one error -> HTTP status table per service (`ErrForbidden` -> 403,
+  not-found -> 404, invalid -> 400, `ErrNameTaken`, `ErrAlreadyMember` and
+  `FolderNotEmptyError` -> 409, the latter with its counts).
+- Handlers depend only on `iam.Service` and `storagemanager.Service`: the monolith passes
+  the in-process Managers, distributed mode passes the gRPC clients, and the handler code
+  is the same. No REST anywhere else; services talk gRPC (distributed) or Go calls
+  (monolith).
+- The internal gRPC contracts are never exposed: they carry `actor_id`, which services
+  trust. The gateway owns its own API (backend-for-frontend) with no actor fields; the
+  actor always comes from the SuperTokens session. (A generic REST->gRPC proxy such as
+  grpc-gateway was rejected for that reason.)
+- Service-to-service calls (`DeleteOwned`, `RemoveUser`, `CopyProjectFiles`,
+  `CreateTemplate`, `SignIn` apart from the sign-in hook) get no routes.
+- TypeScript client written by hand for now; an OpenAPI description can be added later
+  to generate it.
+
 ## Work (when the gateway is built)
 
 - SuperTokens init (ThirdParty/Google, Session), compose service for the core.
