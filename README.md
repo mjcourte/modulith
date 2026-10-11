@@ -2,7 +2,9 @@
 
 A modular-monorepo Go graphic design platform.
 
-Basically the v0 plan is get it running as a local docker container, but actually requires compose to host external services: rustfs (local S3 alike), postgres, NATS, and probably a local redis or dynamodb alike.
+Basically the v0 plan is get it running as a local docker container, but actually requires compose to host external services: rustfs (local S3 alike), postgres, NATS, and probably a local redis or dynamodb alike. Try to cover as much ground as possible with PostGres.
+
+The Go services are divided into approximate microservices, but can be run initially as a monolith.
 
 ## Data Organization
 
@@ -17,26 +19,22 @@ Basically the v0 plan is get it running as a local docker container, but actuall
 - `services/` - domain logic, one folder per service. Go services are packages with no `main`
 - `cmd/` - Go entrypoints. `gyoza` = monolith, `<service>` = one binary each for distributed
 - `platform/` - shared Go plumbing (config, pg, NATS, auth, telemetry, jobs)
-- `libs/` - domain libraries, TBD
-- `contracts/proto/` - gRPC/protobuf APIs, generated for Go, Rust, TS, whatever
-- `deploy/` - monolith vs distributed packaging
-- `infra/aws/` - cloud resources
-
-## Libs
-
-- `engine` - rendering engine, Kyoso-World (Rust)
-- `agent` - agent skills, prompts, tools (Python)
+- `libs/` - domain libraries, TBD, looks like we need a rendering engine...
+- `contracts/proto/` - gRPC/protobuf APIs, generated for Go
+- `deploy/` - monolith AND distributed packaging
+- `infra/aws/` - cloud resources. nothing here for now as everything we need will be dockered.
 
 ## Apps/Services
 
 - `apps/web` - web app frontend ReactJS
-- `document-manager` - document/rendering service (Rust or Go)
+- `document-manager` - document WAL rolling service (Rust? Go?)
+- `exporter` - renderer service (Rust? Go?) ^- these must be Go for monolith.
 - `iam` - identity and access management: users, orgs, projects, sharing (Go)
 - `storage` - s3 object service (Go): `storagemanager` (uploads, DAM) + `storageledger` (ledger of every S3 object), one deployable
-- `gateway` - REST + WS middlewares merged, SuperTokens auth (Go)
-- `creator-agent` - agent/genai service (Python, can defer for MVP)
-- `media-processor` - media processing service (Go)
-- `platform/jobs` - NATS + pgSQL job queue, a library not a service (Go)
+- `gateway` - REST + WS middlewares merged, SuperTokens auth
+- `mcp` - agent/genAI BYOA hookups/MCP
+- `media-processor` - does ffmpeg stuff, like read file specs and edit
+- `platform/jobs` - NATS + pgSQL job queue, a library not a service
 
 ## Technologies/Vendors
 
@@ -44,15 +42,6 @@ Basically the v0 plan is get it running as a local docker container, but actuall
 - PostgreSQL - databases. Docker for now.
 - NATS/JetStream - message streams. Docker.
 - SuperTokens - auth. Docker.
-- OpenTelemetry/DataDog (is there a free self hosted version?) TBD on tracing.
+- OpenTelemetry/DataDog - Tracing/logging/metrics. Try SigNoz?
 
-## Hard things but good to work towards
-
-- Organize the repo s.t. it can be deployed either as a monolith OR distributed.
-  - monolith = one Go binary + document-manager + web. Services only talk through interfaces, in-process or gRPC
-- Fewest possible external technologies ^^
-- Like seriously how much of this can we NOT build and still have the MVP
-- ~~do the middlewares need to be separated?~~ no, merged into `gateway`
-- all backend was built on REST. Where can be benefit from gRPC
-- auth at MW is new to me but lets do it
-- Golang all services that were python except agent.
+Some imaginary future where this becomes a real thing, this could be microserviced with vendor outsourcing for the above.
