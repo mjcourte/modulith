@@ -8,6 +8,25 @@ import (
 
 // TODO pre-map our stream subjects!!
 // how many Streams do we need? one omni stream?
+
+var DocumentDeltas = jetstream.StreamConfig{
+	Name:      "DOCUMENT_DELTAS",
+	Subjects:  []string{"document.*.delta"},
+	Storage:   jetstream.FileStorage,
+	Retention: jetstream.WorkQueuePolicy,
+	Replicas:  3,
+}
+
+var DocumentSnapshots = jetstream.StreamConfig{
+	Name:              "DOCUMENT_SNAPSHOTS",
+	Subjects:          []string{"document.*.snapshot"},
+	Storage:           jetstream.FileStorage,
+	Retention:         jetstream.LimitsPolicy,
+	Discard:           jetstream.DiscardOld,
+	MaxMsgsPerSubject: 1,
+	Replicas:          3,
+}
+
 func EnsureDocumentStream(
 	ctx context.Context,
 	js jetstream.JetStream,

@@ -18,6 +18,9 @@ const (
 	SubjectUserStateIsViewing      = "userstate.{projectID}.{userID}.viewing"
 	SubjectUserStateCursorPosition = "userstate.{projectID}.{userID}.cursorpos"
 
+	// TODO - job queue subjects
+	// if we use NATS to communicate async job and/or generative process completion
+
 	// TODO - the google docs CRDT layers inside the canvas
 	// this is a FE multiplayer/P2P feature (unless agent MCP text editing?)
 	// SubjectDocumentTextNode<> = "document.{projectID}.{nodeID}.<>"

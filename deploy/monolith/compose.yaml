@@ -61,6 +61,10 @@ services:
       timeout: 5s
       retries: 30
 
+# it is categorically a bad idea to run NATS in here.
+# all messages in JetStream die with a crash -- total data loss
+# but since we also have RustFS in here as S3 stand in, just yolo for
+# now nothing matters
   nats-1:
     image: nats:2.14.6
     command: ["-c", "/etc/nats/nats.conf"]

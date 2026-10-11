@@ -1,6 +1,6 @@
 # Document Manager
 
-- Rust (native to whatever the rendering engine is) or actually attempt to redo this in Go? Probably best, for monolithing, so long as we get clean engine interop.
+- attempt this in Go for monolithing
 - basically Kyoso-server
 - transacts/log rolls snapshots in S3
 - server side rendering NOPE this is split to services/exporter
@@ -18,6 +18,7 @@ loadOrInit: a pre-check for read/write ops:
 - If NO, load if from S3
 - Is it IN S3?? if yes load it
 - If NO, init, push to S3 v0, carry on
+- Should also update NATS snapshots stream with latest
 
 ### DebouncedExecutor
 
