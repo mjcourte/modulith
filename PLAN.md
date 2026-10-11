@@ -5,6 +5,7 @@
 - "document manager" is the new kyoso-universe... it log rolls NATS + snapshots. I think i definitely want the dual delivery message type delta OR snapshot via NATS. basically a total postgres WAL impl. This will be the backend's peer and source of truth for document states in-memory
 - exporter - fork the rendering functionality from the document manager
 - somewhere next we will need to do NATS and gateway and supertokens.
+- What is our trrrracing strategy?
 - frontend uhhhh
 - engine uhhhh yeah i mean just yolo redo CRDT + ECS + renderer? lmao ok
 - agent uhhh leave this until last, at least just know we can basically graphQL or gRPC into documenter

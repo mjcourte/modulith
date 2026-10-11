@@ -1,7 +1,8 @@
 # Gyoza
 
-A hypothetical modular-monorepoization of Kyoso post-mortem.
-Largely to be written in Go.
+A modular-monorepo Go graphic design platform.
+
+Basically the v0 plan is get it running as a local docker container, but actually requires compose to host external services: rustfs (local S3 alike), postgres, NATS, and probably a local redis or dynamodb alike.
 
 ## Data Organization
 
@@ -12,12 +13,12 @@ Largely to be written in Go.
 
 ## Layout
 
-- `apps/` - frontends
+- `apps/` - frontend(s?)
 - `services/` - domain logic, one folder per service. Go services are packages with no `main`
 - `cmd/` - Go entrypoints. `gyoza` = monolith, `<service>` = one binary each for distributed
 - `platform/` - shared Go plumbing (config, pg, NATS, auth, telemetry, jobs)
-- `libs/` - domain libraries
-- `contracts/proto/` - gRPC/protobuf APIs, generated for Go, Rust, TS
+- `libs/` - domain libraries, TBD
+- `contracts/proto/` - gRPC/protobuf APIs, generated for Go, Rust, TS, whatever
 - `deploy/` - monolith vs distributed packaging
 - `infra/aws/` - cloud resources
 
@@ -39,14 +40,11 @@ Largely to be written in Go.
 
 ## Technologies/Vendors
 
-- AWS S3 - object storage
-- AWS PostgreSQL - databases
-- AWS ECS - basic CPU services
-- AWS EC2 on ECS - quasi-stateful CPU/GPU servers
-- AWS DynamoDB - Load allocation tables for document manager replicas
-- NATS/JetStream - message streams (embedded in monolith)
-- SuperTokens - auth
-- OpenTelemetry/DataDog (is there a free self hosted version?)
+- AWS S3 - object storage. Workalike: RustFS Docker for now.
+- PostgreSQL - databases. Docker for now.
+- NATS/JetStream - message streams. Docker.
+- SuperTokens - auth. Docker.
+- OpenTelemetry/DataDog (is there a free self hosted version?) TBD on tracing.
 
 ## Hard things but good to work towards
 

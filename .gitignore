@@ -1,4 +1,6 @@
-# ignore KW engine for now
+.claude/
+
+# ignore engine and libs for now
 libs/
 
 # Local settings with credentials; see .env.example
