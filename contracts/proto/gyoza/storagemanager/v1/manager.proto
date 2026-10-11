@@ -48,7 +48,7 @@ service StorageManagerService {
   rpc GetFolderPath(GetFolderPathRequest) returns (GetFolderPathResponse);
   rpc ListTrash(ListTrashRequest) returns (ListTrashResponse);
 
-  // Owner lifecycle, called by usermanager only; never exposed to browsers.
+  // Owner lifecycle, called by iam only; never exposed to browsers.
   rpc DeleteOwned(DeleteOwnedRequest) returns (DeleteOwnedResponse);
   rpc RemoveUser(RemoveUserRequest) returns (RemoveUserResponse);
 }

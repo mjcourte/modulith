@@ -1,4 +1,4 @@
-package usermanager
+package iam
 
 import (
 	"context"
@@ -8,11 +8,11 @@ import (
 
 // User errors returned by every Store (see UserStore).
 var (
-	ErrUserNotFound = errors.New("usermanager: user not found")
-	ErrInvalidUser  = errors.New("usermanager: invalid user")
+	ErrUserNotFound = errors.New("iam: user not found")
+	ErrInvalidUser  = errors.New("iam: invalid user")
 	// ErrEmailTaken: another user already signed in with this email address.
 	// Emails are unique, so sharing and invites can find people by email.
-	ErrEmailTaken = errors.New("usermanager: email already used by another user")
+	ErrEmailTaken = errors.New("iam: email already used by another user")
 )
 
 // Limits on user fields.
@@ -25,7 +25,7 @@ const (
 
 // User is a person who has signed in. Users are created on their first
 // sign-in; the gateway authenticates them (SuperTokens, Google) and
-// usermanager only keeps their profile.
+// iam only keeps their profile.
 type User struct {
 	ID                string // the SuperTokens user ID
 	Email             string // lowercased; unique among users

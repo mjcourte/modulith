@@ -2,7 +2,7 @@
 
 Not started. These are the commitments other services' plans make on its behalf
 (2026-10-11). Related: [storagemanager/PLAN.md](../storagemanager/PLAN.md) (asset refs,
-usage, forking), [usermanager/PLAN.md](../usermanager/PLAN.md) (cloning),
+usage, forking), [iam/PLAN.md](../iam/PLAN.md) (cloning),
 [gateway/PLAN.md](../gateway/PLAN.md) (auth).
 
 ## Asset references
@@ -23,7 +23,7 @@ usage, forking), [usermanager/PLAN.md](../usermanager/PLAN.md) (cloning),
 
 ## Cloning and forking
 
-- Clone (usermanager `CloneProject` -> storagemanager `CopyProjectFiles` -> here): copy
+- Clone (iam `CloneProject` -> storagemanager `CopyProjectFiles` -> here): copy
   the document into the clone project and rewrite every ref to its copy,
   `{UUIDv5(clone project, asset, version), 1}`. Computable locally: no mapping table.
   Must be idempotent, since the clone job can resume.

@@ -12,7 +12,7 @@
 - a project has exactly one document (or none until the document manager initializes it), per the engine's `App`, so there is no separate document scope
 - `Kind`: snapshot, asset, export (initial set). It says what **role** a stored object plays, for every object in S3. Not to be confused with storagemanager's DAM `Category` (image, video, font, ...), which says what **kind of media** an asset is and exists only for DAM assets
 - `ContentType`: the object's MIME type. Document snapshots should use a dedicated vendor type (e.g. `application/vnd.gyoza.app+flatbuffers`) so any service can tell a snapshot's format from the ledger alone
-- user/org/project IDs are opaque strings owned by user-manager, not foreign keys
+- user/org/project IDs are opaque strings owned by iam, not foreign keys
 
 ## Caller-chosen IDs and purging
 
@@ -34,18 +34,18 @@
 - in-process: the `Service` interface (`Memory`, `Postgres`, `GRPCClient`)
 - over the network: `LedgerService` in `contracts/proto/gyoza/storageledger/v1/ledger.proto`. `GRPCServer` exposes any `Service`; `GRPCClient` is a `Service` that calls one remotely, returning the same types and sentinel errors (`errors.Is(err, ErrNotFound)` works across the wire)
 - error mapping: `ErrNotFound` -> NOT_FOUND, `ErrInvalidQuery`/`ErrInvalidObject` -> INVALID_ARGUMENT, `ErrAlreadyExists` -> ALREADY_EXISTS, `ErrNotDeleted` -> FAILED_PRECONDITION, anything else -> INTERNAL with the details logged server-side only
-- the monolith uses `Postgres` directly; `cmd/storage-ledger` serves it on `GYOZA_GRPC_ADDR`
+- deployed inside the storage service (`cmd/storage`) or the monolith, never alone: storagemanager uses `Postgres` in-process, and the binary also serves `LedgerService` on `GYOZA_GRPC_ADDR` for other services (documentmanager snapshots)
 
 ## Project deletion
 
 - delete everything owned by the project (`MarkDeletedByOwner(project)`); objects owned by others but associated with the project survive
 - storagemanager's `DeleteOwned` does this together with the DAM side
-- planned: user-manager publishes `project.deleted` on JetStream; a cleanup consumer deletes from S3 (via storage-manager) and marks deleted here, so a crash mid-cascade resumes on redelivery
+- planned: iam publishes `project.deleted` on JetStream; a cleanup consumer deletes from S3 (via storagemanager) and marks deleted here, so a crash mid-cascade resumes on redelivery
 - open: dangling references when a deleted owner's assets are still used in other documents (placeholder in the engine? org owns uploads into org projects?)
 
 ## User deletion (GDPR)
 
-Orchestrated by user-manager through storagemanager's `RemoveUser`; the ledger provides the bulk operations.
+Orchestrated by iam through storagemanager's `RemoveUser`; the ledger provides the bulk operations.
 
 - user leaves **with an org** (a user has at most one): everything they own moves to the org (`TransferOwner(user, org)`)
 - user leaves **without an org**: everything they own is deleted (`MarkDeletedByOwner(user)`)

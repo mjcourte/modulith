@@ -1,4 +1,4 @@
-package usermanager
+package iam
 
 // Org and membership rules shared by every OrgStore implementation. The
 // membership rules are pure functions over an org's member list, so the

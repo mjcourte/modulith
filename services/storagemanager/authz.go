@@ -15,8 +15,8 @@ var ErrForbidden = errors.New("storagemanager: forbidden")
 
 // Authorizer decides whether a user may read or write files that belong to
 // an owner, or are associated with a project. It's declared here, where it's
-// used; usermanager implements it (org existence, membership, project
-// sharing), so storagemanager never reads usermanager's tables.
+// used; iam implements it (org existence, membership, project
+// sharing), so storagemanager never reads iam's tables.
 //
 // Both methods get the owner and the project: a file can be reachable through
 // either, e.g. an org's asset used in a project shared with a guest. Each
@@ -33,7 +33,7 @@ func errNoActor() error {
 	return fmt.Errorf("%w: no acting user", ErrForbidden)
 }
 
-// AllowAll is the stand-in Authorizer until usermanager implements the real
+// AllowAll is the stand-in Authorizer until iam implements the real
 // one: every identified user may do anything. Never deploy it where real
 // users can reach it.
 type AllowAll struct{}

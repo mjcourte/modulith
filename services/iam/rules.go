@@ -1,4 +1,4 @@
-package usermanager
+package iam
 
 // Rules shared by every Store implementation and by more than one area:
 // IDs, timestamps and names. Area-specific rules are in users_rules.go,

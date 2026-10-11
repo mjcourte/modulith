@@ -1,4 +1,4 @@
-package usermanager
+package iam
 
 import (
 	"context"
@@ -8,14 +8,14 @@ import (
 
 // Org errors returned by every Store (see OrgStore).
 var (
-	ErrOrgNotFound = errors.New("usermanager: org not found")
-	ErrInvalidOrg  = errors.New("usermanager: invalid org")
+	ErrOrgNotFound = errors.New("iam: org not found")
+	ErrInvalidOrg  = errors.New("iam: invalid org")
 	// ErrAlreadyMember: the user already belongs to an org (a user has at most one).
-	ErrAlreadyMember = errors.New("usermanager: user already belongs to an org")
+	ErrAlreadyMember = errors.New("iam: user already belongs to an org")
 	// ErrNotMember: the user isn't a member of that org (or of any, for GetMembership).
-	ErrNotMember = errors.New("usermanager: not a member")
+	ErrNotMember = errors.New("iam: not a member")
 	// ErrLastAdmin: the change would leave an org with members but no admin.
-	ErrLastAdmin = errors.New("usermanager: an org needs at least one admin")
+	ErrLastAdmin = errors.New("iam: an org needs at least one admin")
 )
 
 // Role is what a member may do in their org.

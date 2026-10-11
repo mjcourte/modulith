@@ -2,7 +2,7 @@
 
 Phase 1 (steps 1-10: DAM, cascades, Postgres store, S3, cleanup, gRPC) is done; its
 record is the README. This phase serves cloning and forking, decided while planning
-usermanager (2026-10-11). Related: [usermanager/PLAN.md](../usermanager/PLAN.md)
+iam (2026-10-11). Related: [iam/PLAN.md](../iam/PLAN.md)
 (`CloneProject` calls this), [documentmanager/PLAN.md](../documentmanager/PLAN.md)
 (keeps usage rows, rewrites refs), [apps/web/PLAN.md](../../apps/web/PLAN.md).
 
@@ -21,7 +21,7 @@ usermanager (2026-10-11). Related: [usermanager/PLAN.md](../usermanager/PLAN.md)
   (their owners' later uploads don't move pinned refs); clones get frozen copies.
 - **Reading through a project**: reading a project grants read on the refs it uses,
   checked "via the project": allowed if the project uses the ref and the actor can read
-  the project (one usage lookup + one usermanager check).
+  the project (one usage lookup + one iam check).
 - **Trashed but used**: a project keeps reading refs it uses while their asset is in
   the trash, until purged; trashing only hides it from its owner's library. Results
   carry `DeletedAt` so the UI marks it; after the purge the ref resolves to not found.
@@ -78,7 +78,7 @@ step, `go test -race`.
 
 ## Later: stored avatars (decided 2026-10-11, not scheduled)
 
-For now `usermanager.User.ProviderAvatarURL` is Google's picture URL, refreshed at each
+For now `iam.User.ProviderAvatarURL` is Google's picture URL, refreshed at each
 sign-in. When users can upload their own avatar (or org logos), store them ourselves:
 
 - a ledger-only object of a new `KindAvatar` (not a DAM asset: nobody names, tags or
@@ -88,3 +88,19 @@ sign-in. When users can upload their own avatar (or org logos), store them ourse
   instead (e.g. an "except these kinds" option on the ledger's `TransferOwner`)
 - the user row stores the object ID, not a URL; avatars need longer-lived or public
   cacheable URLs, since short-lived presigned URLs defeat browser image caching
+
+## Deployment change: one storage service (decided and done 2026-10-11)
+
+storageledger and storagemanager stay separate packages and schemas, but deploy as one
+storage service: the ledger only ever runs inside the storage binary, called
+in-process.
+
+- `cmd/storage-manager` (rename to `cmd/storage`) migrates and builds the ledger itself
+  (`storageledger.NewPostgres`) and serves both `StorageManagerService` and
+  `LedgerService` on its gRPC port (documentmanager records snapshots through the latter)
+- remove `cmd/storage-ledger`, `GYOZA_LEDGER_ADDR` and the ledger gRPC client from the
+  binary wiring (`storageledger.GRPCClient` stays, for other services' use and tests)
+- docs: cmd README, CLAUDE.md, `.env.example`, both service READMEs
+- why: storagemanager is the ledger's main writer and only purger; one process removes a
+  network hop per completion and per cleanup item, and lets ledger and DAM writes share a
+  transaction later if useful. The Go package boundary keeps the code separate.

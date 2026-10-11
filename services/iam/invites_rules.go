@@ -1,4 +1,4 @@
-package usermanager
+package iam
 
 // Invite rules shared by every InviteStore implementation.
 

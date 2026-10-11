@@ -1,4 +1,4 @@
-package usermanager
+package iam
 
 import (
 	"context"
@@ -8,9 +8,9 @@ import (
 
 // Invite errors returned by every Store (see InviteStore).
 var (
-	ErrInviteNotFound = errors.New("usermanager: invite not found")
-	ErrInvalidInvite  = errors.New("usermanager: invalid invite")
-	ErrInviteExpired  = errors.New("usermanager: invite expired")
+	ErrInviteNotFound = errors.New("iam: invite not found")
+	ErrInvalidInvite  = errors.New("iam: invalid invite")
+	ErrInviteExpired  = errors.New("iam: invite expired")
 )
 
 // Invite asks whoever signs in with Email to join an org. No email is sent

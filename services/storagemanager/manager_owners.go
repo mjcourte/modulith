@@ -1,7 +1,7 @@
 package storagemanager
 
 // Owner lifecycle: what happens to files when a project, an org or a user
-// goes away. These are service-to-service operations, called by usermanager
+// goes away. These are service-to-service operations, called by iam
 // once it has decided the owner is gone; they take no acting user and must
 // never be exposed to browsers through the gateway.
 //

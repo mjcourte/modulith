@@ -1,0 +1,107 @@
+package iam
+
+// Access rules: who may do what with a project. The decision itself is a pure
+// function (projectAccess) over the facts that matter; accessTo gathers those
+// facts from a Store. The Manager (step 5) and StorageAuthorizer both use it,
+// so a project can't be visible through one door and not the other.
+
+import (
+	"context"
+	"errors"
+
+	"gyoza/services/storageledger"
+)
+
+// rank orders access levels, so the greatest of several can be picked.
+func (a Access) rank() int {
+	switch a {
+	case AccessEditor:
+		return 2
+	case AccessViewer:
+		return 1
+	}
+	return 0
+}
+
+// AtLeast reports whether a grants at least what want does.
+func (a Access) AtLeast(want Access) bool { return a.rank() >= want.rank() }
+
+// greatest returns the higher of two access levels.
+func greatest(a, b Access) Access {
+	if b.rank() > a.rank() {
+		return b
+	}
+	return a
+}
+
+// projectAccess decides actorID's access to p. A user can reach a project
+// through several routes at once; they get the greatest:
+//   - owning user, or member of the owning org: editor
+//   - gyoza template: viewer for every signed-in user
+//   - a share: its level, unless the project is org-locked and they're not in
+//     its org (then the share is suspended)
+//
+// A project that's still cloning grants nothing. actorOrg is the ID of the
+// actor's org ("" if none); share is their share's level (AccessNone if none).
+func projectAccess(p Project, actorID, actorOrg string, share Access) Access {
+	if actorID == "" || p.State != ProjectReady {
+		return AccessNone
+	}
+	access := AccessNone
+	switch p.Owner.Kind {
+	case storageledger.OwnerUser:
+		if p.Owner.ID == actorID {
+			access = AccessEditor
+		}
+	case storageledger.OwnerOrg:
+		if actorOrg != "" && p.Owner.ID == actorOrg {
+			access = AccessEditor
+		}
+	case storageledger.OwnerGyoza:
+		access = AccessViewer
+	}
+	if shareActive(p, actorOrg) {
+		access = greatest(access, share)
+	}
+	return access
+}
+
+// actorOrg returns the ID of actorID's org, or "" if they're in none.
+func actorOrg(ctx context.Context, s Store, actorID string) (string, error) {
+	m, err := s.GetMembership(ctx, actorID)
+	if errors.Is(err, ErrNotMember) {
+		return "", nil
+	}
+	return m.OrgID, err
+}
+
+// accessTo returns the project and actorID's access to it, from the Store.
+// An unknown actor has no access; a missing project is ErrProjectNotFound.
+// Store failures are returned as errors, never mistaken for "no access".
+func accessTo(ctx context.Context, s Store, actorID, projectID string) (Project, Access, error) {
+	p, err := s.GetProject(ctx, projectID)
+	if err != nil {
+		return Project{}, AccessNone, err
+	}
+	if actorID == "" {
+		return p, AccessNone, nil
+	}
+	if _, err := s.GetUser(ctx, actorID); errors.Is(err, ErrUserNotFound) {
+		return p, AccessNone, nil
+	} else if err != nil {
+		return Project{}, AccessNone, err
+	}
+	org, err := actorOrg(ctx, s, actorID)
+	if err != nil {
+		return Project{}, AccessNone, err
+	}
+	share := AccessNone
+	sh, err := s.GetShare(ctx, projectID, actorID)
+	switch {
+	case err == nil:
+		share = sh.Access
+	case !errors.Is(err, ErrShareNotFound):
+		return Project{}, AccessNone, err
+	}
+	return p, projectAccess(p, actorID, org, share), nil
+}

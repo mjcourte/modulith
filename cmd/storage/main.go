@@ -11,10 +11,10 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 
 	"gyoza/cmd/internal/wiring"
-	pb "gyoza/contracts/gen/go/gyoza/storagemanager/v1"
+	ledgerpb "gyoza/contracts/gen/go/gyoza/storageledger/v1"
+	managerpb "gyoza/contracts/gen/go/gyoza/storagemanager/v1"
 	"gyoza/platform/config"
 	"gyoza/platform/postgres"
 	"gyoza/platform/shutdown"
@@ -24,7 +24,7 @@ import (
 
 func main() {
 	if err := run(); err != nil {
-		slog.Error("storage-manager failed", "err", err)
+		slog.Error("storage failed", "err", err)
 		os.Exit(1)
 	}
 }
@@ -41,30 +41,26 @@ func run() error {
 	env.Text("GYOZA_LOG_LEVEL", &logLevel)
 	shutdownTimeout := env.Duration("GYOZA_SHUTDOWN_TIMEOUT", 20*time.Second)
 	// localhost by default so local runs don't listen on the network;
-	// deployments set ":9090". The default differs from the ledger's so both
+	// deployments set ":9090". The default differs from the monolith's so both
 	// can run on one machine.
 	grpcAddr := env.String("GYOZA_GRPC_ADDR", "localhost:9091")
-	ledgerAddr := env.Required("GYOZA_LEDGER_ADDR") // e.g. localhost:9090
 	settings := wiring.StorageManagerFromEnv(env)
 	if err := env.Err(); err != nil {
 		return err
 	}
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: logLevel})))
 
-	// The ledger is another service here: reach it over gRPC. NewClient
-	// doesn't connect yet; the first call does, and reconnects as needed.
-	// Plain-text for now: service-to-service TLS comes with deployment.
-	ledgerConn, err := grpc.NewClient(ledgerAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		return fmt.Errorf("ledger client: %w", err)
-	}
-	defer ledgerConn.Close() // returns at once: it only drops connections
-	ledger := storageledger.NewGRPCClient(ledgerConn)
-
-	pool, err := postgres.Connect(ctx, dbURL, "storage-manager")
+	pool, err := postgres.Connect(ctx, dbURL, "storage")
 	if err != nil {
 		return err
 	}
+	// The ledger lives in this binary, in its own schema: storagemanager calls it
+	// in-process, and other services (documentmanager's snapshots) over gRPC.
+	if err := storageledger.Migrate(ctx, pool); err != nil {
+		pool.Close() // nothing is running yet, so this returns promptly
+		return err
+	}
+	ledger := storageledger.NewPostgres(pool)
 	manager, err := wiring.NewStorageManager(ctx, pool, ledger, settings)
 	if err != nil {
 		pool.Close() // nothing is running yet, so this returns promptly
@@ -77,7 +73,8 @@ func run() error {
 		return err
 	}
 	server := grpc.NewServer()
-	pb.RegisterStorageManagerServiceServer(server, storagemanager.NewGRPCServer(manager))
+	ledgerpb.RegisterLedgerServiceServer(server, storageledger.NewGRPCServer(ledger))
+	managerpb.RegisterStorageManagerServiceServer(server, storagemanager.NewGRPCServer(manager))
 	serveErr := make(chan error, 1)
 	go func() { serveErr <- server.Serve(lis) }()
 
@@ -86,7 +83,7 @@ func run() error {
 	cleanupCtx, stopCleanup := context.WithCancel(context.WithoutCancel(ctx))
 	defer stopCleanup()
 	cleanupDone := wiring.StartCleanup(cleanupCtx, manager, settings.CleanupInterval)
-	slog.Info("storage-manager started", "grpc", lis.Addr().String(), "ledger", ledgerAddr, "bucket", settings.Manager.Bucket)
+	slog.Info("storage started", "grpc", lis.Addr().String(), "bucket", settings.Manager.Bucket)
 
 	// Run until a signal arrives or the server fails on its own.
 	select {

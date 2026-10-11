@@ -86,7 +86,7 @@ type StorageManagerServiceClient interface {
 	ListFolderContents(ctx context.Context, in *ListFolderContentsRequest, opts ...grpc.CallOption) (*ListFolderContentsResponse, error)
 	GetFolderPath(ctx context.Context, in *GetFolderPathRequest, opts ...grpc.CallOption) (*GetFolderPathResponse, error)
 	ListTrash(ctx context.Context, in *ListTrashRequest, opts ...grpc.CallOption) (*ListTrashResponse, error)
-	// Owner lifecycle, called by usermanager only; never exposed to browsers.
+	// Owner lifecycle, called by iam only; never exposed to browsers.
 	DeleteOwned(ctx context.Context, in *DeleteOwnedRequest, opts ...grpc.CallOption) (*DeleteOwnedResponse, error)
 	RemoveUser(ctx context.Context, in *RemoveUserRequest, opts ...grpc.CallOption) (*RemoveUserResponse, error)
 }
@@ -349,7 +349,7 @@ type StorageManagerServiceServer interface {
 	ListFolderContents(context.Context, *ListFolderContentsRequest) (*ListFolderContentsResponse, error)
 	GetFolderPath(context.Context, *GetFolderPathRequest) (*GetFolderPathResponse, error)
 	ListTrash(context.Context, *ListTrashRequest) (*ListTrashResponse, error)
-	// Owner lifecycle, called by usermanager only; never exposed to browsers.
+	// Owner lifecycle, called by iam only; never exposed to browsers.
 	DeleteOwned(context.Context, *DeleteOwnedRequest) (*DeleteOwnedResponse, error)
 	RemoveUser(context.Context, *RemoveUserRequest) (*RemoveUserResponse, error)
 	mustEmbedUnimplementedStorageManagerServiceServer()

@@ -1,6 +1,6 @@
 # Gyoza
 
-A hypothetical monorepoization of Kyoso post-mortem.
+A hypothetical modular-monorepoization of Kyoso post-mortem.
 Largely to be written in Go.
 
 ## Data Organization
@@ -30,9 +30,8 @@ Largely to be written in Go.
 
 - `apps/web` - web app frontend ReactJS
 - `document-manager` - document/rendering service (Rust or Go)
-- `user-manager` - user db service (Go)
-- `storage-manager` - s3 object service (Go)
-- `storage-ledger` - s3 object ledger service (Go)
+- `iam` - identity and access management: users, orgs, projects, sharing (Go)
+- `storage` - s3 object service (Go): `storagemanager` (uploads, DAM) + `storageledger` (ledger of every S3 object), one deployable
 - `gateway` - REST + WS middlewares merged, SuperTokens auth (Go)
 - `creator-agent` - agent/genai service (Python, can defer for MVP)
 - `media-processor` - media processing service (Go)

@@ -24,7 +24,7 @@ Call a running gRPC service by hand with `go tool buf curl` (example in `contrac
 
 Postgres 18 runs locally as a Windows service (`psql` at `C:\Program Files\PostgreSQL\18\bin\psql.exe`, not on PATH). Dev database: `postgres://gyoza:gyoza@localhost:5432/gyoza`.
 
-- `GYOZA_DATABASE_URL`: required by the binaries (`go run ./cmd/gyoza`, `./cmd/storage-ledger`, `./cmd/storage-manager`). They connect, run migrations at startup, and run until Ctrl+C. Binaries hosting storagemanager (the monolith, `storage-manager`) also need the `GYOZA_S3_*` settings, and `storage-manager` needs `GYOZA_LEDGER_ADDR`; `.env.example` has working local values.
+- `GYOZA_DATABASE_URL`: required by the binaries (`go run ./cmd/gyoza`, `./cmd/storage`). They connect, run migrations at startup, and run until Ctrl+C. Both host storagemanager, so both also need the `GYOZA_S3_*` settings; `.env.example` has working local values.
 - `GYOZA_TEST_DATABASE_URL`: enables the Postgres tests. Each subtest runs in a rolled-back transaction, so they are safe against the dev database. They do assume the test owners (`alice`, `bob`, `acme`, `p1`, ...) have no committed rows there: manual runs against the dev database must use other IDs.
 
 Always open pools with `platform/postgres.Connect`, never `pgxpool.New` directly: it sets `plan_cache_mode=force_custom_plan`, which the keyset-paginated queries depend on for index scans.
@@ -46,7 +46,7 @@ Follow `services/storageledger`:
 - `grpc.go` / `grpc_server.go` / `grpc_client.go`: `GRPCServer` wraps any `Service`; `GRPCClient` implements `Service` over the wire and maps status codes back to the same sentinel errors. Contracts live in `contracts/proto`, generated Go in `contracts/gen/go` (committed). `grpc_test.go` runs the suite through a real client/server over `bufconn`.
 - `OPTIMIZATIONS.md` (next to the README): performance findings with evidence, split into Done and Open (with "when to act"). Add an entry whenever a performance issue is found, fixed or deliberately deferred.
 - Never edit a migration that has been applied; add a new one. (One deliberate pre-release exception: on 2026-10-10 the service was renamed storagecatalogue → storageledger, including its Postgres schema `catalogue` → `ledger`, by editing migrations and dropping the old schema from the empty dev databases. Once anything is deployed, renames need forward migrations.)
-- Naming: the service is the "ledger" (`storageledger`, `cmd/storage-ledger`, `LedgerService`, schema `ledger`), never "catalogue"/"catalog".
+- Naming: the service is the "ledger" (`storageledger`, `LedgerService`, schema `ledger`), never "catalogue"/"catalog".
 - `cmd/` mains are wiring only: `main` calls `run() error` so defers run before `os.Exit`. Shutdown sequence: after `<-ctx.Done()` call `stop()` (a second Ctrl+C then kills the process), derive `context.WithTimeout(context.WithoutCancel(ctx), shutdownTimeout)`, and stop things in reverse startup order. Blocking closes without a context (`pool.Close`, gRPC `GracefulStop`) go through `platform/shutdown.Within`, never a bare `defer`, so a stuck connection can't hang exit.
 - Setup shared by several mains (reading a service's settings, building it, starting its background jobs) goes in `cmd/internal/wiring`, so the monolith and the standalone binary can't drift apart.
 - Go packages have no hyphens or underscores; binary names under `cmd/` may.
@@ -63,7 +63,7 @@ The ledger is pure data, so its `Service` *is* its store. storagemanager has log
 - When several sentinel errors share a gRPC code, the status carries one `google.rpc.ErrorInfo` per matching sentinel and the client rebuilds them (`wireErrors` in `grpc.go`); one table drives both directions.
 - Progress and decisions: `services/storagemanager/README.md`; upcoming work in its `PLAN.md`.
 
-Planned work lives in a `PLAN.md` next to each component's README (`services/usermanager`, `services/storagemanager`, `services/gateway`, `services/documentmanager`, `apps/web`); the plans link to each other where a decision spans components. READMEs record what is built and decided; PLAN.md records what is next.
+Planned work lives in a `PLAN.md` next to each component's README (`services/iam`, `services/storagemanager`, `services/gateway`, `services/documentmanager`, `apps/web`); the plans link to each other where a decision spans components. READMEs record what is built and decided; PLAN.md records what is next.
 
 ### Testing conventions
 
@@ -79,7 +79,7 @@ Planned work lives in a `PLAN.md` next to each component's README (`services/use
 The previous system had two Rust repos (the engine and the document server, which is the engine's native client), a ReactJS frontend, Node.js middlewares, and Python FastAPI for all other backends. The new plan:
 
 - **Rust**: `libs/engine`. `services/documentmanager` (formerly "document server") is Rust or Go, undecided: Go is viable via a C ABI crate (`engine-ffi`) over the engine's top-level API, which would make a true one-binary monolith possible.
-- **Go**: `gateway`, `storage-ledger`, `storage-manager`, `user-manager`, `media-processor`, `platform/`. The user is using these to learn Go, so prefer idiomatic, standard-library-first Go and explain non-obvious idioms.
+- **Go**: `gateway`, `storage` (storagemanager + storageledger), `iam`, `media-processor`, `platform/`. The user is using these to learn Go, so prefer idiomatic, standard-library-first Go and explain non-obvious idioms.
 - **TypeScript/React**: `apps/web`
 - **Python**: `services/creator-agent`, `libs/agent`. This can be deferred for the MVP by calling image-gen APIs directly from Go.
 
@@ -103,9 +103,8 @@ The repo must deploy either as a monolith or as separate services. Only same-lan
 
 - `document-manager` (`services/documentmanager`): the successor to Kyoso-server. It does server-side rendering, log-rolls document snapshots to S3 and load-balances replicas, with allocation tracked in DynamoDB. It was previously built on Axum; Dioxus and Leptos are under consideration. Planned crates: the server binary, a router/load-balancer binary, types, reusable data structures, and NATS and AWS SDK wrappers kept swappable.
 - `gateway`: the single entry point from the frontend, merging the old REST and NATS→WebSocket middlewares. It handles SuperTokens auth (previously done in the middleware). REST and WS share one session layer.
-- `storage-manager`: S3 get/put for uploads and assets (not documents). It calls `storage-ledger` over gRPC.
-- `storage-ledger`: the PostgreSQL ledger of every S3 object. It links to user data for GDPR deletion.
-- `user-manager`: users, orgs, permissions, projects and billing tables.
+- `storage` (`cmd/storage`): one deployable hosting two packages. `storagemanager`: S3 get/put for uploads and assets (not documents), the DAM, cleanup. `storageledger`: the PostgreSQL ledger of every S3 object (linked to users for GDPR deletion), called in-process by storagemanager and over gRPC by other services (documentmanager snapshots).
+- `iam`: users, orgs, permissions, projects and billing tables.
 - `media-processor`: an ffmpeg wrapper.
 - `creator-agent`: the agentic/GenAI service.
 

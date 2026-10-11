@@ -62,10 +62,10 @@ func NewStorageManager(ctx context.Context, pool *pgxpool.Pool, ledger storagele
 			return nil, err
 		}
 	}
-	// No usermanager yet, so nothing can answer "may this user do that?".
+	// No iam yet, so nothing can answer "may this user do that?".
 	// Every caller is trusted until it exists: fine while only the platform
 	// itself can reach this service, never once browsers can.
-	slog.Warn("storagemanager: authorization is allow-all until usermanager exists")
+	slog.Warn("storagemanager: authorization is allow-all until iam exists")
 	m, err := storagemanager.NewManager(ledger, storagemanager.NewPostgres(pool), blobs, storagemanager.AllowAll{}, s.Manager)
 	if err != nil {
 		return nil, fmt.Errorf("storagemanager: %w", err)

@@ -7,7 +7,7 @@ import (
 )
 
 // Service is what other components call: the gateway (on behalf of a signed-in
-// user, passing their ID as actorID) and usermanager (the owner lifecycle).
+// user, passing their ID as actorID) and iam (the owner lifecycle).
 // *Manager implements it in-process; GRPCClient implements it over the
 // network, with the same results and errors, so callers can't tell which they
 // have. Callers should depend on Service, never on *Manager.

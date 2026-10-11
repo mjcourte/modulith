@@ -1,4 +1,4 @@
-package usermanager
+package iam
 
 // User rules shared by every UserStore implementation.
 
