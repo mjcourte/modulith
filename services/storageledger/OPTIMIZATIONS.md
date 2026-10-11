@@ -75,6 +75,10 @@ one owner with 20k objects.
 - **When to act:** insert throughput becomes a bottleneck.
 - **Fix:** time-ordered IDs (e.g. UUIDv7). Existing IDs can stay; only the
   generator changes.
+- **Precedent:** storagemanager uses UUIDv7 from the start (`newID` in
+  `services/storagemanager/assets_rules.go`, `github.com/google/uuid`), which
+  also let it page by ID alone. The ledger keeps `rand.Text()` until this
+  item's trigger is hit.
 
 ### force_custom_plan applies to every query on the pool
 

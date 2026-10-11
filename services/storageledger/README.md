@@ -9,8 +9,9 @@
 - an object's lifetime follows its owner: deleting an owner deletes everything it owns (`List{Owner: x}`)
 - `CreatedBy` is the user who uploaded/produced it; can differ from the owner (e.g. org assets)
 - `ProjectID` is optional and means "associated with this project", whoever owns it, so `List{ProjectID: p}` lists everything for a project. A project-owned object always has `ProjectID` set to its owner (enforced on create)
-- a project has exactly one document (or none until the document server initializes it), per the engine's `App`, so there is no separate document scope
-- `Kind`: snapshot, asset, export (initial set)
+- a project has exactly one document (or none until the document manager initializes it), per the engine's `App`, so there is no separate document scope
+- `Kind`: snapshot, asset, export (initial set). It says what **role** a stored object plays, for every object in S3. Not to be confused with storagemanager's DAM `Category` (image, video, font, ...), which says what **kind of media** an asset is and exists only for DAM assets
+- `ContentType`: the object's MIME type. Document snapshots should use a dedicated vendor type (e.g. `application/vnd.gyoza.app+flatbuffers`) so any service can tell a snapshot's format from the ledger alone
 - user/org/project IDs are opaque strings owned by user-manager, not foreign keys
 
 ## Queries

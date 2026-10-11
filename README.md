@@ -29,7 +29,7 @@ Largely to be written in Go.
 ## Apps/Services
 
 - `apps/web` - web app frontend ReactJS
-- `document-server` - document/rendering server (Rust or Go)
+- `document-manager` - document/rendering service (Rust or Go)
 - `user-manager` - user db service (Go)
 - `storage-manager` - s3 object service (Go)
 - `storage-ledger` - s3 object ledger service (Go)
@@ -44,7 +44,7 @@ Largely to be written in Go.
 - AWS PostgreSQL - databases
 - AWS ECS - basic CPU services
 - AWS EC2 on ECS - quasi-stateful CPU/GPU servers
-- AWS DynamoDB - Load allocation tables for document server replicas
+- AWS DynamoDB - Load allocation tables for document manager replicas
 - NATS/JetStream - message streams (embedded in monolith)
 - SuperTokens - auth
 - OpenTelemetry/DataDog (is there a free self hosted version?)
@@ -52,7 +52,7 @@ Largely to be written in Go.
 ## Hard things but good to work towards
 
 - Organize the repo s.t. it can be deployed either as a monolith OR distributed.
-  - monolith = one Go binary + document-server + web. Services only talk through interfaces, in-process or gRPC
+  - monolith = one Go binary + document-manager + web. Services only talk through interfaces, in-process or gRPC
 - Fewest possible external technologies ^^
 - Like seriously how much of this can we NOT build and still have the MVP
 - ~~do the middlewares need to be separated?~~ no, merged into `gateway`

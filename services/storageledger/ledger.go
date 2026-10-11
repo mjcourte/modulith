@@ -28,13 +28,36 @@ type Owner struct {
 	ID   string
 }
 
+// IsZero reports whether no owner is set.
 func (o Owner) IsZero() bool { return o == Owner{} }
+
+// Validate reports whether o is well-formed: a known kind, with an ID for
+// everything except gyoza. It checks shape only, not whether the owner exists
+// or who may act for it; other services use it so everyone agrees on what a
+// valid owner looks like.
+func (o Owner) Validate() error {
+	switch o.Kind {
+	case OwnerUser, OwnerOrg, OwnerProject:
+		if o.ID == "" {
+			return fmt.Errorf("%s owner needs an ID", o.Kind)
+		}
+	case OwnerGyoza:
+		if o.ID != "" {
+			return errors.New("gyoza owner must not have an ID")
+		}
+	case "":
+		return errors.New("owner is not set")
+	default:
+		return fmt.Errorf("unknown owner kind %q", o.Kind)
+	}
+	return nil
+}
 
 // Kind is what an object is used for.
 type Kind string
 
 const (
-	KindSnapshot Kind = "snapshot" // document snapshot written by the document server
+	KindSnapshot Kind = "snapshot" // document snapshot written by the document manager
 	KindAsset    Kind = "asset"    // user-uploaded or generated asset
 	KindExport   Kind = "export"   // rendered output
 )
@@ -63,17 +86,9 @@ var (
 // normalize validates obj for Create and fills in ProjectID for
 // project-owned objects. Shared by every implementation.
 func (obj Object) normalize() (Object, error) {
-	switch obj.Owner.Kind {
-	case OwnerUser, OwnerOrg, OwnerProject:
-		if obj.Owner.ID == "" {
-			return obj, fmt.Errorf("%w: %s owner needs an ID", ErrInvalidObject, obj.Owner.Kind)
-		}
-	case OwnerGyoza:
-		if obj.Owner.ID != "" {
-			return obj, fmt.Errorf("%w: gyoza owner must not have an ID", ErrInvalidObject)
-		}
-	default:
-		return obj, fmt.Errorf("%w: unknown owner kind %q", ErrInvalidObject, obj.Owner.Kind)
+	if err := obj.Owner.Validate(); err != nil {
+		// Two %w: the result matches both ErrInvalidObject and err with errors.Is.
+		return obj, fmt.Errorf("%w: %w", ErrInvalidObject, err)
 	}
 	// A project-owned object is always associated with its own project,
 	// so listing by ProjectID includes it.

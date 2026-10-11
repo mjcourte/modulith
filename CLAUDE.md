@@ -48,20 +48,37 @@ Follow `services/storageledger`:
 - `cmd/` mains are wiring only: `main` calls `run() error` so defers run before `os.Exit`. Shutdown sequence: after `<-ctx.Done()` call `stop()` (a second Ctrl+C then kills the process), derive `context.WithTimeout(context.WithoutCancel(ctx), shutdownTimeout)`, and stop things in reverse startup order. Blocking closes without a context (`pool.Close`, gRPC `GracefulStop`) go through `platform/shutdown.Within`, never a bare `defer`, so a stuck connection can't hang exit.
 - Go packages have no hyphens or underscores; binary names under `cmd/` may.
 
+### Services with real logic: `services/storagemanager`
+
+The ledger is pure data, so its `Service` *is* its store. storagemanager has logic, so it splits:
+
+- `Manager` (logic, step 4+) depends on interfaces only: `storageledger.Service`, `Store` (DAM data, `assets.go`), `Blobs` (S3, `blobs.go`), and later `Authorizer`. Tests wire memory fakes of all of them.
+- The `Store` checks data shape only, never permissions. Shared validation/normalisation lives in `assets_rules.go`, so every Store implementation accepts and rejects the same input.
+- Errors and limits go at the top of the file that defines the types (`assets.go`).
+- Progress and decisions: `services/storagemanager/README.md`; step plan in the user's plan file.
+
+### Testing conventions
+
+- Every interface with several implementations gets one shared suite (`runServiceTests`, `runBlobsTests`, `runStoreTests`) taking a constructor or harness; each implementation has a tiny `*_test.go` that runs it.
+- Mutation-check a new suite: reintroduce realistic bugs into the implementation one at a time, confirm each is caught by a named test, then restore the file. A first pass found tests that passed while proving nothing.
+- External test files (`package x_test`) in one folder share a namespace: prefix helper and case names (`testGetAssetMissing`, not `testGetMissing`) to avoid clashes.
+- Stores keep microsecond timestamps, so two calls can share one; tests asserting "must not change `UpdatedAt`/`DeletedAt`" call `letTimePass()` between them.
+- Compare whole sets of IDs for order-independent results; with UUIDv7 (storagemanager) order is exact and can be asserted.
+
 ## Languages
 
 The previous system had two Rust repos (the engine and the document server, which is the engine's native client), a ReactJS frontend, Node.js middlewares, and Python FastAPI for all other backends. The new plan:
 
-- **Rust**: `libs/engine`, `services/document-server`
+- **Rust**: `libs/engine`. `services/documentmanager` (formerly "document server") is Rust or Go, undecided: Go is viable via a C ABI crate (`engine-ffi`) over the engine's top-level API, which would make a true one-binary monolith possible.
 - **Go**: `gateway`, `storage-ledger`, `storage-manager`, `user-manager`, `media-processor`, `platform/`. The user is using these to learn Go, so prefer idiomatic, standard-library-first Go and explain non-obvious idioms.
 - **TypeScript/React**: `apps/web`
 - **Python**: `services/creator-agent`, `libs/agent`. This can be deferred for the MVP by calling image-gen APIs directly from Go.
 
 ## Layout and the monolith/distributed goal
 
-The repo must deploy either as a monolith or as separate services. Only same-language code can share a process, so in practice "monolith" means one Go binary, with the Rust document server, the web app and the optional Python agent running alongside it. The layout keeps service logic separate from packaging:
+The repo must deploy either as a monolith or as separate services. Only same-language code can share a process, so in practice "monolith" means one Go binary, with the document manager (while it's Rust), the web app and the optional Python agent running alongside it. The layout keeps service logic separate from packaging:
 
-- `services/<name>/`: domain logic. A Go service is a library package (no `main`) exposing a `Service` interface and a constructor, and owns its `migrations/`. The Rust document server will contain its own `crates/`.
+- `services/<name>/`: domain logic. A Go service is a library package (no `main`) exposing a `Service` interface and a constructor, and owns its `migrations/`. If the document manager stays Rust, it will contain its own `crates/`.
 - `cmd/`: thin Go `main` packages that only do wiring. `cmd/gyoza` is the monolith, which runs every Go service in-process with embedded NATS. `cmd/<service>` builds one binary per service for distributed mode.
 - `platform/`: shared Go plumbing (config, Postgres, NATS, auth/session, telemetry, client wiring). `platform/jobs` is the NATS + Postgres job queue, planned as a library rather than a service.
 - `contracts/proto/`: protobuf APIs, generated with `buf` for Go, Rust (prost/tonic) and TS.
@@ -75,7 +92,7 @@ The repo must deploy either as a monolith or as separate services. Only same-lan
 
 ## Services
 
-- `document-server`: the successor to Kyoso-server. It does server-side rendering, log-rolls document snapshots to S3 and load-balances replicas, with allocation tracked in DynamoDB. It was previously built on Axum; Dioxus and Leptos are under consideration. Planned crates: the server binary, a router/load-balancer binary, types, reusable data structures, and NATS and AWS SDK wrappers kept swappable.
+- `document-manager` (`services/documentmanager`): the successor to Kyoso-server. It does server-side rendering, log-rolls document snapshots to S3 and load-balances replicas, with allocation tracked in DynamoDB. It was previously built on Axum; Dioxus and Leptos are under consideration. Planned crates: the server binary, a router/load-balancer binary, types, reusable data structures, and NATS and AWS SDK wrappers kept swappable.
 - `gateway`: the single entry point from the frontend, merging the old REST and NATS→WebSocket middlewares. It handles SuperTokens auth (previously done in the middleware). REST and WS share one session layer.
 - `storage-manager`: S3 get/put for uploads and assets (not documents). It calls `storage-ledger` over gRPC.
 - `storage-ledger`: the PostgreSQL ledger of every S3 object. It links to user data for GDPR deletion.
@@ -83,7 +100,7 @@ The repo must deploy either as a monolith or as separate services. Only same-lan
 - `media-processor`: an ffmpeg wrapper.
 - `creator-agent`: the agentic/GenAI service.
 
-**Infrastructure**: AWS S3, PostgreSQL, ECS (CPU services), EC2-on-ECS (stateful CPU/GPU document servers), DynamoDB, NATS/JetStream, OpenTelemetry/DataDog.
+**Infrastructure**: AWS S3, PostgreSQL, ECS (CPU services), EC2-on-ECS (stateful CPU/GPU document-manager replicas), DynamoDB, NATS/JetStream, OpenTelemetry/DataDog.
 
 ## Design principles
 
