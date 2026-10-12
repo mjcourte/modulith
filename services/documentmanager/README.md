@@ -59,10 +59,12 @@ I'm going to say S3 a bunch, but i mean S3 or RustFS.
 
 ## NATS
 
-- Need a subscriber to projects.projectid.delta and projects.projectId.snapshot
-- Should publish to both, but never recieve snapshots, only publish!
-- Whitelist based filter to allow FE P2P NATS usage eg userstate cursor etc.
-- Needs to actively manage the Jetstream, to consume/delete messages once existing in S3
+Streams and subjects are defined in `platform/nats` (see its README).
+
+- Consumes `document.{projectID}.delta` (durable pull consumer) and publishes to it.
+- The only publisher of `document.{projectID}.snapshot`, never a consumer. The message is a pointer (version, last delta sequence covered, storage object ID), not the snapshot bytes.
+- After a snapshot is stored in S3 through storage: publish the pointer, then `PurgeDeltas(projectID, coveredSeq)`. Order matters: purging first would lose deltas if the publish fails.
+- Whitelist based filter to allow FE P2P NATS usage eg userstate cursor etc. (userstate is core NATS, not JetStream)
 
 ## Load management and replication
 

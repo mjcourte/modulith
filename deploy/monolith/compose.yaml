@@ -8,6 +8,7 @@
 # Then point the binaries and tests at it:
 #   GYOZA_DATABASE_URL=postgres://gyoza:gyoza@localhost:5433/gyoza
 #   GYOZA_TEST_S3_ENDPOINT=http://localhost:9000   (S3: access key gyoza, secret gyoza-dev-secret)
+#   GYOZA_TEST_NATS_URL=nats://localhost:4222
 
 name: gyoza
 
@@ -16,7 +17,7 @@ services:
     build:
       context: ../..
     environment:
-      NATS_URL: nats://nats-1:4222,nats-2:4222,nats-3:4222
+      GYOZA_NATS_URL: nats://nats-1:4222,nats-2:4222,nats-3:4222
     depends_on:
       - nats-1
       - nats-2
@@ -66,39 +67,43 @@ services:
 # but since we also have RustFS in here as S3 stand in, just yolo for
 # now nothing matters
   nats-1:
-    image: nats:2.14.6
+    image: nats:2.14.6-alpine
     command: ["-c", "/etc/nats/nats.conf"]
     volumes:
       - ../../platform/nats/nats-1.conf:/etc/nats/nats.conf:ro
       - nats1-data:/data
+    ports:
+      # Clients on the host connect here; the server tells them about the
+      # other members, but they can only reach this one.
+      - "127.0.0.1:4222:4222"
     healthcheck:
-      test: ["CMD", "nats-server", "--signal", "ldm"]
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8222/healthz"]
       interval: 10s
       timeout: 5s
       retries: 5
     restart: unless-stopped
 
   nats-2:
-    image: nats:2.14.6
+    image: nats:2.14.6-alpine
     command: ["-c", "/etc/nats/nats.conf"]
     volumes:
       - ../../platform/nats/nats-2.conf:/etc/nats/nats.conf:ro
       - nats2-data:/data
     healthcheck:
-      test: ["CMD", "nats-server", "--signal", "ldm"]
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8222/healthz"]
       interval: 10s
       timeout: 5s
       retries: 5
     restart: unless-stopped
 
   nats-3:
-    image: nats:2.14.6
+    image: nats:2.14.6-alpine
     command: ["-c", "/etc/nats/nats.conf"]
     volumes:
       - ../../platform/nats/nats-3.conf:/etc/nats/nats.conf:ro
       - nats3-data:/data
     healthcheck:
-      test: ["CMD", "nats-server", "--signal", "ldm"]
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8222/healthz"]
       interval: 10s
       timeout: 5s
       retries: 5

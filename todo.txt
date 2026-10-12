@@ -1,2 +1,1 @@
-- Do requested cleanups in claude.md
 - Flesh out NATS platform/nats before services that depend on it (docmgr and gateway)
