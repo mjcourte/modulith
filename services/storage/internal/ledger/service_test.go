@@ -27,6 +27,10 @@ func runServiceTests(t *testing.T, newService func(t *testing.T) ledger.Service)
 		{"CreateWithChosenID", testCreateWithChosenID},
 		{"ListDeleted", testListDeleted},
 		{"Purge", testPurge},
+		{"MediaLifecycle", testMediaLifecycle},
+		{"MediaRejects", testMediaRejects},
+		{"ListPendingMedia", testListPendingMedia},
+		{"PurgeRemovesMediaInfo", testPurgeRemovesMediaInfo},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

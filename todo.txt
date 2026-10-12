@@ -1,1 +1,5 @@
 - Flesh out ffprobe in mediaprocessor so it is callable (eg upon media upload or some other's media sniff request? how will that work, i guess we can sniff and store in ledger?)
+- look into our engine mock a little more before building out docmgr
+- cmd/{services}/main.go files
+- when can we do gateway?
+- exporter defintely needs engine mock api

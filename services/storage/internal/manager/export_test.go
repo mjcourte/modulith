@@ -16,3 +16,6 @@ const ClockSkew = clockSkew
 
 // CleanupBatch is how many items each cleanup step handles at a time.
 const CleanupBatch = cleanupBatch
+
+// MaxProbeAttempts is how often the probe job tries a file before giving up.
+const MaxProbeAttempts = maxProbeAttempts

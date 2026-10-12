@@ -17,7 +17,7 @@ import (
 func TestCategoryOf(t *testing.T) {
 	tests := map[string]Category{
 		"image/png":                       CategoryImage,
-		"image/svg+xml":                   CategoryImage,
+		"image/svg+xml":                   CategoryVector,
 		"IMAGE/JPEG":                      CategoryImage,
 		"video/mp4":                       CategoryVideo,
 		"audio/mpeg":                      CategoryAudio,

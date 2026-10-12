@@ -6,6 +6,7 @@ import (
 	"cmp"
 	"context"
 	"crypto/rand"
+	"encoding/json"
 	"fmt"
 	"slices"
 	"sync"
@@ -15,10 +16,11 @@ import (
 type Memory struct {
 	mu      sync.Mutex
 	objects map[string]Object
+	media   map[string]MediaInfo // by object ID
 }
 
 func NewMemory() *Memory {
-	return &Memory{objects: make(map[string]Object)}
+	return &Memory{objects: make(map[string]Object), media: make(map[string]MediaInfo)}
 }
 
 // Compile-time check that *Memory satisfies Service.
@@ -199,5 +201,65 @@ func (m *Memory) Purge(ctx context.Context, id string) error {
 		return fmt.Errorf("%w: %s", ErrNotDeleted, id)
 	}
 	delete(m.objects, id)
+	delete(m.media, id) // as ON DELETE CASCADE does
 	return nil
+}
+
+func (m *Memory) MarkMediaPending(ctx context.Context, objectID string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if _, ok := m.objects[objectID]; !ok {
+		return ErrNotFound
+	}
+	if _, ok := m.media[objectID]; !ok {
+		m.media[objectID] = MediaInfo{ObjectID: objectID, Status: MediaPending, Details: json.RawMessage("{}"), UpdatedAt: now()}
+	}
+	return nil
+}
+
+func (m *Memory) SetMediaInfo(ctx context.Context, info MediaInfo) error {
+	info, err := info.normalize()
+	if err != nil {
+		return err
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if _, ok := m.objects[info.ObjectID]; !ok {
+		return ErrNotFound
+	}
+	info.Details = slices.Clone(info.Details) // the caller may reuse its slice
+	info.UpdatedAt = now()
+	m.media[info.ObjectID] = info
+	return nil
+}
+
+func (m *Memory) GetMediaInfo(ctx context.Context, objectID string) (MediaInfo, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	info, ok := m.media[objectID]
+	if !ok {
+		return MediaInfo{}, ErrNotFound
+	}
+	return info, nil
+}
+
+func (m *Memory) ListPendingMedia(ctx context.Context, limit int) ([]MediaInfo, error) {
+	if err := checkLimit(limit); err != nil {
+		return nil, err
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var matches []MediaInfo
+	for id, info := range m.media {
+		if info.Status == MediaPending && m.objects[id].DeletedAt == nil {
+			matches = append(matches, info)
+		}
+	}
+	slices.SortFunc(matches, func(a, b MediaInfo) int {
+		if c := a.UpdatedAt.Compare(b.UpdatedAt); c != 0 {
+			return c
+		}
+		return cmp.Compare(a.ObjectID, b.ObjectID)
+	})
+	return matches[:min(limit, len(matches))], nil
 }

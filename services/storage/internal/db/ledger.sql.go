@@ -81,6 +81,27 @@ func (q *Queries) CreateObject(ctx context.Context, arg CreateObjectParams) (Sto
 	return i, err
 }
 
+const getMediaInfo = `-- name: GetMediaInfo :one
+SELECT object_id, status, width, height, duration_us, details, error, attempts, updated_at FROM storage.media_info WHERE object_id = $1
+`
+
+func (q *Queries) GetMediaInfo(ctx context.Context, objectID string) (StorageMediaInfo, error) {
+	row := q.db.QueryRow(ctx, getMediaInfo, objectID)
+	var i StorageMediaInfo
+	err := row.Scan(
+		&i.ObjectID,
+		&i.Status,
+		&i.Width,
+		&i.Height,
+		&i.DurationUs,
+		&i.Details,
+		&i.Error,
+		&i.Attempts,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getObject = `-- name: GetObject :one
 SELECT id, owner_kind, owner_id, created_by, project_id, kind, bucket, key, size_bytes, content_type, created_at, deleted_at FROM storage.objects WHERE id = $1
 `
@@ -285,6 +306,46 @@ func (q *Queries) ListObjectsByProject(ctx context.Context, arg ListObjectsByPro
 	return items, nil
 }
 
+const listPendingMedia = `-- name: ListPendingMedia :many
+SELECT m.object_id, m.status, m.width, m.height, m.duration_us, m.details, m.error, m.attempts, m.updated_at FROM storage.media_info m
+JOIN storage.objects o ON o.id = m.object_id
+WHERE m.status = 'pending' AND o.deleted_at IS NULL
+ORDER BY m.updated_at, m.object_id
+LIMIT $1
+`
+
+// Uses the partial index media_info_pending. Deleted objects are skipped:
+// nobody will look at their metadata, and the purge drops their rows.
+func (q *Queries) ListPendingMedia(ctx context.Context, rowLimit int32) ([]StorageMediaInfo, error) {
+	rows, err := q.db.Query(ctx, listPendingMedia, rowLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []StorageMediaInfo
+	for rows.Next() {
+		var i StorageMediaInfo
+		if err := rows.Scan(
+			&i.ObjectID,
+			&i.Status,
+			&i.Width,
+			&i.Height,
+			&i.DurationUs,
+			&i.Details,
+			&i.Error,
+			&i.Attempts,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const markDeletedByOwner = `-- name: MarkDeletedByOwner :execrows
 UPDATE storage.objects
 SET deleted_at = now()
@@ -299,6 +360,23 @@ type MarkDeletedByOwnerParams struct {
 
 func (q *Queries) MarkDeletedByOwner(ctx context.Context, arg MarkDeletedByOwnerParams) (int64, error) {
 	result, err := q.db.Exec(ctx, markDeletedByOwner, arg.OwnerKind, arg.OwnerID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const markMediaPending = `-- name: MarkMediaPending :execrows
+INSERT INTO storage.media_info (object_id, status, updated_at)
+SELECT id, 'pending', clock_timestamp() FROM storage.objects WHERE id = $1
+ON CONFLICT (object_id) DO NOTHING
+`
+
+// Queues an existing object for probing; an object that already has a row
+// keeps it. 0 rows means the object is missing or already has one (the
+// caller tells which).
+func (q *Queries) MarkMediaPending(ctx context.Context, id string) (int64, error) {
+	result, err := q.db.Exec(ctx, markMediaPending, id)
 	if err != nil {
 		return 0, err
 	}
@@ -327,6 +405,48 @@ DELETE FROM storage.objects WHERE id = $1 AND deleted_at IS NOT NULL
 // Only deleted objects; 0 rows means missing or live (the caller tells which).
 func (q *Queries) PurgeObject(ctx context.Context, id string) (int64, error) {
 	result, err := q.db.Exec(ctx, purgeObject, id)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const setMediaInfo = `-- name: SetMediaInfo :execrows
+INSERT INTO storage.media_info (object_id, status, width, height, duration_us, details, error, attempts, updated_at)
+SELECT id, $1::text, $2::int, $3::int,
+       $4::bigint, $5::jsonb, $6::text,
+       $7::int, clock_timestamp()
+FROM storage.objects WHERE id = $8::text
+ON CONFLICT (object_id) DO UPDATE SET
+    status = EXCLUDED.status, width = EXCLUDED.width, height = EXCLUDED.height,
+    duration_us = EXCLUDED.duration_us, details = EXCLUDED.details, error = EXCLUDED.error,
+    attempts = EXCLUDED.attempts, updated_at = EXCLUDED.updated_at
+`
+
+type SetMediaInfoParams struct {
+	Status     string
+	Width      int32
+	Height     int32
+	DurationUs int64
+	Details    []byte
+	Error      string
+	Attempts   int32
+	ObjectID   string
+}
+
+// Records a probe's outcome, replacing what was there. 0 rows means the
+// object is missing.
+func (q *Queries) SetMediaInfo(ctx context.Context, arg SetMediaInfoParams) (int64, error) {
+	result, err := q.db.Exec(ctx, setMediaInfo,
+		arg.Status,
+		arg.Width,
+		arg.Height,
+		arg.DurationUs,
+		arg.Details,
+		arg.Error,
+		arg.Attempts,
+		arg.ObjectID,
+	)
 	if err != nil {
 		return 0, err
 	}

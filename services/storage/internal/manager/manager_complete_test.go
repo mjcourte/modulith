@@ -22,6 +22,7 @@ func fileOf(contentType string, size int) []byte {
 		"image/png":  "\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR",
 		"image/jpeg": "\xff\xd8\xff\xe0\x00\x10JFIF\x00",
 		"zip":        "PK\x03\x04\x14\x00\x00\x00\x08\x00",
+		"video/mp4":  "\x00\x00\x00\x18ftypmp42\x00\x00\x00\x00mp42isom",
 	}
 	data := make([]byte, size)
 	copy(data, headers[contentType])

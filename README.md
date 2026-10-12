@@ -6,6 +6,18 @@ Basically the v0 plan is get it running as a local docker container, but actuall
 
 The Go services are divided into approximate microservices, but can be run initially as a monolith.
 
+## Running the monolith
+
+`cmd/gyoza` runs every service in one process. It needs Postgres and an S3-compatible store; `deploy/monolith/compose.yaml` provides both (plus NATS) via Docker.
+
+```sh
+docker compose -f deploy/monolith/compose.yaml up -d --wait   # Postgres on :5433, RustFS (S3) on :9000, NATS on :4222
+cp .env.example .env                                          # binaries read .env from the working directory; real env vars win
+go run ./cmd/gyoza                                            # runs migrations, creates the bucket, serves gRPC on localhost:9090
+```
+
+Stop with Ctrl+C (a second Ctrl+C forces exit). To use a locally installed Postgres instead, point `GYOZA_DATABASE_URL` in `.env` at it (e.g. `localhost:5432`). Until the gateway exists, call the services over gRPC with `go tool buf curl` (see `contracts/README.md`). See `deploy/README.md` for stopping/resetting the containers and `.env.example` for every setting.
+
 ## Data Organization
 
 - PostgreSQL with tables for customers, organizations, projects, permissions, billing
@@ -19,10 +31,10 @@ The Go services are divided into approximate microservices, but can be run initi
 - `services/` - domain logic, one folder per service. Go services are packages with no `main`
 - `cmd/` - Go entrypoints. `gyoza` = monolith, `<service>` = one binary each for distributed
 - `platform/` - shared Go plumbing (config, pg, NATS, auth, telemetry, jobs)
-- `libs/` - domain libraries, TBD, looks like we need a rendering engine...
+- `internal/` - domain libraries, TBD, looks like we need a rendering engine...
+- `engine/` - 3 guesses what this is
 - `contracts/proto/` - gRPC/protobuf APIs, generated for Go
 - `deploy/` - monolith AND distributed packaging
-- `infra/aws/` - cloud resources. nothing here for now as everything we need will be dockered.
 
 ## Apps/Services
 

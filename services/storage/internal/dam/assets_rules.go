@@ -196,7 +196,7 @@ func (u AssetUpdate) normalize() (AssetUpdate, error) {
 
 // knownCategories is every valid Category, for checking query filters.
 var knownCategories = []Category{
-	CategoryImage, CategoryVideo, CategoryAudio, CategoryFont,
+	CategoryImage, CategoryVector, CategoryVideo, CategoryAudio, CategoryFont,
 	CategoryPDF, CategoryJSON, CategoryText, CategoryOther,
 }
 

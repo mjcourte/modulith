@@ -12,6 +12,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"gyoza/platform/config"
+	"gyoza/services/mediaprocessor"
 	"gyoza/services/storage/internal/blob"
 	"gyoza/services/storage/internal/dam"
 	"gyoza/services/storage/internal/ledger"
@@ -24,6 +25,7 @@ type Settings struct {
 	CreateBucket    bool // create the bucket at startup: local development only
 	Manager         Config
 	CleanupInterval time.Duration
+	ProbeInterval   time.Duration // how often the media probe job looks for new uploads
 }
 
 // SettingsFromEnv reads storage's settings. Problems are recorded in env;
@@ -45,6 +47,7 @@ func SettingsFromEnv(env *config.Env) Settings {
 			TrashRetention: env.Duration("GYOZA_TRASH_RETENTION", DefaultTrashRetention),
 		},
 		CleanupInterval: env.Duration("GYOZA_CLEANUP_INTERVAL", 10*time.Minute),
+		ProbeInterval:   env.Duration("GYOZA_PROBE_INTERVAL", 10*time.Second),
 	}
 }
 
@@ -82,6 +85,17 @@ func StartCleanup(ctx context.Context, m *Manager, interval time.Duration) <-cha
 	go func() {
 		defer close(done)
 		m.RunCleanup(ctx, interval)
+	}()
+	return done
+}
+
+// StartMediaProbe runs m's media probe job with p in the background until ctx
+// is done. The returned channel closes once the job has stopped.
+func StartMediaProbe(ctx context.Context, m *Manager, p mediaprocessor.Prober, interval time.Duration) <-chan struct{} {
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		m.RunMediaProbe(ctx, p, interval)
 	}()
 	return done
 }
