@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"gyoza/platform/blob"
+	"gyoza/services/storage/internal/blob"
 )
 
 // Harness is one blob.Store implementation plus a way to act as the browser

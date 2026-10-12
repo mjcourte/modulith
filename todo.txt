@@ -1,3 +1,2 @@
-- IAM is currently like 45 files -> internal/{store, projects, users/orgs?} how to slice domains?
-- Does /blob/ belong in platform/blob or internal/blob? it DOES interact with S3/RustFS, but is also a common type so idk
 - Do requested cleanups in claude.md
+- Flesh out NATS platform/nats before services that depend on it (docmgr and gateway)

@@ -7,7 +7,6 @@ import (
 
 	"github.com/google/uuid"
 
-	"gyoza/platform/blob"
 	"gyoza/services/iam/internal/directory"
 	"gyoza/services/iam/internal/manager"
 	"gyoza/services/storage"
@@ -146,9 +145,7 @@ func TestStorageAuthorizerStoreFailure(t *testing.T) {
 func TestStorageAuthorizerWithStorage(t *testing.T) {
 	ctx := t.Context()
 	w := newAuthzWorld(t)
-	blobs := blob.NewMemory()
-	m, err := storage.NewMemoryManager(blobs,
-		manager.NewStorageAuthorizer(w.store), storage.Config{Bucket: "gyoza-test"})
+	m, err := storage.NewMemory(manager.NewStorageAuthorizer(w.store), storage.Config{Bucket: "gyoza-test"})
 	if err != nil {
 		t.Fatalf("NewManager: %v", err)
 	}
@@ -160,7 +157,7 @@ func TestStorageAuthorizerWithStorage(t *testing.T) {
 	if err != nil {
 		t.Fatalf("member BeginUpload: %v", err)
 	}
-	if err := blobs.PutSigned(ticket.URL, "image/png", png); err != nil {
+	if err := m.Upload(ticket.URL, "image/png", png); err != nil {
 		t.Fatalf("browser upload: %v", err)
 	}
 	asset, err := m.CompleteUpload(ctx, "mem", ticket.UploadID)

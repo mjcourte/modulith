@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"gyoza/platform/blob"
-	"gyoza/platform/blob/blobtest"
+	"gyoza/services/storage/internal/blob"
+	"gyoza/services/storage/internal/blob/blobtest"
 )
 
 // TestS3 runs the shared suite against a real S3-compatible server, e.g. the

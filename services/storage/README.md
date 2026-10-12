@@ -66,7 +66,7 @@ library/{kind}/{id}                 objects with no project (user/org asset libr
 
 ## URL lifetimes
 
-- `blob.Store` (`platform/blob`) takes an explicit TTL (mechanism); how long URLs last is Manager policy
+- `blob.Store` (`internal/blob`) takes an explicit TTL (mechanism); how long URLs last is Manager policy
 - defaults: upload URLs 15 min, download URLs 5 min, overridable with `GYOZA_UPLOAD_URL_TTL` / `GYOZA_DOWNLOAD_URL_TTL`
 - S3 checks expiry when a request starts, so a long upload that starts in time still completes
 
@@ -149,7 +149,7 @@ Tests force real overlap with wrappers that embed the memory fakes and hold call
 | `internal/dam/` | the DAM data: the `Store` interface, types, rules, `MemoryStore` and `Postgres` (files below) |
 | `internal/manager/` | the logic: `Manager`, `Authorizer`, the `Service` interface (files below) |
 | `internal/grpcapi/` | `StorageService` adapters: `Server` wraps any `Service`, `Client` is a `Service` over the wire (files below) |
-| `platform/blob` | file storage the Manager uses: `blob.Store` (presign PUT/GET with download filename, stat, read first bytes, delete), `blob.S3` (aws-sdk-go-v2, tested against RustFS), `blob.Memory` fake, shared suite in `blobtest` |
+| `internal/blob/` | file storage the Manager uses (internal, so only storage can reach S3): `blob.Store` (presign PUT/GET with download filename, stat, read first bytes, delete), `blob.S3` (aws-sdk-go-v2, tested against RustFS), `blob.Memory` fake, shared suite in `blobtest` |
 
 ### `internal/dam`
 

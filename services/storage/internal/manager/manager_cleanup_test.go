@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"gyoza/platform/blob"
+	"gyoza/services/storage/internal/blob"
 	"gyoza/services/storage/internal/dam"
 	"gyoza/services/storage/internal/ledger"
 	sm "gyoza/services/storage/internal/manager"

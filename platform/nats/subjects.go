@@ -1,4 +1,4 @@
-package messaging
+package nats
 
 // TODO expand here, ensure we have the correct wildcards
 // for userID and projectID

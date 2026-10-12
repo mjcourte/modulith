@@ -53,7 +53,7 @@ anything, and the cloner can edit freely.
 1. **`AssetRef`**: type next to `Asset`/`Version` (`Validate`, `String`, `MarshalText`/
    `UnmarshalText` as "id@3"), proto message in `storage.proto`, tests; a store-suite
    case locking version immutability.
-2. **`blob.Store.Copy(ctx, bucket, srcKey, dstKey)`** (`platform/blob`): S3 server-side
+2. **`blob.Store.Copy(ctx, bucket, srcKey, dstKey)`** (`internal/blob`): S3 server-side
    CopyObject (no bytes through our servers; single copy up to 5 GiB, matching the
    upload limit), memory fake, a `blobtest` case run on RustFS too.
 3. **Asset uses**: `asset_uses` table (migration), Store methods (record, forget, list by

@@ -1,24 +1,24 @@
-package messaging
+package nats
 
 import (
 	"fmt"
 	"time"
 
-	"github.com/nats-io/nats.go"
+	natsgo "github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 )
 
 type Client struct {
-	Conn *nats.Conn
+	Conn *natsgo.Conn
 	JS   jetstream.JetStreamOpt
 }
 
 func Connect(urls string) (*Client, error) {
-	conn, err := nats.Connect(
+	conn, err := natsgo.Connect(
 		urls,
-		nats.Name("Gyoza"),
-		nats.MaxReconnects(-1),
-		nats.ReconnectWait(time.Second),
+		natsgo.Name("Gyoza"),
+		natsgo.MaxReconnects(-1),
+		natsgo.ReconnectWait(time.Second),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("connect to NATS: %w", err)

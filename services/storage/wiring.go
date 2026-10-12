@@ -11,8 +11,8 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"gyoza/platform/blob"
 	"gyoza/platform/config"
+	"gyoza/services/storage/internal/blob"
 	"gyoza/services/storage/internal/dam"
 	"gyoza/services/storage/internal/ledger"
 	"gyoza/services/storage/internal/manager"

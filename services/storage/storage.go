@@ -13,7 +13,7 @@ import (
 	"google.golang.org/grpc"
 
 	pb "gyoza/contracts/gen/go/gyoza/storage/v1"
-	"gyoza/platform/blob"
+	"gyoza/services/storage/internal/blob"
 	"gyoza/services/storage/internal/dam"
 	"gyoza/services/storage/internal/db"
 	"gyoza/services/storage/internal/grpcapi"
@@ -56,10 +56,26 @@ var ErrForbidden = manager.ErrForbidden
 // Migrate brings the storage schema up to date.
 func Migrate(ctx context.Context, pool *pgxpool.Pool) error { return db.Migrate(ctx, pool) }
 
-// NewMemoryManager builds a Manager on in-memory ledger and store, for other
+// Memory is a Manager on in-memory fakes (ledger, store, S3), for other
 // services' tests.
-func NewMemoryManager(blobs blob.Store, authz Authorizer, cfg Config) (*Manager, error) {
-	return manager.NewManager(ledger.NewMemory(), dam.NewMemoryStore(), blobs, authz, cfg)
+type Memory struct {
+	*Manager
+	blobs *blob.Memory
+}
+
+// NewMemory builds a Memory that asks authz for permission.
+func NewMemory(authz Authorizer, cfg Config) (*Memory, error) {
+	blobs := blob.NewMemory()
+	m, err := manager.NewManager(ledger.NewMemory(), dam.NewMemoryStore(), blobs, authz, cfg)
+	if err != nil {
+		return nil, err
+	}
+	return &Memory{Manager: m, blobs: blobs}, nil
+}
+
+// Upload plays the browser: it PUTs data to an upload URL from BeginUpload.
+func (m *Memory) Upload(url, contentType string, data []byte) error {
+	return m.blobs.PutSigned(url, contentType, data)
 }
 
 // RegisterGRPC serves s as StorageService on r.

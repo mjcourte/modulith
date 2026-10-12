@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"gyoza/platform/blob"
-	"gyoza/platform/blob/blobtest"
+	"gyoza/services/storage/internal/blob"
+	"gyoza/services/storage/internal/blob/blobtest"
 )
 
 func TestMemory(t *testing.T) {

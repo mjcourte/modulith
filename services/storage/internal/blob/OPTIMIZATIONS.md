@@ -1,4 +1,4 @@
-# platform/blob: Optimizations
+# storage/internal/blob: Optimizations
 
 Known performance issues, what was done about them, and what is deliberately
 left until it matters. Add an entry whenever you find or defer one, with the

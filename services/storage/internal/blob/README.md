@@ -1,6 +1,6 @@
-# platform/blob
+# storage/internal/blob
 
-File storage addressed by bucket and key: S3 in production, an in-memory fake in tests and local runs. Kept out of storage because it has no storage policy in it (mechanism only).
+File storage addressed by bucket and key: S3 in production, an in-memory fake in tests and local runs. Internal to storage, the only service that talks to S3: other services go through `StorageService`, and Go refuses imports of this package from outside `services/storage`.
 
 - `blob.Store`: presign PUT (exact size and content type signed in), presign GET (optional download filename), `Stat`, `ReadPrefix` (first n bytes, for type sniffing), `Delete`
 - mechanism only: callers choose buckets, keys and URL lifetimes (storage's key layout lives in its README)
@@ -23,7 +23,7 @@ File storage addressed by bucket and key: S3 in production, an in-memory fake in
 
 ```
 docker compose -f deploy/monolith/compose.yaml up -d --wait
-GYOZA_TEST_S3_ENDPOINT=http://localhost:9000 go test ./platform/blob -run TestS3 -v
+GYOZA_TEST_S3_ENDPOINT=http://localhost:9000 go test ./services/storage/internal/blob -run TestS3 -v
 ```
 
 Local S3 is RustFS 1.0.0 (Apache-2.0; MinIO no longer publishes community images). It enforces signed size, content type, expiry and method like S3: all 15 suite cases pass. Mutation check: 7/9 planted bugs caught. The two survivors each removed one of the two prefix limits (Range header, `LimitReader`), which back each other up, so no test can tell them apart.
