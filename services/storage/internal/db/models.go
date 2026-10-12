@@ -51,6 +51,18 @@ type StorageFolder struct {
 	DeletionID *string
 }
 
+type StorageMediaInfo struct {
+	ObjectID   string
+	Status     string
+	Width      int32
+	Height     int32
+	DurationUs int64
+	Details    []byte
+	Error      string
+	Attempts   int32
+	UpdatedAt  time.Time
+}
+
 type StorageObject struct {
 	ID          string
 	OwnerKind   string

@@ -82,14 +82,15 @@ type Version struct {
 type Category string
 
 const (
-	CategoryImage Category = "image" // image/*, including image/svg+xml
-	CategoryVideo Category = "video" // video/*
-	CategoryAudio Category = "audio" // audio/*
-	CategoryFont  Category = "font"  // font/*, application/font-*, application/x-font*, application/vnd.ms-fontobject
-	CategoryPDF   Category = "pdf"   // application/pdf
-	CategoryJSON  Category = "json"  // application/json and *+json
-	CategoryText  Category = "text"  // text/*
-	CategoryOther Category = "other" // anything else, or an unparseable type
+	CategoryImage  Category = "image"  // image/*, excluding image/svg+xml
+	CategoryVector Category = "vector" // image/svg+xml
+	CategoryVideo  Category = "video"  // video/*
+	CategoryAudio  Category = "audio"  // audio/*
+	CategoryFont   Category = "font"   // font/*, application/font-*, application/x-font*, application/vnd.ms-fontobject
+	CategoryPDF    Category = "pdf"    // application/pdf
+	CategoryJSON   Category = "json"   // application/json and *+json
+	CategoryText   Category = "text"   // text/*
+	CategoryOther  Category = "other"  // anything else, or an unparseable type
 )
 
 // CategoryOf maps a MIME type to its Category. Parameters such as
@@ -102,7 +103,9 @@ func CategoryOf(contentType string) Category {
 	}
 	major, minor, _ := strings.Cut(mediaType, "/")
 	switch {
-	case major == "image": // catches image/svg+xml
+	case mediaType == "image/svg+xml":
+		return CategoryVector
+	case major == "image":
 		return CategoryImage
 	case major == "video":
 		return CategoryVideo

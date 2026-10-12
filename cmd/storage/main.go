@@ -73,6 +73,9 @@ func run() error {
 	cleanupCtx, stopCleanup := context.WithCancel(context.WithoutCancel(ctx))
 	defer stopCleanup()
 	cleanupDone := storage.StartCleanup(cleanupCtx, manager, settings.CleanupInterval)
+	// No media probe job here yet: it needs mediaprocessor over gRPC
+	// (mediaprocessor/PLAN.md step 3). Video and audio uploads stay queued
+	// until a binary that probes (the monolith) picks them up.
 	slog.Info("storage started", "grpc", lis.Addr().String(), "bucket", settings.Manager.Bucket)
 
 	// Run until a signal arrives or the server fails on its own.

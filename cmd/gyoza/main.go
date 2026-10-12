@@ -15,6 +15,7 @@ import (
 	"gyoza/platform/config"
 	"gyoza/platform/postgres"
 	"gyoza/platform/shutdown"
+	"gyoza/services/mediaprocessor"
 	"gyoza/services/storage"
 )
 
@@ -67,16 +68,31 @@ func run() error {
 	serveErr := make(chan error, 1)
 	go func() { serveErr <- server.Serve(lis) }()
 
-	cleanupCtx, stopCleanup := context.WithCancel(context.WithoutCancel(ctx))
-	defer stopCleanup()
-	cleanupDone := storage.StartCleanup(cleanupCtx, manager, storageSettings.CleanupInterval)
+	// Background jobs share a context, cancelled at shutdown before the pool
+	// closes, since a run in progress still needs the database.
+	jobsCtx, stopJobs := context.WithCancel(context.WithoutCancel(ctx))
+	defer stopJobs()
+	cleanupDone := storage.StartCleanup(jobsCtx, manager, storageSettings.CleanupInterval)
+	// The monolith runs ffprobe in-process (it gets an empty environment, see
+	// mediaprocessor.FFprobe). Without it, uploads stay queued until a run
+	// with ffprobe picks them up.
+	var probeDone <-chan struct{}
+	if prober, err := mediaprocessor.NewFFprobe(); err != nil {
+		slog.Warn("media probing off: ffprobe not found", "err", err)
+		stopped := make(chan struct{})
+		close(stopped) // nothing to wait for at shutdown
+		probeDone = stopped
+	} else {
+		probeDone = storage.StartMediaProbe(jobsCtx, manager, prober, storageSettings.ProbeInterval)
+	}
+	jobsDone := func() { <-cleanupDone; <-probeDone }
 	slog.Info("gyoza started", "grpc", lis.Addr().String(), "bucket", storageSettings.Manager.Bucket)
 
 	select {
 	case <-ctx.Done():
 	case err := <-serveErr:
-		stopCleanup()
-		<-cleanupDone
+		stopJobs()
+		jobsDone()
 		pool.Close()
 		return fmt.Errorf("grpc server: %w", err)
 	}
@@ -88,15 +104,15 @@ func run() error {
 	shutdownCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), shutdownTimeout)
 	defer cancel()
 
-	// Stop in reverse order of startup: the server, the cleanup job, then
+	// Stop in reverse order of startup: the server, the background jobs, then
 	// the pool, because both of them still need it until they've stopped.
 	if err := shutdown.Within(shutdownCtx, server.GracefulStop); err != nil {
 		server.Stop()
 		slog.Warn("grpc calls cut off at shutdown deadline")
 	}
-	stopCleanup()
-	if err := shutdown.Within(shutdownCtx, func() { <-cleanupDone }); err != nil {
-		slog.Warn("cleanup run cut off at shutdown deadline")
+	stopJobs()
+	if err := shutdown.Within(shutdownCtx, jobsDone); err != nil {
+		slog.Warn("background jobs cut off at shutdown deadline")
 	}
 	if err := shutdown.Within(shutdownCtx, pool.Close); err != nil {
 		return err

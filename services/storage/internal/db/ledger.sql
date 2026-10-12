@@ -75,3 +75,36 @@ LIMIT sqlc.arg(row_limit);
 -- name: PurgeObject :execrows
 -- Only deleted objects; 0 rows means missing or live (the caller tells which).
 DELETE FROM storage.objects WHERE id = $1 AND deleted_at IS NOT NULL;
+
+-- name: MarkMediaPending :execrows
+-- Queues an existing object for probing; an object that already has a row
+-- keeps it. 0 rows means the object is missing or already has one (the
+-- caller tells which).
+INSERT INTO storage.media_info (object_id, status, updated_at)
+SELECT id, 'pending', clock_timestamp() FROM storage.objects WHERE id = $1
+ON CONFLICT (object_id) DO NOTHING;
+
+-- name: SetMediaInfo :execrows
+-- Records a probe's outcome, replacing what was there. 0 rows means the
+-- object is missing.
+INSERT INTO storage.media_info (object_id, status, width, height, duration_us, details, error, attempts, updated_at)
+SELECT id, sqlc.arg(status)::text, sqlc.arg(width)::int, sqlc.arg(height)::int,
+       sqlc.arg(duration_us)::bigint, sqlc.arg(details)::jsonb, sqlc.arg(error)::text,
+       sqlc.arg(attempts)::int, clock_timestamp()
+FROM storage.objects WHERE id = sqlc.arg(object_id)::text
+ON CONFLICT (object_id) DO UPDATE SET
+    status = EXCLUDED.status, width = EXCLUDED.width, height = EXCLUDED.height,
+    duration_us = EXCLUDED.duration_us, details = EXCLUDED.details, error = EXCLUDED.error,
+    attempts = EXCLUDED.attempts, updated_at = EXCLUDED.updated_at;
+
+-- name: GetMediaInfo :one
+SELECT * FROM storage.media_info WHERE object_id = $1;
+
+-- name: ListPendingMedia :many
+-- Uses the partial index media_info_pending. Deleted objects are skipped:
+-- nobody will look at their metadata, and the purge drops their rows.
+SELECT m.* FROM storage.media_info m
+JOIN storage.objects o ON o.id = m.object_id
+WHERE m.status = 'pending' AND o.deleted_at IS NULL
+ORDER BY m.updated_at, m.object_id
+LIMIT sqlc.arg(row_limit);

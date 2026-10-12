@@ -13,7 +13,8 @@ import (
 
 // CompleteUpload finishes an upload the browser has PUT to S3: it checks the
 // file really arrived and is what was declared, records it in the ledger, and
-// creates the asset (or its new version).
+// creates the asset (or its new version). Video and audio are queued for the
+// media probe job (ProbeMedia).
 //
 // It's safe to call again, from a retry, a timeout or a double click, even
 // overlapping: every path ends with one asset (or version) and one ledger
@@ -39,12 +40,27 @@ func (m *Manager) CompleteUpload(ctx context.Context, actorID, uploadID string) 
 		return dam.Asset{}, fmt.Errorf("%w: expired at %s", dam.ErrUploadExpired, u.ExpiresAt.Format(time.RFC3339))
 	}
 
-	if err := m.checkUploadedFile(ctx, u); err != nil {
+	prefix, err := m.checkUploadedFile(ctx, u)
+	if err != nil {
 		return dam.Asset{}, err
 	}
 
 	if err := m.recordInLedger(ctx, u); err != nil {
 		return dam.Asset{}, err
+	}
+	// Media info, recorded before the session completes so that a retry after
+	// a failure here records it again (both calls are safe to repeat). Raster
+	// images are measured now from the bytes already read; video and audio
+	// are queued for the probe job (ffprobe). Vector images have no pixel size.
+	switch dam.CategoryOf(u.ContentType) {
+	case dam.CategoryImage:
+		if err := m.recordImageInfo(ctx, u.ObjectID, prefix); err != nil {
+			return dam.Asset{}, err
+		}
+	case dam.CategoryVideo, dam.CategoryAudio:
+		if err := m.ledger.MarkMediaPending(ctx, u.ObjectID); err != nil {
+			return dam.Asset{}, fmt.Errorf("queue media probe: %w", err)
+		}
 	}
 	// Overlapping calls all get here; the Store lets one complete the
 	// session and hands the others the same asset.
@@ -57,26 +73,36 @@ func (m *Manager) CompleteUpload(ctx context.Context, actorID, uploadID string) 
 }
 
 // checkUploadedFile confirms the file is in S3 with the signed size and type,
-// and that its first bytes match the declared type. A rejected file is left
-// in place: the cleanup job deletes it when the session expires.
-func (m *Manager) checkUploadedFile(ctx context.Context, u dam.Upload) error {
+// and that its first bytes match the declared type. It returns those first
+// bytes: enough to measure an image (imageHeaderLen) for raster images,
+// SniffLen otherwise. A rejected file is left in place: the cleanup job
+// deletes it when the session expires.
+func (m *Manager) checkUploadedFile(ctx context.Context, u dam.Upload) ([]byte, error) {
 	info, err := m.blobs.Stat(ctx, u.Bucket, u.Key)
 	if errors.Is(err, blob.ErrNotFound) {
-		return fmt.Errorf("%w: upload the file to the ticket's URL first", ErrNotUploaded)
+		return nil, fmt.Errorf("%w: upload the file to the ticket's URL first", ErrNotUploaded)
 	}
 	if err != nil {
-		return fmt.Errorf("check uploaded file: %w", err)
+		return nil, fmt.Errorf("check uploaded file: %w", err)
 	}
 	// The presigned URL signs both, so S3 shouldn't let these differ; check anyway.
 	if info.Size != u.SizeBytes || info.ContentType != u.ContentType {
-		return fmt.Errorf("%w: stored %s, %d bytes; expected %s, %d bytes",
+		return nil, fmt.Errorf("%w: stored %s, %d bytes; expected %s, %d bytes",
 			dam.ErrInvalidUpload, info.ContentType, info.Size, u.ContentType, u.SizeBytes)
 	}
-	prefix, err := m.blobs.ReadPrefix(ctx, u.Bucket, u.Key, SniffLen)
-	if err != nil {
-		return fmt.Errorf("read uploaded file: %w", err)
+	// One read serves both: sniffing looks at the first SniffLen bytes only.
+	n := SniffLen
+	if dam.CategoryOf(u.ContentType) == dam.CategoryImage {
+		n = imageHeaderLen
 	}
-	return checkSniffed(u.ContentType, prefix)
+	prefix, err := m.blobs.ReadPrefix(ctx, u.Bucket, u.Key, n)
+	if err != nil {
+		return nil, fmt.Errorf("read uploaded file: %w", err)
+	}
+	if err := checkSniffed(u.ContentType, prefix); err != nil {
+		return nil, err
+	}
+	return prefix, nil
 }
 
 // recordInLedger records the session's file in the ledger under the ID the

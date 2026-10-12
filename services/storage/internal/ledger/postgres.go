@@ -241,3 +241,80 @@ func (p *Postgres) Purge(ctx context.Context, id string) error {
 	}
 	return fmt.Errorf("%w: %s", ErrNotDeleted, id)
 }
+
+func (p *Postgres) MarkMediaPending(ctx context.Context, objectID string) error {
+	n, err := p.q.MarkMediaPending(ctx, objectID)
+	if err != nil {
+		return fmt.Errorf("mark media of %s pending: %w", objectID, err)
+	}
+	if n == 1 {
+		return nil
+	}
+	// Nothing inserted: either it already has media info (fine) or it's missing.
+	_, err = p.Get(ctx, objectID)
+	return err
+}
+
+func (p *Postgres) SetMediaInfo(ctx context.Context, info MediaInfo) error {
+	info, err := info.normalize()
+	if err != nil {
+		return err
+	}
+	n, err := p.q.SetMediaInfo(ctx, db.SetMediaInfoParams{
+		ObjectID:   info.ObjectID,
+		Status:     string(info.Status),
+		Width:      int32(info.Width),
+		Height:     int32(info.Height),
+		DurationUs: info.Duration.Microseconds(),
+		Details:    info.Details,
+		Error:      info.Error,
+		Attempts:   int32(info.Attempts),
+	})
+	if err != nil {
+		return fmt.Errorf("set media info of %s: %w", info.ObjectID, err)
+	}
+	if n == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+func (p *Postgres) GetMediaInfo(ctx context.Context, objectID string) (MediaInfo, error) {
+	row, err := p.q.GetMediaInfo(ctx, objectID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return MediaInfo{}, ErrNotFound
+	}
+	if err != nil {
+		return MediaInfo{}, fmt.Errorf("get media info of %s: %w", objectID, err)
+	}
+	return mediaFromRow(row), nil
+}
+
+func (p *Postgres) ListPendingMedia(ctx context.Context, limit int) ([]MediaInfo, error) {
+	if err := checkLimit(limit); err != nil {
+		return nil, err
+	}
+	rows, err := p.q.ListPendingMedia(ctx, int32(limit))
+	if err != nil {
+		return nil, fmt.Errorf("list pending media: %w", err)
+	}
+	infos := make([]MediaInfo, len(rows))
+	for i, row := range rows {
+		infos[i] = mediaFromRow(row)
+	}
+	return infos, nil
+}
+
+func mediaFromRow(r db.StorageMediaInfo) MediaInfo {
+	return MediaInfo{
+		ObjectID:  r.ObjectID,
+		Status:    MediaStatus(r.Status),
+		Width:     int(r.Width),
+		Height:    int(r.Height),
+		Duration:  time.Duration(r.DurationUs) * time.Microsecond,
+		Details:   r.Details,
+		Error:     r.Error,
+		Attempts:  int(r.Attempts),
+		UpdatedAt: r.UpdatedAt.UTC(),
+	}
+}

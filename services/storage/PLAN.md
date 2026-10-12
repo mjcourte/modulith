@@ -101,3 +101,61 @@ needs them:
   records each snapshot as a ledger object (`Kind=snapshot`)
 - whether bytes go through storage or through presigned URLs (log-rolled snapshots may
   be large and frequent)
+
+## Next: media metadata (decided 2026-10-12, not scheduled)
+
+Built parts are recorded in the README ("Media metadata"). Know a stored file's dimensions,
+duration, codecs, ... without fetching it, by probing it once when it's stored.
+Related: [mediaprocessor/PLAN.md](../mediaprocessor/PLAN.md) (does the probing).
+
+### Decisions
+
+- **Keyed by ledger object, owned by the ledger**: a `storage.media_info` table with
+  `object_id` as primary key (FK to `storage.objects`). A version points at exactly one
+  object, so this is per version, as the README wants; it also covers exports and any
+  other ledger object, settling the README's open question. The read/write calls go on
+  `ledger.Service` (memory + Postgres, shared suite), since the ledger is where callers
+  look an object up. `objects` itself stays narrow (it's the GDPR index; most rows
+  aren't media).
+- **Typed columns for what we filter or sort by, JSON for the rest**:
+  migration `00002_media_info.sql`: `width`/`height` (display size, after rotation),
+  `duration_us`, all 0 = unknown, plus `details` jsonb (`mediaprocessor.Info`), `error`,
+  `attempts`, `updated_at` (`clock_timestamp()`, so it advances within a transaction).
+- **Images inline, video/audio by a job**: raster images are measured in `CompleteUpload`
+  (the same `ReadPrefix` as sniffing, 256 KiB for images since JPEG metadata can push
+  the size back; `image.DecodeConfig` for JPEG/PNG/GIF/WebP; EXIF orientation 5-8 swaps
+  to the display size) and written `ready`, or `failed` with why (HEIC/AVIF, corrupt):
+  the upload succeeds either way. SVG is its own DAM category, `vector`, with no media
+  info. Video/audio are marked `pending` right after the ledger object
+  is created. Not one transaction (the ledger and the DAM store are separate), but
+  `MarkMediaPending` is idempotent and runs before the session completes, so a retried
+  `CompleteUpload` queues it again.
+- **Storage calls mediaprocessor, never the reverse**: a background loop in storage
+  (like `RunCleanup`; no NATS for the MVP) takes pending rows, presigns a short-lived
+  GET, calls `mediaprocessor.Prober.Probe(ctx, url)` (in-process in the monolith, gRPC
+  when distributed) and writes the result. mediaprocessor gets a URL only: no S3
+  credentials, no Postgres. Failures bump
+  `attempts`; after N they become `failed` with the error kept.
+- **Purge**: purging an object deletes its `media_info` row (`ON DELETE CASCADE`).
+- **Reads**: `GetAsset` and version listings join `media_info` so the frontend gets
+  dimensions/duration (or "pending") with the version.
+
+### Steps
+
+1. Done (2026-10-12): migration + ledger calls (`MarkMediaPending`, `SetMediaInfo`,
+   `GetMediaInfo`, `ListPendingMedia`), shared suite on Memory and Postgres, purge
+   removes the row; mutation-checked (3/3). Still to do: a batch get for listings (with
+   step 4).
+2. Done (2026-10-12): `CategoryVector` (migration 00003 moves existing SVGs);
+   `measureImage` / `jpegOrientation` / `recordImageInfo` (`manager_image.go`), table and
+   malformed-EXIF tests plus `FuzzJPEGOrientation` (`manager_image_internal_test.go`),
+   upload tests (`manager_image_test.go`); mutation-checked (4 + 4). `Info` got JSON tags,
+   so all `details` are camelCase. Deferred: SVG size from `viewBox`; HEIC/AVIF via
+   mediaprocessor (ffprobe reads them); EXIF orientation in PNG/WebP (rare).
+3. Done (2026-10-12): video/audio queued in `CompleteUpload`; `ProbeMedia` /
+   `RunMediaProbe` (`manager_media.go`) with a fake prober in tests; 3 attempts then
+   `failed`, shutdown doesn't use an attempt; mutation-checked (5/5).
+   `StartMediaProbe` in `wiring.go`, `GYOZA_PROBE_INTERVAL` (default 10s). Runs in
+   `cmd/gyoza` only, and is off if ffprobe isn't on PATH; `cmd/storage` waits for
+   mediaprocessor's gRPC API. Verified end to end against RustFS + Postgres.
+4. Expose on `Version` / `storage.proto`, gRPC round-trip tests; README.

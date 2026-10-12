@@ -212,6 +212,25 @@ type Service interface {
 	// gone from S3. A live object is ErrNotDeleted; a missing one is not an
 	// error, so a purge job can simply retry.
 	Purge(ctx context.Context, id string) error
+
+	// MarkMediaPending queues an object for probing (MediaInfo.Status
+	// pending). An object that already has media info keeps it, so retries
+	// are safe. ErrNotFound if the object doesn't exist.
+	MarkMediaPending(ctx context.Context, objectID string) error
+
+	// SetMediaInfo records an object's media info, replacing any there.
+	// UpdatedAt is set by the ledger. ErrNotFound if the object doesn't exist;
+	// ErrInvalidObject for an unknown status or invalid Details.
+	SetMediaInfo(ctx context.Context, info MediaInfo) error
+
+	// GetMediaInfo returns an object's media info: ErrNotFound if none is
+	// recorded (or there's no such object). Purging an object removes it.
+	GetMediaInfo(ctx context.Context, objectID string) (MediaInfo, error)
+
+	// ListPendingMedia returns up to limit pending media infos of objects
+	// that aren't deleted, least recently updated first: the probe job's work
+	// list. limit must be between 1 and MaxPageSize (ErrInvalidQuery).
+	ListPendingMedia(ctx context.Context, limit int) ([]MediaInfo, error)
 }
 
 // checkLimit validates ListDeleted's limit.
