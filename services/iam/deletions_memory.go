@@ -9,7 +9,7 @@ import (
 	"slices"
 	"time"
 
-	"gyoza/services/storageledger"
+	"gyoza/services/storage"
 )
 
 func (m *MemoryStore) MarkUserDeleting(ctx context.Context, userID, toOrgID string) (User, error) {
@@ -44,7 +44,7 @@ func (m *MemoryStore) MarkOrgDeleting(ctx context.Context, orgID string) (Org, e
 	}
 	// Its projects go with it, in the same step: nothing can reach them
 	// through the org meanwhile, and none can be shared or created there.
-	owner := storageledger.Owner{Kind: storageledger.OwnerOrg, ID: orgID}
+	owner := storage.Owner{Kind: storage.OwnerOrg, ID: orgID}
 	for id, p := range m.projects {
 		if p.Owner == owner && p.DeletingAt == nil {
 			p.DeletingAt = &t
@@ -125,7 +125,7 @@ func (m *MemoryStore) ListDeletingProjects(ctx context.Context, limit int) ([]Pr
 	return out[:min(limit, len(out))], nil
 }
 
-func (m *MemoryStore) ListOwnedProjects(ctx context.Context, owner storageledger.Owner, limit int) ([]string, error) {
+func (m *MemoryStore) ListOwnedProjects(ctx context.Context, owner storage.Owner, limit int) ([]string, error) {
 	if err := checkLimit(limit); err != nil {
 		return nil, err
 	}
@@ -147,8 +147,8 @@ func (m *MemoryStore) TransferUserProjects(ctx context.Context, userID, toOrgID 
 	if !m.liveOrg(toOrgID) {
 		return 0, ErrOrgNotFound
 	}
-	from := storageledger.Owner{Kind: storageledger.OwnerUser, ID: userID}
-	to := storageledger.Owner{Kind: storageledger.OwnerOrg, ID: toOrgID}
+	from := storage.Owner{Kind: storage.OwnerUser, ID: userID}
+	to := storage.Owner{Kind: storage.OwnerOrg, ID: toOrgID}
 	t, n := now(), 0
 	for id, p := range m.projects {
 		if p.Owner == from {
@@ -232,7 +232,7 @@ func (m *MemoryStore) DeleteOrg(ctx context.Context, orgID string) error {
 	case o.DeletingAt == nil:
 		return fmt.Errorf("%w: org %s", ErrNotDeleting, orgID)
 	}
-	owner := storageledger.Owner{Kind: storageledger.OwnerOrg, ID: orgID}
+	owner := storage.Owner{Kind: storage.OwnerOrg, ID: orgID}
 	for _, p := range m.projects {
 		if p.Owner == owner {
 			return fmt.Errorf("%w: org %s still owns projects", ErrInvalidOrg, orgID)
@@ -265,7 +265,7 @@ func (m *MemoryStore) DeleteUser(ctx context.Context, userID string) error {
 	if _, member := m.members[userID]; member {
 		return fmt.Errorf("%w: user %s still belongs to an org", ErrInvalidUser, userID)
 	}
-	owner := storageledger.Owner{Kind: storageledger.OwnerUser, ID: userID}
+	owner := storage.Owner{Kind: storage.OwnerUser, ID: userID}
 	for _, p := range m.projects {
 		if p.Owner == owner {
 			return fmt.Errorf("%w: user %s still owns projects", ErrInvalidUser, userID)

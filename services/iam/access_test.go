@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"gyoza/services/storageledger"
+	"gyoza/services/storage"
 )
 
 func TestProjectAccess(t *testing.T) {
@@ -69,7 +69,7 @@ func TestAccessOrder(t *testing.T) {
 
 // The owner kinds the rules don't name (a project owning a project) grant nothing.
 func TestProjectAccessUnknownOwner(t *testing.T) {
-	p := Project{Owner: storageledger.Owner{Kind: storageledger.OwnerProject, ID: "p1"}, State: ProjectReady}
+	p := Project{Owner: storage.Owner{Kind: storage.OwnerProject, ID: "p1"}, State: ProjectReady}
 	if got := projectAccess(p, "ann", "acme", AccessNone); got != AccessNone {
 		t.Errorf("project-owned project: %q, want none", got)
 	}

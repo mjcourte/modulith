@@ -8,18 +8,18 @@ import (
 	"github.com/google/uuid"
 
 	"gyoza/services/iam"
-	"gyoza/services/storageledger"
+	"gyoza/services/storage"
 )
 
-func userOwner(id string) storageledger.Owner {
-	return storageledger.Owner{Kind: storageledger.OwnerUser, ID: id}
+func userOwner(id string) storage.Owner {
+	return storage.Owner{Kind: storage.OwnerUser, ID: id}
 }
 
-func orgOwner(id string) storageledger.Owner {
-	return storageledger.Owner{Kind: storageledger.OwnerOrg, ID: id}
+func orgOwner(id string) storage.Owner {
+	return storage.Owner{Kind: storage.OwnerOrg, ID: id}
 }
 
-var gyoza = storageledger.Owner{Kind: storageledger.OwnerGyoza}
+var gyoza = storage.Owner{Kind: storage.OwnerGyoza}
 
 func mustProject(t *testing.T, s iam.Store, p iam.Project) iam.Project {
 	t.Helper()
@@ -280,12 +280,12 @@ func testTransferProject(t *testing.T, s iam.Store) {
 	tests := []struct {
 		name string
 		id   string
-		to   storageledger.Owner
+		to   storage.Owner
 		want error
 	}{
 		{"template away", template.ID, userOwner(ann.ID), iam.ErrInvalidProject},
 		{"to gyoza", p.ID, gyoza, iam.ErrInvalidProject},
-		{"to a project", p.ID, storageledger.Owner{Kind: storageledger.OwnerProject, ID: template.ID}, iam.ErrInvalidProject},
+		{"to a project", p.ID, storage.Owner{Kind: storage.OwnerProject, ID: template.ID}, iam.ErrInvalidProject},
 		{"to an unknown org", p.ID, orgOwner(uuid.NewString()), iam.ErrOrgNotFound},
 		{"to an unknown user", p.ID, userOwner("ghost"), iam.ErrUserNotFound},
 		{"missing project", uuid.NewString(), userOwner(ann.ID), iam.ErrProjectNotFound},

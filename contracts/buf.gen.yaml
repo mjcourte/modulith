@@ -3,7 +3,7 @@ version: v2
 managed:
   enabled: true
   override:
-    # gyoza/storageledger/v1/x.proto -> package gyoza/contracts/gen/go/gyoza/storageledger/v1
+    # gyoza/storage/v1/x.proto -> package gyoza/contracts/gen/go/gyoza/storage/v1
     - file_option: go_package_prefix
       value: gyoza/contracts/gen/go
 plugins:

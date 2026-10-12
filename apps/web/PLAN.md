@@ -3,7 +3,7 @@
 Not started. UI details the backend plans rely on (2026-10-11). Related:
 [gateway/PLAN.md](../../services/gateway/PLAN.md),
 [iam/PLAN.md](../../services/iam/PLAN.md),
-[storagemanager/PLAN.md](../../services/storagemanager/PLAN.md).
+[storage/PLAN.md](../../services/storage/PLAN.md).
 
 ## Sign-in and orgs
 

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"gyoza/services/storageledger"
+	"gyoza/services/storage"
 )
 
 // Project and share errors returned by every Store (see ProjectStore).
@@ -38,9 +38,9 @@ const (
 // is documentmanager's). Its files are owned by the project in the ledger
 // (owner kind project, ID = the project's ID).
 type Project struct {
-	ID         string              // UUIDv7
-	Owner      storageledger.Owner // a user, an org, or gyoza (templates); never a project
-	Name       string              // not unique
+	ID         string        // UUIDv7
+	Owner      storage.Owner // a user, an org, or gyoza (templates); never a project
+	Name       string        // not unique
 	State      ProjectState
 	ClonedFrom string // the source project's ID, for a clone; "" otherwise
 	// OrgLocked keeps an org project inside its org: no shares with outsiders
@@ -86,7 +86,7 @@ type ProjectQuery struct {
 	VisibleTo string
 	// Owner lists one owner's projects: an org's, a user's, or the gyoza
 	// templates.
-	Owner storageledger.Owner
+	Owner storage.Owner
 
 	// Pagination, oldest first (UUIDv7 order). PageSize 0 means
 	// DefaultPageSize; larger than MaxPageSize is capped. PageToken is the
@@ -125,7 +125,7 @@ type ProjectStore interface {
 	// a personal project to their org). Shares are kept; the org-lock is
 	// cleared, since it was the old owner's policy. Transferring to or from
 	// gyoza is ErrInvalidProject (templates are made by tooling).
-	TransferProject(ctx context.Context, id string, to storageledger.Owner) (Project, error)
+	TransferProject(ctx context.Context, id string, to storage.Owner) (Project, error)
 	// MarkProjectReady ends a clone: ProjectCloning becomes ProjectReady.
 	// Marking a ready project again changes nothing, so a resumed clone job
 	// can repeat it.

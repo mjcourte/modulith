@@ -12,14 +12,10 @@ import (
 
 	"google.golang.org/grpc"
 
-	"gyoza/cmd/internal/wiring"
-	ledgerpb "gyoza/contracts/gen/go/gyoza/storageledger/v1"
-	managerpb "gyoza/contracts/gen/go/gyoza/storagemanager/v1"
 	"gyoza/platform/config"
 	"gyoza/platform/postgres"
 	"gyoza/platform/shutdown"
-	"gyoza/services/storageledger"
-	"gyoza/services/storagemanager"
+	"gyoza/services/storage"
 )
 
 func main() {
@@ -42,7 +38,7 @@ func run() error {
 	env.Text("GYOZA_LOG_LEVEL", &logLevel)
 	shutdownTimeout := env.Duration("GYOZA_SHUTDOWN_TIMEOUT", 20*time.Second)
 	grpcAddr := env.String("GYOZA_GRPC_ADDR", "localhost:9090")
-	storage := wiring.StorageManagerFromEnv(env)
+	storageSettings := storage.SettingsFromEnv(env)
 	if err := env.Err(); err != nil {
 		return err
 	}
@@ -53,15 +49,9 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	if err := storageledger.Migrate(ctx, pool); err != nil {
-		pool.Close() // nothing is running yet, so this returns promptly
-		return err
-	}
-	// In-process: the manager calls the ledger directly, no gRPC in between.
-	ledger := storageledger.NewPostgres(pool)
-	manager, err := wiring.NewStorageManager(ctx, pool, ledger, storage)
+	manager, err := storage.Open(ctx, pool, storageSettings)
 	if err != nil {
-		pool.Close()
+		pool.Close() // nothing is running yet, so this returns promptly
 		return err
 	}
 
@@ -73,15 +63,14 @@ func run() error {
 		return err
 	}
 	server := grpc.NewServer()
-	ledgerpb.RegisterLedgerServiceServer(server, storageledger.NewGRPCServer(ledger))
-	managerpb.RegisterStorageManagerServiceServer(server, storagemanager.NewGRPCServer(manager))
+	storage.RegisterGRPC(server, manager)
 	serveErr := make(chan error, 1)
 	go func() { serveErr <- server.Serve(lis) }()
 
 	cleanupCtx, stopCleanup := context.WithCancel(context.WithoutCancel(ctx))
 	defer stopCleanup()
-	cleanupDone := wiring.StartCleanup(cleanupCtx, manager, storage.CleanupInterval)
-	slog.Info("gyoza started", "grpc", lis.Addr().String(), "bucket", storage.Manager.Bucket)
+	cleanupDone := storage.StartCleanup(cleanupCtx, manager, storageSettings.CleanupInterval)
+	slog.Info("gyoza started", "grpc", lis.Addr().String(), "bucket", storageSettings.Manager.Bucket)
 
 	select {
 	case <-ctx.Done():

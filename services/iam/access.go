@@ -9,7 +9,7 @@ import (
 	"context"
 	"errors"
 
-	"gyoza/services/storageledger"
+	"gyoza/services/storage"
 )
 
 // rank orders access levels, so the greatest of several can be picked.
@@ -50,15 +50,15 @@ func projectAccess(p Project, actorID, actorOrg string, share Access) Access {
 	}
 	access := AccessNone
 	switch p.Owner.Kind {
-	case storageledger.OwnerUser:
+	case storage.OwnerUser:
 		if p.Owner.ID == actorID {
 			access = AccessEditor
 		}
-	case storageledger.OwnerOrg:
+	case storage.OwnerOrg:
 		if actorOrg != "" && p.Owner.ID == actorOrg {
 			access = AccessEditor
 		}
-	case storageledger.OwnerGyoza:
+	case storage.OwnerGyoza:
 		access = AccessViewer
 	}
 	if shareActive(p, actorOrg) {

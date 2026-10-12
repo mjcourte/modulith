@@ -12,12 +12,12 @@ Not started. Decided while planning iam (2026-10-11). Related:
    upgrade; access tokens are JWTs checked locally against the core's JWKS, so no
    network hop per request. No other service sees cookies or credentials.
 2. **Identity propagation (gateway -> services)**: explicit `actorID` in Go `Service`
-   methods and `actor_id` on the wire (already in storagemanager). Services trust it,
+   methods and `actor_id` on the wire (already in storage). Services trust it,
    so they're reachable only inside the platform (private subnets, security groups:
    only the gateway). Service-to-service calls (`DeleteOwned`, `RemoveUser`,
    `CopyProjectFiles`, gyoza project management) are never routed by the gateway.
 3. **Authorization (may they?)**: in each service, through an interface it declares
-   (storagemanager's `Authorizer`), implemented by iam. SuperTokens holds
+   (storage's `Authorizer`), implemented by iam. SuperTokens holds
    identities and sessions only, never our permissions.
 
 ## Decisions (2026-10-11)
@@ -40,7 +40,7 @@ Not started. Decided while planning iam (2026-10-11). Related:
   gateway, and one error -> HTTP status table per service (`ErrForbidden` -> 403,
   not-found -> 404, invalid -> 400, `ErrNameTaken`, `ErrAlreadyMember` and
   `FolderNotEmptyError` -> 409, the latter with its counts).
-- Handlers depend only on `iam.Service` and `storagemanager.Service`: the monolith passes
+- Handlers depend only on `iam.Service` and `storage.Service`: the monolith passes
   the in-process Managers, distributed mode passes the gRPC clients, and the handler code
   is the same. No REST anywhere else; services talk gRPC (distributed) or Go calls
   (monolith).

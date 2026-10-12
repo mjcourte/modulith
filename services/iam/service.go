@@ -3,7 +3,7 @@ package iam
 import (
 	"context"
 
-	"gyoza/services/storageledger"
+	"gyoza/services/storage"
 )
 
 // Service is what other components call: the gateway, for a signed-in user
@@ -35,7 +35,7 @@ type Service interface {
 	DeclineInvite(ctx context.Context, actorID, inviteID string) error
 
 	// Projects and sharing (manager_projects.go).
-	CreateProject(ctx context.Context, actorID string, owner storageledger.Owner, name string, orgLocked bool) (Project, error)
+	CreateProject(ctx context.Context, actorID string, owner storage.Owner, name string, orgLocked bool) (Project, error)
 	GetProject(ctx context.Context, actorID, projectID string) (ProjectView, error)
 	ListMyProjects(ctx context.Context, actorID string, pageSize int, pageToken string) (ProjectPage, error)
 	ListTemplates(ctx context.Context, actorID string, pageSize int, pageToken string) (ProjectPage, error)

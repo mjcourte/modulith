@@ -2,8 +2,8 @@
 
 - transacts/log rolls snapshots to RustFS/S3
 - recieves deltas from any entry point, and uses engine go api to update
-- Document puts to S3 might want to be recorded in the ledger (the storage service's `LedgerService`), so the files are in pgSQL ledger
-- snapshot convention (agreed with storagemanager/storageledger): record every snapshot in the ledger with `Kind=snapshot`, a vendor MIME type (e.g. `application/vnd.gyoza.app+flatbuffers`), and an S3 key under `projects/{projectID}/snapshot/{id}` (see storagemanager README "S3 key layout"). Snapshots are not DAM assets
+- never touches S3 directly: snapshot reads and writes go through the storage service over gRPC (`StorageService`; the snapshot calls are still to be designed, see [storage/PLAN.md](../storage/PLAN.md))
+- snapshot convention (agreed with storage): storage records every snapshot in its ledger with `Kind=snapshot`, a vendor MIME type (e.g. `application/vnd.gyoza.app+flatbuffers`), and an S3 key under `projects/{projectID}/snapshot/{id}` (see the storage README "S3 key layout"). Snapshots are not DAM assets
 
 ## Internal Methods
 
@@ -43,7 +43,7 @@ I'm going to say S3 a bunch, but i mean S3 or RustFS.
 
 - precheck if exists in "S3"
 - create a new engine doc, put v0 snapshot to S3, probably also get/return to caller.
-- Storage Ledger records snapshot's existence
+- storage records the snapshot in its ledger
 
 ### CloneDocument
 

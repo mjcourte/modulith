@@ -12,11 +12,11 @@ None yet.
 
 ### An authorization check is several Store reads
 
-- **Expected:** `StorageAuthorizer` runs on every storagemanager request. One check
+- **Expected:** `StorageAuthorizer` runs on every storage request. One check
   reads the user, their membership, the project and their share, and the user and
   membership are read twice when the project route is used (once by the authorizer,
   once by `accessTo`). With MemoryStore that's free; with Postgres it's 4-6 round trips.
-- **When to act:** step 8 (Postgres store): measure, and before storagemanager runs with
+- **When to act:** step 8 (Postgres store): measure, and before storage runs with
   the real authorizer in production.
 - **Fix:** one query that returns everything `projectAccess` needs (project, membership,
   share) for an actor and project, behind a Store method; pass the actor's org into the

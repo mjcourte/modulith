@@ -34,7 +34,7 @@ func (c Config) withDefaults() (Config, error) {
 // Store, which keeps the data rules. Every method that acts for a user takes
 // their ID (actorID) as authenticated by the gateway. Safe for concurrent use.
 //
-// Later steps add projects (step 5) and the cascades that need storagemanager
+// Later steps add projects (step 5) and the cascades that need storage
 // and the identity provider (step 6).
 type Manager struct {
 	store Store

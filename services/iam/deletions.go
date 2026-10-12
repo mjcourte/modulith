@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"gyoza/services/storageledger"
+	"gyoza/services/storage"
 )
 
 // ErrNotDeleting: a hard delete was asked for something whose deletion
@@ -39,7 +39,7 @@ type DeletionStore interface {
 	ListDeletingProjects(ctx context.Context, limit int) ([]Project, error)
 	// ListOwnedProjects returns up to limit project IDs owned by owner, in any
 	// state, for a cascade to work through.
-	ListOwnedProjects(ctx context.Context, owner storageledger.Owner, limit int) ([]string, error)
+	ListOwnedProjects(ctx context.Context, owner storage.Owner, limit int) ([]string, error)
 
 	// TransferUserProjects gives every project userID owns to toOrgID (account
 	// deletion with an org). They arrive unlocked (user projects can't be

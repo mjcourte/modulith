@@ -15,7 +15,7 @@ import (
 )
 
 // newID returns a new UUIDv7 as a string. UUIDv7 starts with a timestamp, so
-// IDs sort in creation order (see storagemanager's README, "IDs").
+// IDs sort in creation order (see storage's README, "IDs").
 func newID() string {
 	return uuid.Must(uuid.NewV7()).String()
 }

@@ -15,14 +15,14 @@ Step 6 in progress: 6a (Store markers, bulk steps, hard deletes, guards) done; n
 
 ## Context
 
-storagemanager authorizes with `AllowAll` until something can answer "may this user
+storage authorizes with `AllowAll` until something can answer "may this user
 read/write these files?". iam owns users, orgs, membership, projects and
-sharing, implements storagemanager's `Authorizer`, and drives the cascades already
+sharing, implements storage's `Authorizer`, and drives the cascades already
 built (`DeleteOwned`, `RemoveUser`). Identity comes from SuperTokens (Google sign-in)
 via the gateway; iam never talks to SuperTokens directly.
 
 Related plans: auth and sign-in in [gateway/PLAN.md](../gateway/PLAN.md); asset refs,
-usage, forking and file copying in [storagemanager/PLAN.md](../storagemanager/PLAN.md);
+usage, forking and file copying in [storage/PLAN.md](../storage/PLAN.md);
 the document side of cloning in [documentmanager/PLAN.md](../documentmanager/PLAN.md);
 what the UI must show in [apps/web/PLAN.md](../../apps/web/PLAN.md).
 
@@ -60,10 +60,10 @@ Defaults (mine, to confirm while building):
     one-click way around the lock; downloads stay possible
 - leaving an org moves nothing: org files stay the org's, personal files stay personal.
   Account deletion is what moves a user's library and projects to their org (or deletes them)
-- the last member leaving deletes the org (its projects and files, via storagemanager);
+- the last member leaving deletes the org (its projects and files, via storage);
   the last admin can't leave while other members remain (promote someone first)
 - deletions mark the row first (access stops at once), cascade, then remove the row;
-  a cleanup loop finishes interrupted deletions (same resumable pattern as storagemanager)
+  a cleanup loop finishes interrupted deletions (same resumable pattern as storage)
 - user rows are hard-deleted at the end (GDPR); invites and shares go with them
 - gyoza projects are created, filled and deleted only through service-to-service calls
   (a seeding tool or admin tooling later), never through the gateway; they can't be
@@ -77,11 +77,11 @@ Defaults (mine, to confirm while building):
   gets the source's name, a fresh ID and `cloned_from`; shares aren't copied.
 - A clone is a multi-step job, so the project starts as `cloning`: invisible to
   listings and granting no access until it's `ready`. Steps: create the row ->
-  storagemanager `CopyProjectFiles(source, clone)` -> (later) documentmanager clones the
+  storage `CopyProjectFiles(source, clone)` -> (later) documentmanager clones the
   document and rewrites its refs -> mark `ready`. Each step is idempotent; the cleanup
   loop resumes stalled clones or abandons (deletes) them.
 - What gets copied, and why the clone is independent of the source in both directions,
-  is storagemanager's side: see its PLAN.md.
+  is storage's side: see its PLAN.md.
 
 ## Access rules (the heart of it)
 
@@ -91,30 +91,30 @@ none. A user can reach a project through several of these at once (an org member
 who also has a share); their access is the greatest of them, except that on an
 org-locked project shares with people outside the org count for nothing; so sharing with someone
 who already has access is allowed and harmless: it can raise access, never lower it
-(decided 2026-10-11). Sharing again with the same level changes nothing (idempotent). For storagemanager's `Authorizer`:
+(decided 2026-10-11). Sharing again with the same level changes nothing (idempotent). For storage's `Authorizer`:
 
 - owner user: write if actor is that user
 - owner org: write if actor is a member
 - owner project: the project access (editor -> write, viewer -> read)
 - owner gyoza: everyone reads, nobody writes (admin tooling later)
 - assets used by a project: reading the project grants read on them, checked "via the
-  project" (storagemanager's `ResolveRef`); iam answers the project part
-- `Asset.ProjectID` association: project access grants read only, until storagemanager
+  project" (storage's `ResolveRef`); iam answers the project part
+- `Asset.ProjectID` association: project access grants read only, until storage
   retires it in favour of usage rows
 - deleted users/orgs/projects, and projects still `cloning`, grant nothing
 
 ## Architecture
 
-Like storagemanager: `Store` (data, own schema `iam`, MemoryStore + Postgres,
+Like storage: `Store` (data, own schema `iam`, MemoryStore + Postgres,
 shared suite) and `Manager` (rules, permission checks, cascades) behind a `Service`.
 
-- `Manager` depends on `Store`, `storagemanager.Service` (cascades, cloning) and an
+- `Manager` depends on `Store`, `storage.Service` (cascades, cloning) and an
   `Identity` interface declared here (`DeleteUser(ctx, userID)`), implemented by the
   gateway's SuperTokens wrapper, so iam stays SuperTokens-free.
 - The storage `Authorizer` needs only the `Store` (reads), not the Manager. That breaks
-  the construction cycle (storagemanager needs the authorizer; iam's Manager needs
-  storagemanager): build Store -> Authorizer -> storagemanager -> iam Manager.
-- Import direction: iam imports storagemanager (interface, errors), never the
+  the construction cycle (storage needs the authorizer; iam's Manager needs
+  storage): build Store -> Authorizer -> storage -> iam Manager.
+- Import direction: iam imports storage (interface, errors), never the
   reverse.
 
 ## Data model (schema `iam`)
@@ -141,7 +141,7 @@ shared suite) and `Manager` (rules, permission checks, cascades) behind a `Servi
    Done.
 3. **Access rules + storage Authorizer**: pure access functions over Store data;
    greatest of all routes; outside shares ignored on locked projects;
-   `StorageAuthorizer` implementing `storagemanager.Authorizer`; table tests covering
+   `StorageAuthorizer` implementing `storage.Authorizer`; table tests covering
    every rule above (including deleted and `cloning` rows), mutation check.
 4. **Manager: users and orgs**: `SignIn(identity)` (upsert profile, return pending
    invites), `CreateOrg`, invites (create/list/revoke/accept/decline), roles,
@@ -158,7 +158,7 @@ shared suite) and `Manager` (rules, permission checks, cascades) behind a `Servi
      deleted and treat an org being deleted as no org, listings hide them.
    - **Delete a project** (owner or org admin; templates via service-only
      `DeleteTemplate`); final, no project trash (decided): mark deleting ->
-     storagemanager `DeleteOwned(project)` (files and document snapshots to the storage
+     storage `DeleteOwned(project)` (files and document snapshots to the storage
      trash, purged after 7 days) -> delete its shares and the row.
    - **Delete an org**: an admin may delete it even with other members (decided, with
      confirmation in the UI), or it goes when its last member leaves. Mark the org and
@@ -178,21 +178,21 @@ shared suite) and `Manager` (rules, permission checks, cascades) behind a `Servi
    - **Resumable loop**: `Cleanup`/`RunCleanup` finishes everything marked deleting
      (each step idempotent) and removes expired invites.
    - **Dependencies**, declared in iam (consumer-side interfaces): `Storage`
-     (`DeleteOwned`, `RemoveUser`; `storagemanager.Service` satisfies it) and
+     (`DeleteOwned`, `RemoveUser`; `storage.Service` satisfies it) and
      `IdentityProvider` (`DeleteUser`). `NewManager(store, storage, idp, cfg)`.
    - **Store**: mark deleting (user with destination org; org with its projects;
      project), list what's deleting, transfer a user's projects to an org, hard deletes
      (refused unless marked), forget a user; shared suite + mutation check. Tests run the
-     cascades against storagemanager's memory fakes.
-7. **Cloning**: `CloneProject` and the `cloning` state as above. Needs storagemanager's
+     cascades against storage's memory fakes.
+7. **Cloning**: `CloneProject` and the `cloning` state as above. Needs storage's
    phase 2 steps 1-5 (asset refs, usage, `CopyProjectFiles`) first. Tests: clone visible
    only when ready; files readable/writable by the new owner; source untouched; a clone
    interrupted after each step resumes or is abandoned.
 8. **Postgres store**: migrations, sqlc, shared suite on Postgres, EXPLAIN the access
-   queries (they run on every storagemanager request).
+   queries (they run on every storage request).
 9. **gRPC + binaries**: `IAMService` (user-facing, `actor_id` as in
-   storagemanager) and `AuthzService` (CanRead/CanWrite for storagemanager);
-   `AuthzClient` implementing `storagemanager.Authorizer` over gRPC; `cmd/iam`;
+   storage) and `AuthzService` (CanRead/CanWrite for storage);
+   `AuthzClient` implementing `storage.Authorizer` over gRPC; `cmd/iam`;
    monolith wiring in the order above (replacing `AllowAll`); `cmd/storage` gets
    `GYOZA_IAM_ADDR`; docs (README, OPTIMIZATIONS: per-request authz calls and
    caching).
@@ -203,6 +203,6 @@ and fills gyoza projects.
 ## Verification
 
 Per step: shared suite on MemoryStore (and Postgres from step 8), `go vet`, mutation
-check of each new suite, `go test -race`. Step 9: storagemanager's tests still pass with
+check of each new suite, `go test -race`. Step 9: storage's tests still pass with
 the real authorizer wired in a new integration test (member/non-member/guest/viewer
 against real uploads), plus a `buf curl` smoke run of the monolith.

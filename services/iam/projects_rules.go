@@ -8,16 +8,16 @@ import (
 	"fmt"
 	"slices"
 
-	"gyoza/services/storageledger"
+	"gyoza/services/storage"
 )
 
 // checkProjectOwner checks that o can own a project: a well-formed user, org
 // or gyoza owner. A project can't own a project.
-func checkProjectOwner(o storageledger.Owner, invalid error) error {
+func checkProjectOwner(o storage.Owner, invalid error) error {
 	if err := o.Validate(); err != nil {
 		return fmt.Errorf("%w: %w", invalid, err)
 	}
-	if o.Kind == storageledger.OwnerProject {
+	if o.Kind == storage.OwnerProject {
 		return fmt.Errorf("%w: a project can't own a project", invalid)
 	}
 	return nil
@@ -59,11 +59,11 @@ func (p Project) normalize() (Project, error) {
 // checkTransfer validates TransferProject: the new owner must be able to own a
 // project, and templates neither come from nor go to users and orgs (they're
 // made by tooling).
-func checkTransfer(p Project, to storageledger.Owner) error {
+func checkTransfer(p Project, to storage.Owner) error {
 	if err := checkProjectOwner(to, ErrInvalidProject); err != nil {
 		return err
 	}
-	if p.Owner.Kind == storageledger.OwnerGyoza || to.Kind == storageledger.OwnerGyoza {
+	if p.Owner.Kind == storage.OwnerGyoza || to.Kind == storage.OwnerGyoza {
 		return fmt.Errorf("%w: gyoza templates can't change owner", ErrInvalidProject)
 	}
 	return nil
@@ -72,7 +72,7 @@ func checkTransfer(p Project, to storageledger.Owner) error {
 // checkOrgLock refuses locking a project its org doesn't own: the lock is an
 // org's policy for its own work.
 func checkOrgLock(p Project) error {
-	if p.Owner.Kind != storageledger.OwnerOrg {
+	if p.Owner.Kind != storage.OwnerOrg {
 		return fmt.Errorf("%w: only org projects can be org-locked", ErrInvalidProject)
 	}
 	return nil
@@ -82,7 +82,7 @@ func checkOrgLock(p Project) error {
 // none) grants anything: shares are suspended on a locked project unless the
 // user belongs to its org.
 func shareActive(p Project, userOrgID string) bool {
-	return !p.OrgLocked || (p.Owner.Kind == storageledger.OwnerOrg && p.Owner.ID == userOrgID)
+	return !p.OrgLocked || (p.Owner.Kind == storage.OwnerOrg && p.Owner.ID == userOrgID)
 }
 
 // sortShares puts shares oldest first, ties by user ID.
@@ -118,7 +118,7 @@ func (s Share) normalize() (Share, error) {
 // checkShareable refuses shares on gyoza templates: every signed-in user can
 // already see them.
 func checkShareable(p Project) error {
-	if p.Owner.Kind == storageledger.OwnerGyoza {
+	if p.Owner.Kind == storage.OwnerGyoza {
 		return fmt.Errorf("%w: gyoza templates are visible to everyone and can't be shared", ErrInvalidShare)
 	}
 	return nil
@@ -151,7 +151,7 @@ func (q ProjectQuery) normalize() (ProjectQuery, error) {
 
 // Paging: projects are ordered by ID. UUIDv7 strings sort in creation order,
 // so a page token only needs the last ID seen. It's base64-encoded so callers
-// treat it as opaque and don't build tokens themselves (as in storagemanager).
+// treat it as opaque and don't build tokens themselves (as in storage).
 
 // afterID returns the ID the requested page starts after, or "" for the first page.
 func (q ProjectQuery) afterID() (string, error) {

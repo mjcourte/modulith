@@ -1,7 +1,7 @@
 package iam
 
 // Test-only access to internals: in package iam, so it can reach unexported
-// fields, but compiled only into tests (see storagemanager's export_test.go).
+// fields, but compiled only into tests (see storage's internal/manager/export_test.go).
 
 import "time"
 

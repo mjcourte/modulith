@@ -21,33 +21,33 @@ go generate ./contracts
 - Every RPC has its own `XRequest` / `XResponse` messages, so fields can be added later without breaking callers.
 - Never renumber or reuse a field number; add new fields with new numbers. Check with `go tool buf breaking proto --against <previous version>`.
 - A version bump (`v1` -> `v2`) is a new package alongside the old one, not an edit.
-- Services: `storageledger/v1` (`LedgerService`), `storagemanager/v1` (`StorageManagerService`, which imports the ledger's `Owner`).
+- Services: `storage/v1` (`StorageService`).
 - Calls made for a user carry `actor_id`, set by the gateway from the signed-in session; services trust it, so they must only be reachable inside the platform.
-- When several errors share a status code, the status carries a `google.rpc.ErrorInfo` detail naming the exact one (storagemanager: domain `storagemanager.gyoza`, reasons like `ASSET_NOT_FOUND`). Clients map it back to the domain error.
+- When several errors share a status code, the status carries a `google.rpc.ErrorInfo` detail naming the exact one (storage: domain `storage.gyoza`, reasons like `ASSET_NOT_FOUND`). Clients map it back to the domain error.
 
 ## Calling a running service by hand
 
 ```sh
 
 go tool buf curl --schema contracts/proto --protocol grpc --http2-prior-knowledge \
- -d '{"projectId":"p1"}' \
- http://localhost:9090/gyoza.storageledger.v1.LedgerService/ListObjects
+ -d '{"actorId":"alice","owner":{"kind":"OWNER_KIND_USER","id":"alice"}}' \
+ http://localhost:9090/gyoza.storage.v1.StorageService/ListAssets
 
 ```
 
-A full upload against the monolith (`go run ./cmd/gyoza`, which serves both services on `localhost:9090`), from bash:
+A full upload against the monolith (`go run ./cmd/gyoza`, which serves them on `localhost:9090`), from bash:
 
 ```sh
 
 go tool buf curl --schema contracts/proto --protocol grpc --http2-prior-knowledge \
  -d '{"actorId":"alice","owner":{"kind":"OWNER_KIND_USER","id":"alice"},"name":"Logo","contentType":"image/png","sizeBytes":64}' \
- http://localhost:9090/gyoza.storagemanager.v1.StorageManagerService/BeginUpload
+ http://localhost:9090/gyoza.storage.v1.StorageService/BeginUpload
 
 # PUT the file to the returned url with the returned Content-Type header, then:
 
 go tool buf curl --schema contracts/proto --protocol grpc --http2-prior-knowledge \
  -d '{"actorId":"alice","uploadId":"<uploadId>"}' \
- http://localhost:9090/gyoza.storagemanager.v1.StorageManagerService/CompleteUpload
+ http://localhost:9090/gyoza.storage.v1.StorageService/CompleteUpload
 
 ```
 

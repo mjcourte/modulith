@@ -5,7 +5,7 @@ than users.
 
 - users (profiles; sign-in itself is the gateway's, through SuperTokens), orgs,
   membership and roles, invites, projects and project sharing; billing tables later
-- answers other services' "may this user...?" questions: implements storagemanager's
+- answers other services' "may this user...?" questions: implements storage's
   `Authorizer` (may this user read/write files for this owner or project?). Other
   services only see that interface, never these tables. In the monolith it's passed
   in-process; distributed, over gRPC
@@ -34,12 +34,12 @@ than users.
   people outside the org; clones in progress grant nothing. `accessTo` gathers the
   facts from a Store; unknown users get nothing; Store failures are errors, never
   "no access"
-- `storage_authz.go`: `StorageAuthorizer` implements storagemanager's `Authorizer` from
-  a Store alone (so the binaries can build it before storagemanager). Files are
+- `storage_authz.go`: `StorageAuthorizer` implements storage's `Authorizer` from
+  a Store alone (so the binaries can build it before storage). Files are
   reachable through their owner (own library, org library for members, a project's
   files by project access, gyoza's files read-only for all) or, read-only, through a
-  project they're associated with. Refusals wrap `storagemanager.ErrForbidden`. Not
-  wired into the binaries yet (step 9); tested end to end with storagemanager's
+  project they're associated with. Refusals wrap `storage.ErrForbidden`. Not
+  wired into the binaries yet (step 9); tested end to end with storage's
   memory fakes
 - performance notes: [OPTIMIZATIONS.md](OPTIMIZATIONS.md)
 

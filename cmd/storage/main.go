@@ -12,14 +12,10 @@ import (
 
 	"google.golang.org/grpc"
 
-	"gyoza/cmd/internal/wiring"
-	ledgerpb "gyoza/contracts/gen/go/gyoza/storageledger/v1"
-	managerpb "gyoza/contracts/gen/go/gyoza/storagemanager/v1"
 	"gyoza/platform/config"
 	"gyoza/platform/postgres"
 	"gyoza/platform/shutdown"
-	"gyoza/services/storageledger"
-	"gyoza/services/storagemanager"
+	"gyoza/services/storage"
 )
 
 func main() {
@@ -44,7 +40,7 @@ func run() error {
 	// deployments set ":9090". The default differs from the monolith's so both
 	// can run on one machine.
 	grpcAddr := env.String("GYOZA_GRPC_ADDR", "localhost:9091")
-	settings := wiring.StorageManagerFromEnv(env)
+	settings := storage.SettingsFromEnv(env)
 	if err := env.Err(); err != nil {
 		return err
 	}
@@ -54,14 +50,9 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	// The ledger lives in this binary, in its own schema: storagemanager calls it
-	// in-process, and other services (documentmanager's snapshots) over gRPC.
-	if err := storageledger.Migrate(ctx, pool); err != nil {
-		pool.Close() // nothing is running yet, so this returns promptly
-		return err
-	}
-	ledger := storageledger.NewPostgres(pool)
-	manager, err := wiring.NewStorageManager(ctx, pool, ledger, settings)
+	// The manager calls the ledger in-process; other services (documentmanager's
+	// snapshots) call it over gRPC.
+	manager, err := storage.Open(ctx, pool, settings)
 	if err != nil {
 		pool.Close() // nothing is running yet, so this returns promptly
 		return err
@@ -73,8 +64,7 @@ func run() error {
 		return err
 	}
 	server := grpc.NewServer()
-	ledgerpb.RegisterLedgerServiceServer(server, storageledger.NewGRPCServer(ledger))
-	managerpb.RegisterStorageManagerServiceServer(server, storagemanager.NewGRPCServer(manager))
+	storage.RegisterGRPC(server, manager)
 	serveErr := make(chan error, 1)
 	go func() { serveErr <- server.Serve(lis) }()
 
@@ -82,7 +72,7 @@ func run() error {
 	// pool closes, since a run in progress still needs the database.
 	cleanupCtx, stopCleanup := context.WithCancel(context.WithoutCancel(ctx))
 	defer stopCleanup()
-	cleanupDone := wiring.StartCleanup(cleanupCtx, manager, settings.CleanupInterval)
+	cleanupDone := storage.StartCleanup(cleanupCtx, manager, settings.CleanupInterval)
 	slog.Info("storage started", "grpc", lis.Addr().String(), "bucket", settings.Manager.Bucket)
 
 	// Run until a signal arrives or the server fails on its own.

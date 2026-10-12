@@ -10,13 +10,13 @@ import (
 	"testing"
 	"time"
 
-	"gyoza/services/storageledger"
+	"gyoza/services/storage"
 )
 
 var (
-	ruleUser  = storageledger.Owner{Kind: storageledger.OwnerUser, ID: "ann"}
-	ruleOrg   = storageledger.Owner{Kind: storageledger.OwnerOrg, ID: "acme"}
-	ruleGyoza = storageledger.Owner{Kind: storageledger.OwnerGyoza}
+	ruleUser  = storage.Owner{Kind: storage.OwnerUser, ID: "ann"}
+	ruleOrg   = storage.Owner{Kind: storage.OwnerOrg, ID: "acme"}
+	ruleGyoza = storage.Owner{Kind: storage.OwnerGyoza}
 )
 
 func TestProjectNormalize(t *testing.T) {
@@ -24,7 +24,7 @@ func TestProjectNormalize(t *testing.T) {
 	if err != nil || p.Name != "Poster" || p.State != ProjectReady {
 		t.Fatalf("normalize = %+v, %v; want trimmed name, state ready", p, err)
 	}
-	for _, owner := range []storageledger.Owner{ruleOrg, ruleGyoza} {
+	for _, owner := range []storage.Owner{ruleOrg, ruleGyoza} {
 		if _, err := (Project{Owner: owner, Name: "X"}).normalize(); err != nil {
 			t.Errorf("owner %v: %v", owner, err)
 		}
@@ -36,8 +36,8 @@ func TestProjectNormalize(t *testing.T) {
 
 	bad := map[string]Project{
 		"no owner":         {Name: "X"},
-		"project owner":    {Owner: storageledger.Owner{Kind: storageledger.OwnerProject, ID: "p1"}, Name: "X"},
-		"gyoza with ID":    {Owner: storageledger.Owner{Kind: storageledger.OwnerGyoza, ID: "x"}, Name: "X"},
+		"project owner":    {Owner: storage.Owner{Kind: storage.OwnerProject, ID: "p1"}, Name: "X"},
+		"gyoza with ID":    {Owner: storage.Owner{Kind: storage.OwnerGyoza, ID: "x"}, Name: "X"},
 		"no name":          {Owner: ruleUser, Name: "  "},
 		"long name":        {Owner: ruleUser, Name: strings.Repeat("a", MaxNameLen+1)},
 		"unknown state":    {Owner: ruleUser, Name: "X", State: "archived"},
@@ -59,13 +59,13 @@ func TestCheckTransfer(t *testing.T) {
 	}
 	bad := map[string]struct {
 		p  Project
-		to storageledger.Owner
+		to storage.Owner
 	}{
 		"to gyoza":      {userProject, ruleGyoza},
 		"from gyoza":    {Project{Owner: ruleGyoza}, ruleOrg},
-		"to a project":  {userProject, storageledger.Owner{Kind: storageledger.OwnerProject, ID: "p1"}},
-		"to no one":     {userProject, storageledger.Owner{}},
-		"malformed org": {userProject, storageledger.Owner{Kind: storageledger.OwnerOrg}},
+		"to a project":  {userProject, storage.Owner{Kind: storage.OwnerProject, ID: "p1"}},
+		"to no one":     {userProject, storage.Owner{}},
+		"malformed org": {userProject, storage.Owner{Kind: storage.OwnerOrg}},
 	}
 	for name, tt := range bad {
 		if err := checkTransfer(tt.p, tt.to); !errors.Is(err, ErrInvalidProject) {
@@ -95,7 +95,7 @@ func TestShareNormalize(t *testing.T) {
 }
 
 func TestCheckShareable(t *testing.T) {
-	for _, owner := range []storageledger.Owner{ruleUser, ruleOrg} {
+	for _, owner := range []storage.Owner{ruleUser, ruleOrg} {
 		if err := checkShareable(Project{Owner: owner}); err != nil {
 			t.Errorf("%v-owned project: %v", owner.Kind, err)
 		}
@@ -117,8 +117,8 @@ func TestProjectQueryNormalize(t *testing.T) {
 		"no scope":        {},
 		"two scopes":      {VisibleTo: "ann", Owner: ruleOrg},
 		"bad user":        {VisibleTo: "has space"},
-		"project owner":   {Owner: storageledger.Owner{Kind: storageledger.OwnerProject, ID: "p1"}},
-		"malformed owner": {Owner: storageledger.Owner{Kind: storageledger.OwnerUser}},
+		"project owner":   {Owner: storage.Owner{Kind: storage.OwnerProject, ID: "p1"}},
+		"malformed owner": {Owner: storage.Owner{Kind: storage.OwnerUser}},
 		"negative size":   {VisibleTo: "ann", PageSize: -1},
 	}
 	for name, q := range bad {
@@ -161,7 +161,7 @@ func TestOrgLockRules(t *testing.T) {
 	if _, err := (Project{Owner: ruleOrg, Name: "X", OrgLocked: true}).normalize(); err != nil {
 		t.Errorf("locked org project: %v", err)
 	}
-	for _, owner := range []storageledger.Owner{ruleUser, ruleGyoza} {
+	for _, owner := range []storage.Owner{ruleUser, ruleGyoza} {
 		if _, err := (Project{Owner: owner, Name: "X", OrgLocked: true}).normalize(); !errors.Is(err, ErrInvalidProject) {
 			t.Errorf("locked %v project = %v, want ErrInvalidProject", owner.Kind, err)
 		}

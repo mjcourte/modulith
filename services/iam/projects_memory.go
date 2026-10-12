@@ -8,18 +8,18 @@ import (
 	"slices"
 	"strings"
 
-	"gyoza/services/storageledger"
+	"gyoza/services/storage"
 )
 
 // ownerExists reports whether o names a live (existing, not being deleted)
 // user or org; gyoza always exists. The caller must hold m.mu.
-func (m *MemoryStore) ownerExists(o storageledger.Owner) error {
+func (m *MemoryStore) ownerExists(o storage.Owner) error {
 	switch o.Kind {
-	case storageledger.OwnerUser:
+	case storage.OwnerUser:
 		if !m.liveUser(o.ID) {
 			return ErrUserNotFound
 		}
-	case storageledger.OwnerOrg:
+	case storage.OwnerOrg:
 		if !m.liveOrg(o.ID) {
 			return ErrOrgNotFound
 		}
@@ -84,9 +84,9 @@ func (m *MemoryStore) ListProjects(ctx context.Context, q ProjectQuery) (Project
 		userOrg := m.orgOf(q.VisibleTo)
 		inScope = func(p Project) bool {
 			switch {
-			case p.Owner == storageledger.Owner{Kind: storageledger.OwnerUser, ID: q.VisibleTo}:
+			case p.Owner == storage.Owner{Kind: storage.OwnerUser, ID: q.VisibleTo}:
 				return true
-			case userOrg != "" && p.Owner == storageledger.Owner{Kind: storageledger.OwnerOrg, ID: userOrg}:
+			case userOrg != "" && p.Owner == storage.Owner{Kind: storage.OwnerOrg, ID: userOrg}:
 				return true
 			}
 			_, shared := m.shares[shareKey{p.ID, q.VisibleTo}]
@@ -139,7 +139,7 @@ func (m *MemoryStore) RenameProject(ctx context.Context, id, name string) (Proje
 	})
 }
 
-func (m *MemoryStore) TransferProject(ctx context.Context, id string, to storageledger.Owner) (Project, error) {
+func (m *MemoryStore) TransferProject(ctx context.Context, id string, to storage.Owner) (Project, error) {
 	return m.update(id, func(p *Project) error {
 		if err := checkTransfer(*p, to); err != nil {
 			return err

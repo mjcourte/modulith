@@ -16,7 +16,7 @@ import (
 	"errors"
 	"fmt"
 
-	"gyoza/services/storageledger"
+	"gyoza/services/storage"
 )
 
 // ProjectView is a project as one user sees it: with their access level, so
@@ -45,11 +45,11 @@ func (m *Manager) manageable(ctx context.Context, actorID, projectID string) (Pr
 		return Project{}, err
 	}
 	switch p.Owner.Kind {
-	case storageledger.OwnerUser:
+	case storage.OwnerUser:
 		if p.Owner.ID == actorID {
 			return p, nil
 		}
-	case storageledger.OwnerOrg:
+	case storage.OwnerOrg:
 		if _, err := m.admin(ctx, actorID, p.Owner.ID); err == nil {
 			return p, nil
 		} else if !errors.Is(err, ErrForbidden) {
@@ -62,16 +62,16 @@ func (m *Manager) manageable(ctx context.Context, actorID, projectID string) (Pr
 // CreateProject creates a project owned by the acting user or by their org
 // (any member may). orgLocked applies to org projects only (the UI offers it,
 // on by default). Gyoza templates are made with CreateTemplate.
-func (m *Manager) CreateProject(ctx context.Context, actorID string, owner storageledger.Owner, name string, orgLocked bool) (Project, error) {
+func (m *Manager) CreateProject(ctx context.Context, actorID string, owner storage.Owner, name string, orgLocked bool) (Project, error) {
 	if _, err := m.actor(ctx, actorID); err != nil {
 		return Project{}, err
 	}
 	switch owner.Kind {
-	case storageledger.OwnerUser:
+	case storage.OwnerUser:
 		if owner.ID != actorID {
 			return Project{}, fmt.Errorf("%w: you can only create projects for yourself or your org", ErrForbidden)
 		}
-	case storageledger.OwnerOrg:
+	case storage.OwnerOrg:
 		if _, err := m.member(ctx, actorID, owner.ID); err != nil {
 			return Project{}, err
 		}
@@ -85,7 +85,7 @@ func (m *Manager) CreateProject(ctx context.Context, actorID string, owner stora
 // changed by nobody. Service to service only (seeding/admin tooling); the
 // gateway must never expose it.
 func (m *Manager) CreateTemplate(ctx context.Context, name string) (Project, error) {
-	return m.store.CreateProject(ctx, Project{Owner: storageledger.Owner{Kind: storageledger.OwnerGyoza}, Name: name})
+	return m.store.CreateProject(ctx, Project{Owner: storage.Owner{Kind: storage.OwnerGyoza}, Name: name})
 }
 
 // GetProject returns a project the acting user can see, with their access.
@@ -111,7 +111,7 @@ func (m *Manager) ListTemplates(ctx context.Context, actorID string, pageSize in
 	if _, err := m.actor(ctx, actorID); err != nil {
 		return ProjectPage{}, err
 	}
-	return m.store.ListProjects(ctx, ProjectQuery{Owner: storageledger.Owner{Kind: storageledger.OwnerGyoza}, PageSize: pageSize, PageToken: pageToken})
+	return m.store.ListProjects(ctx, ProjectQuery{Owner: storage.Owner{Kind: storage.OwnerGyoza}, PageSize: pageSize, PageToken: pageToken})
 }
 
 // RenameProject renames a project; its owner (or an admin of the owning org).
@@ -129,14 +129,14 @@ func (m *Manager) MoveProjectToOrg(ctx context.Context, actorID, projectID strin
 	if err != nil {
 		return Project{}, err
 	}
-	if p.Owner.Kind != storageledger.OwnerUser {
+	if p.Owner.Kind != storage.OwnerUser {
 		return Project{}, fmt.Errorf("%w: only personal projects can move to an org", ErrInvalidProject)
 	}
 	mem, err := m.store.GetMembership(ctx, actorID)
 	if err != nil {
 		return Project{}, err // ErrNotMember: they have no org to move it to
 	}
-	return m.store.TransferProject(ctx, projectID, storageledger.Owner{Kind: storageledger.OwnerOrg, ID: mem.OrgID})
+	return m.store.TransferProject(ctx, projectID, storage.Owner{Kind: storage.OwnerOrg, ID: mem.OrgID})
 }
 
 // SetOrgLocked locks or unlocks an org project; admins of the owning org only.
@@ -145,7 +145,7 @@ func (m *Manager) SetOrgLocked(ctx context.Context, actorID, projectID string, l
 	if err != nil {
 		return Project{}, err
 	}
-	if p.Owner.Kind != storageledger.OwnerOrg {
+	if p.Owner.Kind != storage.OwnerOrg {
 		return Project{}, fmt.Errorf("%w: only org projects can be org-locked", ErrInvalidProject)
 	}
 	if _, err := m.admin(ctx, actorID, p.Owner.ID); err != nil {

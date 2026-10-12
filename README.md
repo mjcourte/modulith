@@ -30,7 +30,7 @@ The Go services are divided into approximate microservices, but can be run initi
 - `document-manager` - document WAL rolling service (Rust? Go?)
 - `exporter` - renderer service (Rust? Go?) ^- these must be Go for monolith.
 - `iam` - identity and access management: users, orgs, projects, sharing (Go)
-- `storage` - s3 object service (Go): `storagemanager` (uploads, DAM) + `storageledger` (ledger of every S3 object), one deployable
+- `storage` - s3 object service (Go): uploads, the DAM, and the ledger of every S3 object
 - `gateway` - REST + WS middlewares merged, SuperTokens auth
 - `mcp` - agent/genAI BYOA hookups/MCP
 - `media-processor` - does ffmpeg stuff, like read file specs and edit

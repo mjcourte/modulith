@@ -1,0 +1,412 @@
+syntax = "proto3";
+
+// Storage: every file Gyoza keeps in S3. Uploads and downloads through
+// presigned S3 URLs, the DAM (assets, versions, folders, trash) and cleanup.
+// Mirrors the Service interface in services/storage.
+//
+// actor_id is the signed-in user a call is made for. The gateway sets it from
+// the authenticated session; this service trusts it and authorizes with it,
+// so it must only be reachable from inside the platform.
+//
+// Errors carry a google.rpc.ErrorInfo detail (domain "storage.gyoza")
+// whose reason names the exact error, e.g. ASSET_NOT_FOUND, since several
+// errors share a status code. FOLDER_NOT_EMPTY adds "folders" and "assets"
+// counts in its metadata.
+package gyoza.storage.v1;
+
+import "google/protobuf/timestamp.proto";
+
+service StorageService {
+  // Uploads: begin returns a presigned PUT; complete records the file.
+  rpc BeginUpload(BeginUploadRequest) returns (BeginUploadResponse);
+  rpc CompleteUpload(CompleteUploadRequest) returns (CompleteUploadResponse);
+
+  // Downloads: short-lived presigned GETs.
+  rpc GetDownloadURL(GetDownloadURLRequest) returns (GetDownloadURLResponse);
+  rpc GetExportURL(GetExportURLRequest) returns (GetExportURLResponse);
+
+  // Assets.
+  rpc GetAsset(GetAssetRequest) returns (GetAssetResponse);
+  rpc ListAssets(ListAssetsRequest) returns (ListAssetsResponse);
+  rpc UpdateAsset(UpdateAssetRequest) returns (UpdateAssetResponse);
+  rpc DeleteAsset(DeleteAssetRequest) returns (DeleteAssetResponse);
+  rpc RestoreAsset(RestoreAssetRequest) returns (RestoreAssetResponse);
+  rpc ListVersions(ListVersionsRequest) returns (ListVersionsResponse);
+  rpc RevertAsset(RevertAssetRequest) returns (RevertAssetResponse);
+
+  // Folders and the trash.
+  rpc CreateFolder(CreateFolderRequest) returns (CreateFolderResponse);
+  rpc RenameFolder(RenameFolderRequest) returns (RenameFolderResponse);
+  rpc MoveFolder(MoveFolderRequest) returns (MoveFolderResponse);
+  // Only empty folders; otherwise FAILED_PRECONDITION / FOLDER_NOT_EMPTY.
+  rpc DeleteFolder(DeleteFolderRequest) returns (DeleteFolderResponse);
+  // rm -rf: the folder and everything in it, restorable together.
+  rpc DeleteFolderTree(DeleteFolderTreeRequest) returns (DeleteFolderTreeResponse);
+  rpc RestoreFolder(RestoreFolderRequest) returns (RestoreFolderResponse);
+  rpc ListFolderContents(ListFolderContentsRequest) returns (ListFolderContentsResponse);
+  rpc GetFolderPath(GetFolderPathRequest) returns (GetFolderPathResponse);
+  rpc ListTrash(ListTrashRequest) returns (ListTrashResponse);
+
+  // Owner lifecycle, called by iam only; never exposed to browsers.
+  rpc DeleteOwned(DeleteOwnedRequest) returns (DeleteOwnedResponse);
+  rpc RemoveUser(RemoveUserRequest) returns (RemoveUserResponse);
+}
+
+// ---- Shared messages
+
+message Asset {
+  string id = 1;
+  Owner owner = 2;
+  string project_id = 3;
+  // Empty: the top level.
+  string folder_id = 4;
+  string name = 5;
+  string description = 6;
+  repeated string tags = 7;
+  string content_type = 8;
+  // image, video, audio, font, pdf, json, text or other.
+  string category = 9;
+  int32 current_version = 10;
+  string created_by = 11;
+  google.protobuf.Timestamp created_at = 12;
+  google.protobuf.Timestamp updated_at = 13;
+  // Unset while the asset is live.
+  google.protobuf.Timestamp deleted_at = 14;
+  string deletion_id = 15;
+}
+
+message Version {
+  string asset_id = 1;
+  int32 number = 2;
+  string object_id = 3;
+  string content_type = 4;
+  int64 size_bytes = 5;
+  string created_by = 6;
+  google.protobuf.Timestamp created_at = 7;
+}
+
+message AssetPage {
+  repeated Asset assets = 1;
+  string next_page_token = 2;
+}
+
+message Folder {
+  string id = 1;
+  Owner owner = 2;
+  // Empty: the top level.
+  string parent_id = 3;
+  string name = 4;
+  string created_by = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
+  google.protobuf.Timestamp deleted_at = 8;
+  string deletion_id = 9;
+}
+
+message FolderDeletion {
+  string deletion_id = 1;
+  int32 folders = 2;
+  int32 assets = 3;
+}
+
+message Download {
+  string url = 1;
+  // What the browser saves the file as.
+  string filename = 2;
+  google.protobuf.Timestamp expires_at = 3;
+}
+
+// A list of tags, so an update can tell "set to no tags" from "unchanged".
+message Tags {
+  repeated string tags = 1;
+}
+
+// ---- Uploads
+
+message BeginUploadRequest {
+  string actor_id = 1;
+  // New asset: who will own it and the project it's for (optional).
+  Owner owner = 2;
+  string project_id = 3;
+  // Set to upload a new version of this asset instead.
+  string asset_id = 4;
+  // The new asset's details.
+  string name = 5;
+  string description = 6;
+  repeated string tags = 7;
+  string folder_id = 8;
+  // The file; both are signed into the URL.
+  string content_type = 9;
+  int64 size_bytes = 10;
+}
+
+message BeginUploadResponse {
+  string upload_id = 1;
+  // Always PUT.
+  string method = 2;
+  string url = 3;
+  // Must be sent exactly as given.
+  map<string, string> headers = 4;
+  google.protobuf.Timestamp expires_at = 5;
+}
+
+message CompleteUploadRequest {
+  string actor_id = 1;
+  string upload_id = 2;
+}
+
+message CompleteUploadResponse {
+  Asset asset = 1;
+}
+
+// ---- Downloads
+
+message GetDownloadURLRequest {
+  string actor_id = 1;
+  string asset_id = 2;
+  // 0: the current version.
+  int32 version = 3;
+}
+
+message GetDownloadURLResponse {
+  Download download = 1;
+}
+
+message GetExportURLRequest {
+  string actor_id = 1;
+  // The export's ledger object.
+  string object_id = 2;
+}
+
+message GetExportURLResponse {
+  Download download = 1;
+}
+
+// ---- Assets
+
+message GetAssetRequest {
+  string actor_id = 1;
+  string id = 2;
+}
+
+message GetAssetResponse {
+  Asset asset = 1;
+}
+
+message ListAssetsRequest {
+  string actor_id = 1;
+  // Scope: set exactly one.
+  string project_id = 2;
+  Owner owner = 3;
+  // Filters.
+  string tag = 4;
+  string category = 5;
+  // Unset: any folder; empty: the top level; an ID: that folder only.
+  optional string folder_id = 6;
+  bool include_deleted = 7;
+  bool only_deleted = 8;
+  // Paging.
+  int32 page_size = 9;
+  string page_token = 10;
+}
+
+message ListAssetsResponse {
+  AssetPage page = 1;
+}
+
+// Unset fields are left alone; set ones replace the current value.
+message UpdateAssetRequest {
+  string actor_id = 1;
+  string id = 2;
+  optional string name = 3;
+  optional string description = 4;
+  Tags tags = 5;
+  // Moves the asset; empty: to the top level.
+  optional string folder_id = 6;
+}
+
+message UpdateAssetResponse {
+  Asset asset = 1;
+}
+
+message DeleteAssetRequest {
+  string actor_id = 1;
+  string id = 2;
+}
+
+message DeleteAssetResponse {}
+
+message RestoreAssetRequest {
+  string actor_id = 1;
+  string id = 2;
+}
+
+message RestoreAssetResponse {
+  Asset asset = 1;
+}
+
+message ListVersionsRequest {
+  string actor_id = 1;
+  string asset_id = 2;
+}
+
+message ListVersionsResponse {
+  // Oldest first.
+  repeated Version versions = 1;
+}
+
+message RevertAssetRequest {
+  string actor_id = 1;
+  string asset_id = 2;
+  int32 version = 3;
+}
+
+message RevertAssetResponse {
+  Asset asset = 1;
+}
+
+// ---- Folders and the trash
+
+message CreateFolderRequest {
+  string actor_id = 1;
+  Owner owner = 2;
+  string parent_id = 3;
+  string name = 4;
+}
+
+message CreateFolderResponse {
+  Folder folder = 1;
+}
+
+message RenameFolderRequest {
+  string actor_id = 1;
+  string id = 2;
+  string name = 3;
+}
+
+message RenameFolderResponse {
+  Folder folder = 1;
+}
+
+message MoveFolderRequest {
+  string actor_id = 1;
+  string id = 2;
+  // Empty: to the top level.
+  string new_parent_id = 3;
+}
+
+message MoveFolderResponse {
+  Folder folder = 1;
+}
+
+message DeleteFolderRequest {
+  string actor_id = 1;
+  string id = 2;
+}
+
+message DeleteFolderResponse {
+  FolderDeletion deletion = 1;
+}
+
+message DeleteFolderTreeRequest {
+  string actor_id = 1;
+  string id = 2;
+}
+
+message DeleteFolderTreeResponse {
+  FolderDeletion deletion = 1;
+}
+
+message RestoreFolderRequest {
+  string actor_id = 1;
+  string id = 2;
+}
+
+message RestoreFolderResponse {
+  FolderDeletion deletion = 1;
+}
+
+message ListFolderContentsRequest {
+  string actor_id = 1;
+  Owner owner = 2;
+  // Empty: the top level.
+  string folder_id = 3;
+  string page_token = 4;
+}
+
+message ListFolderContentsResponse {
+  // Breadcrumbs, top level first.
+  repeated Folder path = 1;
+  // Sub-folders, on the first page only.
+  repeated Folder folders = 2;
+  AssetPage assets = 3;
+}
+
+message GetFolderPathRequest {
+  string actor_id = 1;
+  string id = 2;
+}
+
+message GetFolderPathResponse {
+  // Top level first, ending with the folder itself.
+  repeated Folder path = 1;
+}
+
+message ListTrashRequest {
+  string actor_id = 1;
+  Owner owner = 2;
+  string page_token = 3;
+}
+
+message ListTrashResponse {
+  // On the first page only.
+  repeated Folder folders = 1;
+  AssetPage assets = 2;
+}
+
+// ---- Owner lifecycle
+
+message DeleteOwnedRequest {
+  Owner owner = 1;
+}
+
+message DeleteOwnedResponse {
+  int32 ledger_objects = 1;
+  FolderDeletion trash = 2;
+}
+
+message RemoveUserRequest {
+  string user_id = 1;
+  // The user's org, if any: their files move there. Unset: they're trashed.
+  string org_id = 2;
+}
+
+message RemoveUserResponse {
+  int32 expired_uploads = 1;
+  // Unset when the user had no org.
+  Owner transferred_to = 2;
+  int32 transferred_assets = 3;
+  int32 transferred_folders = 4;
+  int32 renamed_folders = 5;
+  int32 ledger_objects = 6;
+  int32 deleted_ledger_objects = 7;
+  FolderDeletion deleted = 8;
+  int32 cleared_ledger = 9;
+  int32 cleared_dam = 10;
+}
+
+enum OwnerKind {
+  OWNER_KIND_UNSPECIFIED = 0;
+  OWNER_KIND_PROJECT = 1;
+  OWNER_KIND_USER = 2;
+  OWNER_KIND_ORG = 3;
+  // Shared files owned by the platform; id is empty.
+  OWNER_KIND_GYOZA = 4;
+}
+
+// The single principal that owns an object. Deleting it deletes what it owns.
+message Owner {
+  OwnerKind kind = 1;
+  string id = 2;
+}
+

@@ -1,9 +1,9 @@
 # platform/blob
 
-File storage addressed by bucket and key: S3 in production, an in-memory fake in tests and local runs. Moved out of storagemanager because it has no storagemanager policy in it and other services (media-processor, the document manager) need S3 too.
+File storage addressed by bucket and key: S3 in production, an in-memory fake in tests and local runs. Kept out of storage because it has no storage policy in it (mechanism only).
 
 - `blob.Store`: presign PUT (exact size and content type signed in), presign GET (optional download filename), `Stat`, `ReadPrefix` (first n bytes, for type sniffing), `Delete`
-- mechanism only: callers choose buckets, keys and URL lifetimes (storagemanager's key layout lives in its README)
+- mechanism only: callers choose buckets, keys and URL lifetimes (storage's key layout lives in its README)
 - `blob.Memory`: the fake. Its URLs use a `memory://` scheme; `PutSigned`/`GetSigned` play the browser and enforce what each URL was signed for, as S3 would
 - `blobtest.RunSuite`: the shared suite every implementation must pass. A separate package (like `net/http/httptest`) so `testing` is never compiled into production binaries
 - `blob.S3` (`s3.go`): Amazon S3 or any S3-compatible server, via aws-sdk-go-v2. `NewS3(S3Config{Endpoint, Region, AccessKey, SecretKey, PathStyle})`; `EnsureBucket` creates a bucket for local runs and tests (production buckets come from infrastructure code)
@@ -15,7 +15,7 @@ File storage addressed by bucket and key: S3 in production, an in-memory fake in
 - `ReadPrefix` is a Range GET (`bytes=0-(n-1)`), capped again with `io.LimitReader` in case a server ignores the range. An empty object answers 416, which means "no bytes", not an error
 - "not found" is decided by HTTP status (404), not error type names: HEAD responses have no body, and S3-compatible servers name errors differently
 - `Delete` of a missing key succeeds, as on S3
-- static credentials only for now; on AWS (ECS task roles) the default credential chain comes with the binaries (storagemanager step 10)
+- static credentials only for now; on AWS (ECS task roles) the default credential chain comes with the binaries (storage, phase 1 step 10)
 
 ## Testing against S3
 

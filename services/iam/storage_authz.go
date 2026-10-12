@@ -5,14 +5,13 @@ import (
 	"errors"
 	"fmt"
 
-	"gyoza/services/storageledger"
-	"gyoza/services/storagemanager"
+	"gyoza/services/storage"
 )
 
-// StorageAuthorizer answers storagemanager's "may this user read/write these
+// StorageAuthorizer answers storage's "may this user read/write these
 // files?" from iam's data. It needs only a Store (reads), not the Manager:
-// that's what lets the binaries build it before storagemanager, and
-// storagemanager before iam's Manager (which calls storagemanager).
+// that's what lets the binaries build it before storage, and
+// storage before iam's Manager (which calls storage).
 //
 // Files are reachable two ways:
 //   - through their owner: a user's own library (read-write), their org's
@@ -29,25 +28,25 @@ func NewStorageAuthorizer(s Store) *StorageAuthorizer {
 	return &StorageAuthorizer{store: s}
 }
 
-// Compile-time check that *StorageAuthorizer satisfies storagemanager.Authorizer.
-var _ storagemanager.Authorizer = (*StorageAuthorizer)(nil)
+// Compile-time check that *StorageAuthorizer satisfies storage.Authorizer.
+var _ storage.Authorizer = (*StorageAuthorizer)(nil)
 
-func (a *StorageAuthorizer) CanRead(ctx context.Context, actorID string, owner storageledger.Owner, projectID string) error {
+func (a *StorageAuthorizer) CanRead(ctx context.Context, actorID string, owner storage.Owner, projectID string) error {
 	return a.check(ctx, actorID, owner, projectID, AccessViewer)
 }
 
-func (a *StorageAuthorizer) CanWrite(ctx context.Context, actorID string, owner storageledger.Owner, projectID string) error {
+func (a *StorageAuthorizer) CanWrite(ctx context.Context, actorID string, owner storage.Owner, projectID string) error {
 	return a.check(ctx, actorID, owner, projectID, AccessEditor)
 }
 
 // check allows the call if actorID reaches the files with at least want
-// (viewer = read, editor = write). Refusals wrap storagemanager.ErrForbidden,
+// (viewer = read, editor = write). Refusals wrap storage.ErrForbidden,
 // as the Authorizer contract asks; Store failures are returned as they are.
-func (a *StorageAuthorizer) check(ctx context.Context, actorID string, owner storageledger.Owner, projectID string, want Access) error {
+func (a *StorageAuthorizer) check(ctx context.Context, actorID string, owner storage.Owner, projectID string, want Access) error {
 	verb := map[Access]string{AccessViewer: "read", AccessEditor: "write"}[want]
-	forbidden := fmt.Errorf("%w: %s may not %s files of %s %q", storagemanager.ErrForbidden, actorID, verb, owner.Kind, owner.ID)
+	forbidden := fmt.Errorf("%w: %s may not %s files of %s %q", storage.ErrForbidden, actorID, verb, owner.Kind, owner.ID)
 	if actorID == "" {
-		return fmt.Errorf("%w: no acting user", storagemanager.ErrForbidden)
+		return fmt.Errorf("%w: no acting user", storage.ErrForbidden)
 	}
 	u, err := a.store.GetUser(ctx, actorID)
 	if errors.Is(err, ErrUserNotFound) || (err == nil && u.DeletingAt != nil) {
@@ -66,7 +65,7 @@ func (a *StorageAuthorizer) check(ctx context.Context, actorID string, owner sto
 	}
 	// The project route grants read only, and only for a project other than
 	// the owner itself (a project owner was already checked above).
-	if want == AccessViewer && projectID != "" && owner != (storageledger.Owner{Kind: storageledger.OwnerProject, ID: projectID}) {
+	if want == AccessViewer && projectID != "" && owner != (storage.Owner{Kind: storage.OwnerProject, ID: projectID}) {
 		access, err := a.projectAccess(ctx, actorID, projectID)
 		if err != nil {
 			return err
@@ -79,13 +78,13 @@ func (a *StorageAuthorizer) check(ctx context.Context, actorID string, owner sto
 }
 
 // ownerAccess is actorID's access to everything owner owns.
-func (a *StorageAuthorizer) ownerAccess(ctx context.Context, actorID string, owner storageledger.Owner) (Access, error) {
+func (a *StorageAuthorizer) ownerAccess(ctx context.Context, actorID string, owner storage.Owner) (Access, error) {
 	switch owner.Kind {
-	case storageledger.OwnerUser:
+	case storage.OwnerUser:
 		if owner.ID == actorID {
 			return AccessEditor, nil // your own library
 		}
-	case storageledger.OwnerOrg:
+	case storage.OwnerOrg:
 		org, err := actorOrg(ctx, a.store, actorID)
 		if err != nil {
 			return AccessNone, err
@@ -93,9 +92,9 @@ func (a *StorageAuthorizer) ownerAccess(ctx context.Context, actorID string, own
 		if org != "" && org == owner.ID {
 			return AccessEditor, nil
 		}
-	case storageledger.OwnerProject:
+	case storage.OwnerProject:
 		return a.projectAccess(ctx, actorID, owner.ID)
-	case storageledger.OwnerGyoza:
+	case storage.OwnerGyoza:
 		return AccessViewer, nil // shared files: everyone reads, nobody writes
 	}
 	return AccessNone, nil

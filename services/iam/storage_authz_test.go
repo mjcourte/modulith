@@ -9,8 +9,7 @@ import (
 
 	"gyoza/platform/blob"
 	"gyoza/services/iam"
-	"gyoza/services/storageledger"
-	"gyoza/services/storagemanager"
+	"gyoza/services/storage"
 )
 
 // authzWorld is a small populated store:
@@ -55,8 +54,8 @@ func newAuthzWorld(t *testing.T) authzWorld {
 	return w
 }
 
-func projectOwner(p iam.Project) storageledger.Owner {
-	return storageledger.Owner{Kind: storageledger.OwnerProject, ID: p.ID}
+func projectOwner(p iam.Project) storage.Owner {
+	return storage.Owner{Kind: storage.OwnerProject, ID: p.ID}
 }
 
 func TestStorageAuthorizer(t *testing.T) {
@@ -67,7 +66,7 @@ func TestStorageAuthorizer(t *testing.T) {
 	tests := []struct {
 		name      string
 		actor     string
-		owner     storageledger.Owner
+		owner     storage.Owner
 		projectID string
 		read      bool
 		write     bool
@@ -79,7 +78,7 @@ func TestStorageAuthorizer(t *testing.T) {
 		{"org library, other org", "eve", acmeLib, "", false, false},
 		{"org library, no org", "bob", acmeLib, "", false, false},
 
-		// Project-owned files: storagemanager passes the project as projectID too.
+		// Project-owned files: storage passes the project as projectID too.
 		{"project, owner", "ann", projectOwner(w.annP), w.annP.ID, true, true},
 		{"project, viewer share", "vic", projectOwner(w.annP), w.annP.ID, true, false},
 		{"project, editor share", "edi", projectOwner(w.annP), w.annP.ID, true, true},
@@ -91,7 +90,7 @@ func TestStorageAuthorizer(t *testing.T) {
 		{"locked project, suspended share", "bob", projectOwner(w.lockedP), w.lockedP.ID, false, false},
 		{"template", "bob", projectOwner(w.tmpl), w.tmpl.ID, true, false},
 		{"clone in progress, even its owner", "ann", projectOwner(w.cloning), w.cloning.ID, false, false},
-		{"missing project", "ann", storageledger.Owner{Kind: storageledger.OwnerProject, ID: uuid.NewString()}, "", false, false},
+		{"missing project", "ann", storage.Owner{Kind: storage.OwnerProject, ID: uuid.NewString()}, "", false, false},
 
 		{"gyoza's shared files", "bob", gyoza, "", true, false},
 
@@ -112,7 +111,7 @@ func TestStorageAuthorizer(t *testing.T) {
 				switch {
 				case want && err != nil:
 					t.Errorf("%s = %v, want allowed", verb, err)
-				case !want && !errors.Is(err, storagemanager.ErrForbidden):
+				case !want && !errors.Is(err, storage.ErrForbidden):
 					t.Errorf("%s = %v, want ErrForbidden", verb, err)
 				}
 			}
@@ -135,26 +134,26 @@ func TestStorageAuthorizerStoreFailure(t *testing.T) {
 	w := newAuthzWorld(t)
 	authz := iam.NewStorageAuthorizer(failingMembership{w.store})
 	err := authz.CanWrite(t.Context(), "mem", orgOwner(w.acme.ID), "")
-	if err == nil || errors.Is(err, storagemanager.ErrForbidden) {
+	if err == nil || errors.Is(err, storage.ErrForbidden) {
 		t.Errorf("CanWrite during a store failure = %v; want the failure, not ErrForbidden", err)
 	}
 }
 
-// End to end: storagemanager with iam's authorizer instead of AllowAll. An org
+// End to end: storage with iam's authorizer instead of AllowAll. An org
 // member uploads into the org's project; a viewer can download it but not add
 // a version; a stranger can't even see it.
 func TestStorageAuthorizerWithStoragemanager(t *testing.T) {
 	ctx := t.Context()
 	w := newAuthzWorld(t)
 	blobs := blob.NewMemory()
-	m, err := storagemanager.NewManager(storageledger.NewMemory(), storagemanager.NewMemoryStore(), blobs,
-		iam.NewStorageAuthorizer(w.store), storagemanager.Config{Bucket: "gyoza-test"})
+	m, err := storage.NewMemoryManager(blobs,
+		iam.NewStorageAuthorizer(w.store), storage.Config{Bucket: "gyoza-test"})
 	if err != nil {
 		t.Fatalf("NewManager: %v", err)
 	}
 
 	png := append([]byte("\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR"), make([]byte, 48)...)
-	ticket, err := m.BeginUpload(ctx, "mem", storagemanager.UploadRequest{
+	ticket, err := m.BeginUpload(ctx, "mem", storage.UploadRequest{
 		Owner: projectOwner(w.acmeP), Name: "Logo", ContentType: "image/png", SizeBytes: int64(len(png)),
 	})
 	if err != nil {
@@ -171,10 +170,10 @@ func TestStorageAuthorizerWithStoragemanager(t *testing.T) {
 	if _, err := m.DownloadURL(ctx, "vic", asset.ID, 0); err != nil {
 		t.Errorf("viewer download: %v", err)
 	}
-	if _, err := m.BeginUpload(ctx, "vic", storagemanager.UploadRequest{AssetID: asset.ID, ContentType: "image/png", SizeBytes: 64}); !errors.Is(err, storagemanager.ErrForbidden) {
+	if _, err := m.BeginUpload(ctx, "vic", storage.UploadRequest{AssetID: asset.ID, ContentType: "image/png", SizeBytes: 64}); !errors.Is(err, storage.ErrForbidden) {
 		t.Errorf("viewer new version = %v, want ErrForbidden", err)
 	}
-	if _, err := m.GetAsset(ctx, "bob", asset.ID); !errors.Is(err, storagemanager.ErrForbidden) {
+	if _, err := m.GetAsset(ctx, "bob", asset.ID); !errors.Is(err, storage.ErrForbidden) {
 		t.Errorf("stranger GetAsset = %v, want ErrForbidden", err)
 	}
 }
@@ -190,7 +189,7 @@ func TestStorageAuthorizerShareFailure(t *testing.T) {
 	w := newAuthzWorld(t)
 	authz := iam.NewStorageAuthorizer(failingShares{w.store})
 	err := authz.CanRead(t.Context(), "vic", projectOwner(w.annP), w.annP.ID)
-	if err == nil || errors.Is(err, storagemanager.ErrForbidden) {
+	if err == nil || errors.Is(err, storage.ErrForbidden) {
 		t.Errorf("CanRead during a share lookup failure = %v; want the failure, not ErrForbidden", err)
 	}
 }
