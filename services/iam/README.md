@@ -11,6 +11,16 @@ than users.
   in-process; distributed, over gRPC
 - plan and decisions: [PLAN.md](PLAN.md)
 
+## Layout
+
+| Path | What |
+| --- | --- |
+| `iam.go` | the public surface: aliases (`Service`, `Store`, the types and errors), `NewMemoryStore`, `NewManager`, `NewStorageAuthorizer` |
+| `internal/directory/` | the data: `Store` and its parts, rules, `MemoryStore`, and the access rules (`access.go`); checks data shape only |
+| `internal/manager/` | the logic: `Manager`, `Service`, `StorageAuthorizer`; depends on `directory`, never the other way |
+
+The sections below name files in `internal/directory` (Store, Access, Deletion store) and `internal/manager` (Manager, `storage_authz.go`).
+
 ## Built so far (steps 1-3)
 
 - `Store` (`store.go`) embeds `UserStore` (`users.go`), `OrgStore` (`orgs.go`),
@@ -31,7 +41,7 @@ than users.
 - `access.go`: `projectAccess` decides a user's access to a project as a pure function: the
   greatest of owner (editor), member of the owning org (editor), gyoza template (viewer
   for everyone) and their share, with shares suspended on org-locked projects for
-  people outside the org; clones in progress grant nothing. `accessTo` gathers the
+  people outside the org; clones in progress grant nothing. `AccessTo` gathers the
   facts from a Store; unknown users get nothing; Store failures are errors, never
   "no access"
 - `storage_authz.go`: `StorageAuthorizer` implements storage's `Authorizer` from
