@@ -1,10 +1,7 @@
 # Document Manager
 
-- attempt this in Go for monolithing
-- basically Kyoso-server
-- transacts/log rolls snapshots in S3
-- server side rendering NOPE this is split to services/exporter
-- does load balancing NOPE just forget all that for now lol
+- transacts/log rolls snapshots to RustFS/S3
+- recieves deltas from any entry point, and uses engine go api to update
 - Document puts to S3 might want to be recorded in the ledger (the storage service's `LedgerService`), so the files are in pgSQL ledger
 - snapshot convention (agreed with storagemanager/storageledger): record every snapshot in the ledger with `Kind=snapshot`, a vendor MIME type (e.g. `application/vnd.gyoza.app+flatbuffers`), and an S3 key under `projects/{projectID}/snapshot/{id}` (see storagemanager README "S3 key layout"). Snapshots are not DAM assets
 
