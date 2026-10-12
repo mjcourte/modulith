@@ -57,6 +57,19 @@ Not started. UI details the backend plans rely on (2026-10-11). Related:
 - Editing a shared asset (one you can read but not write): explain "this is shared:
   editing makes your own copy", then call `ForkAsset` and edit the copy.
 
+## Live documents
+
+Transport and streams: [platform/nats/README.md](../../platform/nats/README.md).
+
+- The client keeps a live in-memory replica of the open document, applying every delta
+  from `document.{projectID}.delta` (through the gateway).
+- Snapshot messages (`document.{projectID}.snapshot`) are pointers, not the snapshot:
+  version, last delta sequence covered, storage object ID. On receiving one, the client
+  must fetch that snapshot and merge it into its existing live replica, not replace the
+  replica with it. Replacing would drop local edits that aren't in the snapshot yet.
+- After the merge, the client keeps applying deltas with a sequence after the one the
+  snapshot covers.
+
 ## Files
 
 - Deleting a non-empty folder: offer rm -rf with the counts from `FolderNotEmptyError`.

@@ -24,7 +24,7 @@ Deltas are published to `document.{projectID}.delta`. Every replica (documentman
 | JetStream snapshots | Latest snapshot pointer per project                                            | Latest per subject        |
 | RustFS/S3           | Store the snapshots (versioned)                                                | Durable                   |
 | Gateway->gRPC       | Request current document state from the manager                                | Request/response lifetime |
-| FE clients          | Load the latest snapshot, then replay deltas after its sequence; send deltas   | In-memory replica         |
+| FE clients          | Apply deltas; on a snapshot pointer, fetch it and merge into the live replica ([apps/web/PLAN.md](../../apps/web/PLAN.md)) | In-memory replica |
 
 ## Streams
 
