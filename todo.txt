@@ -1,6 +1,3 @@
-- merge services storageledger and storagemanager into storage/
-    - use internal/ to organize the files a bit better within
-- generally make better use of service/*/internal/ to unflatten slightly like one level
 - IAM is currently like 45 files -> internal/{store, projects, users/orgs?} how to slice domains?
-- See: services/README.md for organization plan
 - Does /blob/ belong in platform/blob or internal/blob? it DOES interact with S3/RustFS, but is also a common type so idk
+- Do requested cleanups in claude.md

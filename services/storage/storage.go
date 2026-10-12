@@ -14,7 +14,9 @@ import (
 
 	pb "gyoza/contracts/gen/go/gyoza/storage/v1"
 	"gyoza/platform/blob"
+	"gyoza/services/storage/internal/dam"
 	"gyoza/services/storage/internal/db"
+	"gyoza/services/storage/internal/grpcapi"
 	"gyoza/services/storage/internal/ledger"
 	"gyoza/services/storage/internal/manager"
 )
@@ -57,13 +59,13 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error { return db.Migrate(
 // NewMemoryManager builds a Manager on in-memory ledger and store, for other
 // services' tests.
 func NewMemoryManager(blobs blob.Store, authz Authorizer, cfg Config) (*Manager, error) {
-	return manager.NewManager(ledger.NewMemory(), manager.NewMemoryStore(), blobs, authz, cfg)
+	return manager.NewManager(ledger.NewMemory(), dam.NewMemoryStore(), blobs, authz, cfg)
 }
 
 // RegisterGRPC serves s as StorageService on r.
 func RegisterGRPC(r grpc.ServiceRegistrar, s Service) {
-	pb.RegisterStorageServiceServer(r, manager.NewGRPCServer(s))
+	pb.RegisterStorageServiceServer(r, grpcapi.NewServer(s))
 }
 
 // NewGRPCClient is a Service calling a remote storage over conn.
-func NewGRPCClient(conn grpc.ClientConnInterface) Service { return manager.NewGRPCClient(conn) }
+func NewGRPCClient(conn grpc.ClientConnInterface) Service { return grpcapi.NewClient(conn) }

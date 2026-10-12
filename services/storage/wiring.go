@@ -13,6 +13,7 @@ import (
 
 	"gyoza/platform/blob"
 	"gyoza/platform/config"
+	"gyoza/services/storage/internal/dam"
 	"gyoza/services/storage/internal/ledger"
 	"gyoza/services/storage/internal/manager"
 )
@@ -66,7 +67,7 @@ func Open(ctx context.Context, pool *pgxpool.Pool, s Settings) (*Manager, error)
 	// itself can reach this service, never once browsers can.
 	slog.Warn("storage: authorization is allow-all until iam exists")
 
-	m, err := manager.NewManager(ledger.NewPostgres(pool), manager.NewPostgres(pool), blobs, AllowAll{}, s.Manager)
+	m, err := manager.NewManager(ledger.NewPostgres(pool), dam.NewPostgres(pool), blobs, AllowAll{}, s.Manager)
 	if err != nil {
 		return nil, fmt.Errorf("storage: %w", err)
 	}

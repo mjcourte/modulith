@@ -8,13 +8,14 @@ import (
 
 	"github.com/google/uuid"
 
+	"gyoza/services/storage/internal/dam"
 	"gyoza/services/storage/internal/ledger"
 	sm "gyoza/services/storage/internal/manager"
 )
 
 // uploadAsset runs the whole upload flow as actor and returns the new asset
 // and the exact bytes the browser sent.
-func uploadAsset(t *testing.T, tm testManager, actor string, req sm.UploadRequest) (sm.Asset, []byte) {
+func uploadAsset(t *testing.T, tm testManager, actor string, req sm.UploadRequest) (dam.Asset, []byte) {
 	t.Helper()
 	ticket := beginAndPut(t, tm, actor, req)
 	a, err := tm.CompleteUpload(t.Context(), actor, ticket.UploadID)
@@ -126,11 +127,11 @@ func TestDownloadRejects(t *testing.T) {
 	ctx := t.Context()
 	a, _ := uploadAsset(t, tm, "member", newAssetRequest())
 
-	if _, err := tm.DownloadURL(ctx, "member", uuid.NewString(), 0); !errors.Is(err, sm.ErrAssetNotFound) {
+	if _, err := tm.DownloadURL(ctx, "member", uuid.NewString(), 0); !errors.Is(err, dam.ErrAssetNotFound) {
 		t.Errorf("missing asset = %v, want ErrAssetNotFound", err)
 	}
 	for _, v := range []int{-1, 2} {
-		if _, err := tm.DownloadURL(ctx, "member", a.ID, v); !errors.Is(err, sm.ErrVersionNotFound) {
+		if _, err := tm.DownloadURL(ctx, "member", a.ID, v); !errors.Is(err, dam.ErrVersionNotFound) {
 			t.Errorf("version %d = %v, want ErrVersionNotFound", v, err)
 		}
 	}
@@ -140,7 +141,7 @@ func TestDownloadRejects(t *testing.T) {
 	if err := tm.ledger.MarkDeleted(ctx, vs[0].ObjectID); err != nil {
 		t.Fatalf("ledger MarkDeleted: %v", err)
 	}
-	if _, err := tm.DownloadURL(ctx, "member", a.ID, 0); !errors.Is(err, sm.ErrAssetNotFound) {
+	if _, err := tm.DownloadURL(ctx, "member", a.ID, 0); !errors.Is(err, dam.ErrAssetNotFound) {
 		t.Errorf("version whose ledger object is gone = %v, want ErrAssetNotFound", err)
 	}
 
@@ -149,7 +150,7 @@ func TestDownloadRejects(t *testing.T) {
 	if err := tm.store.MarkAssetDeleted(ctx, b.ID); err != nil {
 		t.Fatalf("MarkAssetDeleted: %v", err)
 	}
-	if _, err := tm.DownloadURL(ctx, "member", b.ID, 0); !errors.Is(err, sm.ErrAssetNotFound) {
+	if _, err := tm.DownloadURL(ctx, "member", b.ID, 0); !errors.Is(err, dam.ErrAssetNotFound) {
 		t.Errorf("trashed asset = %v, want ErrAssetNotFound", err)
 	}
 }

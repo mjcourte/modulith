@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 
+	"gyoza/services/storage/internal/dam"
 	"gyoza/services/storage/internal/ledger"
 )
 
@@ -33,33 +34,33 @@ func (m *Manager) canWrite(ctx context.Context, actorID string, owner ledger.Own
 
 // asset loads an asset and checks the actor may read it (write=false) or
 // change it (write=true).
-func (m *Manager) asset(ctx context.Context, actorID, id string, write bool) (Asset, error) {
+func (m *Manager) asset(ctx context.Context, actorID, id string, write bool) (dam.Asset, error) {
 	a, err := m.store.GetAsset(ctx, id)
 	if err != nil {
-		return Asset{}, err
+		return dam.Asset{}, err
 	}
 	check := m.canRead
 	if write {
 		check = m.canWrite
 	}
 	if err := check(ctx, actorID, a.Owner, a.ProjectID); err != nil {
-		return Asset{}, err
+		return dam.Asset{}, err
 	}
 	return a, nil
 }
 
 // folder is asset's counterpart for folders.
-func (m *Manager) folder(ctx context.Context, actorID, id string, write bool) (Folder, error) {
+func (m *Manager) folder(ctx context.Context, actorID, id string, write bool) (dam.Folder, error) {
 	f, err := m.store.GetFolder(ctx, id)
 	if err != nil {
-		return Folder{}, err
+		return dam.Folder{}, err
 	}
 	check := m.canRead
 	if write {
 		check = m.canWrite
 	}
 	if err := check(ctx, actorID, f.Owner, ""); err != nil {
-		return Folder{}, err
+		return dam.Folder{}, err
 	}
 	return f, nil
 }
@@ -68,26 +69,26 @@ func (m *Manager) folder(ctx context.Context, actorID, id string, write bool) (F
 
 // GetAsset returns an asset the actor may read, trashed ones included (for
 // the trash view).
-func (m *Manager) GetAsset(ctx context.Context, actorID, id string) (Asset, error) {
+func (m *Manager) GetAsset(ctx context.Context, actorID, id string) (dam.Asset, error) {
 	return m.asset(ctx, actorID, id, false)
 }
 
 // ListAssets lists assets in a project or an owner's library, with the
 // query's filters. The actor needs read access to that scope.
-func (m *Manager) ListAssets(ctx context.Context, actorID string, q AssetQuery) (AssetPage, error) {
+func (m *Manager) ListAssets(ctx context.Context, actorID string, q dam.AssetQuery) (dam.AssetPage, error) {
 	if (q.ProjectID == "") == q.Owner.IsZero() {
-		return AssetPage{}, fmt.Errorf("%w: set exactly one of ProjectID or Owner", ErrInvalidQuery)
+		return dam.AssetPage{}, fmt.Errorf("%w: set exactly one of ProjectID or Owner", dam.ErrInvalidQuery)
 	}
 	if err := m.canRead(ctx, actorID, q.Owner, q.ProjectID); err != nil {
-		return AssetPage{}, err
+		return dam.AssetPage{}, err
 	}
 	return m.store.ListAssets(ctx, q)
 }
 
 // UpdateAsset renames, re-describes, re-tags or moves an asset.
-func (m *Manager) UpdateAsset(ctx context.Context, actorID, id string, u AssetUpdate) (Asset, error) {
+func (m *Manager) UpdateAsset(ctx context.Context, actorID, id string, u dam.AssetUpdate) (dam.Asset, error) {
 	if _, err := m.asset(ctx, actorID, id, true); err != nil {
-		return Asset{}, err
+		return dam.Asset{}, err
 	}
 	return m.store.UpdateAsset(ctx, id, u)
 }
@@ -102,19 +103,19 @@ func (m *Manager) DeleteAsset(ctx context.Context, actorID, id string) error {
 
 // RestoreAsset takes an asset out of the trash (to the top level if its
 // folder is gone).
-func (m *Manager) RestoreAsset(ctx context.Context, actorID, id string) (Asset, error) {
+func (m *Manager) RestoreAsset(ctx context.Context, actorID, id string) (dam.Asset, error) {
 	a, err := m.asset(ctx, actorID, id, true)
 	if err != nil {
-		return Asset{}, err
+		return dam.Asset{}, err
 	}
 	if !m.restorable(a.DeletedAt) {
-		return Asset{}, fmt.Errorf("%w: its time in the trash is over", ErrAssetNotFound)
+		return dam.Asset{}, fmt.Errorf("%w: its time in the trash is over", dam.ErrAssetNotFound)
 	}
 	return m.store.RestoreAsset(ctx, id)
 }
 
 // ListVersions returns an asset's version history, oldest first.
-func (m *Manager) ListVersions(ctx context.Context, actorID, id string) ([]Version, error) {
+func (m *Manager) ListVersions(ctx context.Context, actorID, id string) ([]dam.Version, error) {
 	if _, err := m.asset(ctx, actorID, id, false); err != nil {
 		return nil, err
 	}
@@ -122,9 +123,9 @@ func (m *Manager) ListVersions(ctx context.Context, actorID, id string) ([]Versi
 }
 
 // RevertAsset makes an older version current again.
-func (m *Manager) RevertAsset(ctx context.Context, actorID, id string, version int) (Asset, error) {
+func (m *Manager) RevertAsset(ctx context.Context, actorID, id string, version int) (dam.Asset, error) {
 	if _, err := m.asset(ctx, actorID, id, true); err != nil {
-		return Asset{}, err
+		return dam.Asset{}, err
 	}
 	return m.store.SetCurrentVersion(ctx, id, version)
 }
@@ -133,45 +134,45 @@ func (m *Manager) RevertAsset(ctx context.Context, actorID, id string, version i
 
 // CreateFolder creates a folder in f.Owner's tree, recording the actor as
 // its creator.
-func (m *Manager) CreateFolder(ctx context.Context, actorID string, f Folder) (Folder, error) {
+func (m *Manager) CreateFolder(ctx context.Context, actorID string, f dam.Folder) (dam.Folder, error) {
 	if err := m.canWrite(ctx, actorID, f.Owner, ""); err != nil {
-		return Folder{}, err
+		return dam.Folder{}, err
 	}
 	f.CreatedBy = actorID
 	return m.store.CreateFolder(ctx, f)
 }
 
 // RenameFolder renames a folder.
-func (m *Manager) RenameFolder(ctx context.Context, actorID, id, name string) (Folder, error) {
+func (m *Manager) RenameFolder(ctx context.Context, actorID, id, name string) (dam.Folder, error) {
 	if _, err := m.folder(ctx, actorID, id, true); err != nil {
-		return Folder{}, err
+		return dam.Folder{}, err
 	}
 	return m.store.RenameFolder(ctx, id, name)
 }
 
 // MoveFolder moves a folder (and everything in it) under newParentID, or to
 // the top level with "".
-func (m *Manager) MoveFolder(ctx context.Context, actorID, id, newParentID string) (Folder, error) {
+func (m *Manager) MoveFolder(ctx context.Context, actorID, id, newParentID string) (dam.Folder, error) {
 	if _, err := m.folder(ctx, actorID, id, true); err != nil {
-		return Folder{}, err
+		return dam.Folder{}, err
 	}
 	return m.store.MoveFolder(ctx, id, newParentID)
 }
 
 // DeleteFolder trashes an empty folder. If it isn't empty, the error is a
 // *FolderNotEmptyError with counts, so the UI can offer DeleteFolderTree.
-func (m *Manager) DeleteFolder(ctx context.Context, actorID, id string) (FolderDeletion, error) {
+func (m *Manager) DeleteFolder(ctx context.Context, actorID, id string) (dam.FolderDeletion, error) {
 	if _, err := m.folder(ctx, actorID, id, true); err != nil {
-		return FolderDeletion{}, err
+		return dam.FolderDeletion{}, err
 	}
 	return m.store.DeleteFolder(ctx, id)
 }
 
 // DeleteFolderTree is rm -rf: the folder, its sub-folders and their assets
 // go to the trash together, and can be restored together with RestoreFolder.
-func (m *Manager) DeleteFolderTree(ctx context.Context, actorID, id string) (FolderDeletion, error) {
+func (m *Manager) DeleteFolderTree(ctx context.Context, actorID, id string) (dam.FolderDeletion, error) {
 	if _, err := m.folder(ctx, actorID, id, true); err != nil {
-		return FolderDeletion{}, err
+		return dam.FolderDeletion{}, err
 	}
 	return m.store.DeleteFolderTree(ctx, id)
 }
@@ -179,18 +180,18 @@ func (m *Manager) DeleteFolderTree(ctx context.Context, actorID, id string) (Fol
 // RestoreFolder takes a trashed folder out of the trash together with
 // everything deleted with it (the whole rm -rf, if that's how it went).
 // Restoring a live folder changes nothing.
-func (m *Manager) RestoreFolder(ctx context.Context, actorID, id string) (FolderDeletion, error) {
+func (m *Manager) RestoreFolder(ctx context.Context, actorID, id string) (dam.FolderDeletion, error) {
 	f, err := m.folder(ctx, actorID, id, true)
 	if err != nil {
-		return FolderDeletion{}, err
+		return dam.FolderDeletion{}, err
 	}
 	if f.DeletedAt == nil {
-		return FolderDeletion{}, nil
+		return dam.FolderDeletion{}, nil
 	}
 	// Everything under one DeletionID was trashed at the same moment, so the
 	// folder's deletion time speaks for the assets restored with it.
 	if !m.restorable(f.DeletedAt) {
-		return FolderDeletion{}, fmt.Errorf("%w: its time in the trash is over", ErrFolderNotFound)
+		return dam.FolderDeletion{}, fmt.Errorf("%w: its time in the trash is over", dam.ErrFolderNotFound)
 	}
 	return m.store.RestoreDeletion(ctx, f.DeletionID)
 }
@@ -198,9 +199,9 @@ func (m *Manager) RestoreFolder(ctx context.Context, actorID, id string) (Folder
 // FolderContents is one screen of a file browser: where you are, the
 // sub-folders, and a page of assets.
 type FolderContents struct {
-	Path    []Folder  // breadcrumbs, top level first; empty at the top level
-	Folders []Folder  // sub-folders, by name; only on the first page
-	Assets  AssetPage // the folder's assets, oldest first, paged
+	Path    []dam.Folder  // breadcrumbs, top level first; empty at the top level
+	Folders []dam.Folder  // sub-folders, by name; only on the first page
+	Assets  dam.AssetPage // the folder's assets, oldest first, paged
 }
 
 // ListFolderContents returns what's directly inside folderID ("" for the top
@@ -217,7 +218,7 @@ func (m *Manager) ListFolderContents(ctx context.Context, actorID string, owner 
 			return FolderContents{}, err
 		}
 		if f.Owner != owner || f.DeletedAt != nil {
-			return FolderContents{}, ErrFolderNotFound
+			return FolderContents{}, dam.ErrFolderNotFound
 		}
 		if contents.Path, err = m.store.FolderPath(ctx, folderID); err != nil {
 			return FolderContents{}, err
@@ -230,12 +231,12 @@ func (m *Manager) ListFolderContents(ctx context.Context, actorID string, owner 
 		}
 	}
 	var err error
-	contents.Assets, err = m.store.ListAssets(ctx, AssetQuery{Owner: owner, Folder: &folderID, PageToken: pageToken})
+	contents.Assets, err = m.store.ListAssets(ctx, dam.AssetQuery{Owner: owner, Folder: &folderID, PageToken: pageToken})
 	return contents, err
 }
 
 // FolderPath returns a folder's breadcrumbs, top level first.
-func (m *Manager) FolderPath(ctx context.Context, actorID, id string) ([]Folder, error) {
+func (m *Manager) FolderPath(ctx context.Context, actorID, id string) ([]dam.Folder, error) {
 	if _, err := m.folder(ctx, actorID, id, false); err != nil {
 		return nil, err
 	}
@@ -247,8 +248,8 @@ func (m *Manager) FolderPath(ctx context.Context, actorID, id string) ([]Folder,
 // Trash is an owner's trash: trashed folders (most recent first) and a page
 // of trashed assets.
 type Trash struct {
-	Folders []Folder // only on the first page
-	Assets  AssetPage
+	Folders []dam.Folder // only on the first page
+	Assets  dam.AssetPage
 }
 
 // ListTrash returns what owner has in the trash.
@@ -264,6 +265,6 @@ func (m *Manager) ListTrash(ctx context.Context, actorID string, owner ledger.Ow
 		}
 	}
 	var err error
-	trash.Assets, err = m.store.ListAssets(ctx, AssetQuery{Owner: owner, OnlyDeleted: true, PageToken: pageToken})
+	trash.Assets, err = m.store.ListAssets(ctx, dam.AssetQuery{Owner: owner, OnlyDeleted: true, PageToken: pageToken})
 	return trash, err
 }

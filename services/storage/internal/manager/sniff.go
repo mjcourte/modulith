@@ -3,6 +3,7 @@ package manager
 import (
 	"errors"
 	"fmt"
+	"gyoza/services/storage/internal/dam"
 	"net/http"
 	"strings"
 )
@@ -30,16 +31,16 @@ const SniffLen = 512
 // Everything else, e.g. zip or HTML bytes declared as an image, is rejected.
 func checkSniffed(declared string, prefix []byte) error {
 	detected := http.DetectContentType(prefix)
-	want, got := CategoryOf(declared), CategoryOf(detected)
+	want, got := dam.CategoryOf(declared), dam.CategoryOf(detected)
 
 	switch {
 	case strings.HasPrefix(detected, "application/octet-stream"):
 		return nil
-	case want == CategoryOther || want == got:
+	case want == dam.CategoryOther || want == got:
 		return nil
-	case got == CategoryText && (want == CategoryJSON || isSVG(declared)):
+	case got == dam.CategoryText && (want == dam.CategoryJSON || isSVG(declared)):
 		return nil
-	case strings.HasPrefix(detected, "application/ogg") && (want == CategoryAudio || want == CategoryVideo):
+	case strings.HasPrefix(detected, "application/ogg") && (want == dam.CategoryAudio || want == dam.CategoryVideo):
 		return nil
 	}
 	return fmt.Errorf("%w: declared %s, but the bytes look like %s", ErrContentMismatch, declared, detected)

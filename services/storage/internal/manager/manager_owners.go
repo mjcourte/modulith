@@ -12,13 +12,14 @@ import (
 	"context"
 	"fmt"
 
+	"gyoza/services/storage/internal/dam"
 	"gyoza/services/storage/internal/ledger"
 )
 
 // OwnerDeletion reports what DeleteOwned put in the trash.
 type OwnerDeletion struct {
-	LedgerObjects int            // ledger objects newly marked deleted
-	Trash         FolderDeletion // DAM folders and assets trashed, under one DeletionID
+	LedgerObjects int                // ledger objects newly marked deleted
+	Trash         dam.FolderDeletion // DAM folders and assets trashed, under one DeletionID
 }
 
 // DeleteOwned trashes everything owner owns: a deleted project's files, an
@@ -42,7 +43,7 @@ type UserRemoval struct {
 	ExpiredUploads int
 	// With an org: what moved to it. Without: what was trashed.
 	TransferredTo ledger.Owner // zero if the user had no org
-	Transfer      OwnerTransfer
+	Transfer      dam.OwnerTransfer
 	LedgerObjects int // ledger objects transferred or deleted
 	Deleted       OwnerDeletion
 	// Creator references removed (GDPR), in the ledger and the DAM.
@@ -56,7 +57,7 @@ type UserRemoval struct {
 // from every file, so no personal reference to them remains.
 func (m *Manager) RemoveUser(ctx context.Context, userID, orgID string) (UserRemoval, error) {
 	if userID == "" {
-		return UserRemoval{}, fmt.Errorf("%w: empty userID", ErrInvalidQuery)
+		return UserRemoval{}, fmt.Errorf("%w: empty userID", dam.ErrInvalidQuery)
 	}
 	user := ledger.Owner{Kind: ledger.OwnerUser, ID: userID}
 	var r UserRemoval

@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"gyoza/services/storage/internal/dam"
 	sm "gyoza/services/storage/internal/manager"
 )
 
@@ -25,7 +26,7 @@ func TestManagerAssetOperations(t *testing.T) {
 	tm := damManager(t)
 	ctx := t.Context()
 	a, _ := uploadAsset(t, tm, "member", newAssetRequest())
-	folder, err := tm.CreateFolder(ctx, "member", sm.Folder{Owner: acme, Name: "Logos"})
+	folder, err := tm.CreateFolder(ctx, "member", dam.Folder{Owner: acme, Name: "Logos"})
 	if err != nil {
 		t.Fatalf("CreateFolder: %v", err)
 	}
@@ -39,7 +40,7 @@ func TestManagerAssetOperations(t *testing.T) {
 	}
 	writes := map[string]func(actor string) error{
 		"update": func(actor string) error {
-			_, err := tm.UpdateAsset(ctx, actor, a.ID, sm.AssetUpdate{Name: ptr("x")})
+			_, err := tm.UpdateAsset(ctx, actor, a.ID, dam.AssetUpdate{Name: ptr("x")})
 			return err
 		},
 		"delete":  func(actor string) error { return tm.DeleteAsset(ctx, actor, a.ID) },
@@ -56,7 +57,7 @@ func TestManagerAssetOperations(t *testing.T) {
 	}
 
 	// Members can do it all.
-	updated, err := tm.UpdateAsset(ctx, "member", a.ID, sm.AssetUpdate{Name: ptr("Main logo"), Tags: ptr([]string{"Brand"}), FolderID: ptr(folder.ID)})
+	updated, err := tm.UpdateAsset(ctx, "member", a.ID, dam.AssetUpdate{Name: ptr("Main logo"), Tags: ptr([]string{"Brand"}), FolderID: ptr(folder.ID)})
 	if err != nil || updated.Name != "Main logo" || updated.FolderID != folder.ID || !slices.Equal(updated.Tags, []string{"brand"}) {
 		t.Errorf("UpdateAsset = %+v, %v", updated, err)
 	}
@@ -84,20 +85,20 @@ func TestManagerListAssets(t *testing.T) {
 	p, _ := uploadAsset(t, tm, "member", inProject)
 	lib, _ := uploadAsset(t, tm, "member", newAssetRequest())
 
-	if page, err := tm.ListAssets(ctx, "guest", sm.AssetQuery{ProjectID: "p1"}); err != nil || !slices.Equal(assetIDs(page.Assets), []string{p.ID}) {
+	if page, err := tm.ListAssets(ctx, "guest", dam.AssetQuery{ProjectID: "p1"}); err != nil || !slices.Equal(assetIDs(page.Assets), []string{p.ID}) {
 		t.Errorf("guest listing p1 = %v, %v; want [%s]", assetIDs(page.Assets), err, p.ID)
 	}
-	if page, err := tm.ListAssets(ctx, "viewer", sm.AssetQuery{Owner: acme}); err != nil || len(page.Assets) != 2 {
+	if page, err := tm.ListAssets(ctx, "viewer", dam.AssetQuery{Owner: acme}); err != nil || len(page.Assets) != 2 {
 		t.Errorf("viewer listing acme = %v, %v; want both (incl. %s)", assetIDs(page.Assets), err, lib.ID)
 	}
-	if _, err := tm.ListAssets(ctx, "guest", sm.AssetQuery{Owner: acme}); !errors.Is(err, sm.ErrForbidden) {
+	if _, err := tm.ListAssets(ctx, "guest", dam.AssetQuery{Owner: acme}); !errors.Is(err, sm.ErrForbidden) {
 		t.Errorf("guest listing all of acme = %v, want ErrForbidden", err)
 	}
-	if _, err := tm.ListAssets(ctx, "member", sm.AssetQuery{Owner: acme, ProjectID: "p1"}); !errors.Is(err, sm.ErrInvalidQuery) {
+	if _, err := tm.ListAssets(ctx, "member", dam.AssetQuery{Owner: acme, ProjectID: "p1"}); !errors.Is(err, dam.ErrInvalidQuery) {
 		t.Errorf("two scopes = %v, want ErrInvalidQuery", err)
 	}
 	// No scope is a bad request, not a permission problem.
-	if _, err := tm.ListAssets(ctx, "member", sm.AssetQuery{}); !errors.Is(err, sm.ErrInvalidQuery) {
+	if _, err := tm.ListAssets(ctx, "member", dam.AssetQuery{}); !errors.Is(err, dam.ErrInvalidQuery) {
 		t.Errorf("no scope = %v, want ErrInvalidQuery", err)
 	}
 }
@@ -111,16 +112,16 @@ func laterPageToken() string {
 func TestManagerFolders(t *testing.T) {
 	tm := damManager(t)
 	ctx := t.Context()
-	brand, err := tm.CreateFolder(ctx, "member", sm.Folder{Owner: acme, Name: "Brand", CreatedBy: "someone else"})
+	brand, err := tm.CreateFolder(ctx, "member", dam.Folder{Owner: acme, Name: "Brand", CreatedBy: "someone else"})
 	if err != nil || brand.CreatedBy != "member" {
 		t.Fatalf("CreateFolder = %+v, %v; want CreatedBy set to the actor", brand, err)
 	}
-	logos, _ := tm.CreateFolder(ctx, "member", sm.Folder{Owner: acme, Name: "Logos", ParentID: brand.ID})
+	logos, _ := tm.CreateFolder(ctx, "member", dam.Folder{Owner: acme, Name: "Logos", ParentID: brand.ID})
 	req := newAssetRequest()
 	req.FolderID = logos.ID
 	uploadAsset(t, tm, "member", req)
 
-	if _, err := tm.CreateFolder(ctx, "viewer", sm.Folder{Owner: acme, Name: "Nope"}); !errors.Is(err, sm.ErrForbidden) {
+	if _, err := tm.CreateFolder(ctx, "viewer", dam.Folder{Owner: acme, Name: "Nope"}); !errors.Is(err, sm.ErrForbidden) {
 		t.Errorf("viewer CreateFolder = %v, want ErrForbidden", err)
 	}
 	if path, err := tm.FolderPath(ctx, "viewer", logos.ID); err != nil || !slices.Equal(folderNames(path), []string{"Brand", "Logos"}) {
@@ -132,7 +133,7 @@ func TestManagerFolders(t *testing.T) {
 
 	// Not empty: the error carries the counts for an "are you sure?" prompt.
 	_, err = tm.DeleteFolder(ctx, "member", brand.ID)
-	var notEmpty *sm.FolderNotEmptyError
+	var notEmpty *dam.FolderNotEmptyError
 	if !errors.As(err, &notEmpty) || notEmpty.Folders != 1 || notEmpty.Assets != 1 {
 		t.Fatalf("DeleteFolder = %v, want FolderNotEmptyError{1 folder, 1 asset}", err)
 	}
@@ -159,9 +160,9 @@ func TestManagerFolders(t *testing.T) {
 func TestManagerFolderContents(t *testing.T) {
 	tm := damManager(t)
 	ctx := t.Context()
-	brand, _ := tm.CreateFolder(ctx, "member", sm.Folder{Owner: acme, Name: "Brand"})
-	tm.CreateFolder(ctx, "member", sm.Folder{Owner: acme, Name: "Logos", ParentID: brand.ID})
-	tm.CreateFolder(ctx, "member", sm.Folder{Owner: acme, Name: "Fonts", ParentID: brand.ID})
+	brand, _ := tm.CreateFolder(ctx, "member", dam.Folder{Owner: acme, Name: "Brand"})
+	tm.CreateFolder(ctx, "member", dam.Folder{Owner: acme, Name: "Logos", ParentID: brand.ID})
+	tm.CreateFolder(ctx, "member", dam.Folder{Owner: acme, Name: "Fonts", ParentID: brand.ID})
 	var ids []string
 	for range 3 {
 		req := newAssetRequest()
@@ -190,9 +191,9 @@ func TestManagerFolderContents(t *testing.T) {
 		t.Errorf("later page folders = %q, %v; want none", folderNames(later.Folders), err)
 	}
 
-	alicesFolder, _ := tm.CreateFolder(ctx, "alice", sm.Folder{Owner: alice, Name: "Mine"})
+	alicesFolder, _ := tm.CreateFolder(ctx, "alice", dam.Folder{Owner: alice, Name: "Mine"})
 	for _, token := range []string{"", laterPageToken()} { // any page must not reveal her folder (e.g. via breadcrumbs)
-		if _, err := tm.Manager.ListFolderContents(ctx, "member", acme, alicesFolder.ID, token); !errors.Is(err, sm.ErrFolderNotFound) {
+		if _, err := tm.Manager.ListFolderContents(ctx, "member", acme, alicesFolder.ID, token); !errors.Is(err, dam.ErrFolderNotFound) {
 			t.Errorf("another owner's folder (page token %q) = %v, want ErrFolderNotFound", token, err)
 		}
 	}
@@ -204,7 +205,7 @@ func TestManagerFolderContents(t *testing.T) {
 func TestManagerTrash(t *testing.T) {
 	tm := damManager(t)
 	ctx := t.Context()
-	folder, _ := tm.CreateFolder(ctx, "member", sm.Folder{Owner: acme, Name: "Old"})
+	folder, _ := tm.CreateFolder(ctx, "member", dam.Folder{Owner: acme, Name: "Old"})
 	a, _ := uploadAsset(t, tm, "member", newAssetRequest())
 	if _, err := tm.DeleteFolder(ctx, "member", folder.ID); err != nil {
 		t.Fatalf("DeleteFolder: %v", err)
@@ -226,7 +227,7 @@ func TestManagerProjectOwnedFolders(t *testing.T) {
 	tm := damManager(t)
 	ctx := t.Context()
 	tm.authz.AllowProject("member", "p1", sm.AccessWrite)
-	f, err := tm.CreateFolder(ctx, "member", sm.Folder{Owner: project, Name: "Scenes"})
+	f, err := tm.CreateFolder(ctx, "member", dam.Folder{Owner: project, Name: "Scenes"})
 	if err != nil {
 		t.Fatalf("project member CreateFolder: %v", err)
 	}

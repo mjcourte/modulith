@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"gyoza/platform/blob"
+	"gyoza/services/storage/internal/dam"
 	"gyoza/services/storage/internal/ledger"
 )
 
@@ -84,7 +85,7 @@ func (c Config) withDefaults() (Config, error) {
 // may do. Safe for concurrent use.
 type Manager struct {
 	ledger ledger.Service
-	store  Store
+	store  dam.Store
 	blobs  blob.Store
 	authz  Authorizer
 	cfg    Config
@@ -92,7 +93,7 @@ type Manager struct {
 }
 
 // NewManager wires a Manager. All dependencies are required.
-func NewManager(l ledger.Service, store Store, blobs blob.Store, authz Authorizer, cfg Config) (*Manager, error) {
+func NewManager(l ledger.Service, store dam.Store, blobs blob.Store, authz Authorizer, cfg Config) (*Manager, error) {
 	if l == nil || store == nil || blobs == nil || authz == nil {
 		return nil, errors.New("storage: NewManager needs a ledger, store, blobs and authorizer")
 	}

@@ -142,7 +142,7 @@ func TestStorageAuthorizerStoreFailure(t *testing.T) {
 // End to end: storage with iam's authorizer instead of AllowAll. An org
 // member uploads into the org's project; a viewer can download it but not add
 // a version; a stranger can't even see it.
-func TestStorageAuthorizerWithStoragemanager(t *testing.T) {
+func TestStorageAuthorizerWithStorage(t *testing.T) {
 	ctx := t.Context()
 	w := newAuthzWorld(t)
 	blobs := blob.NewMemory()

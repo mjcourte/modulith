@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"gyoza/services/storage/internal/dam"
 	"gyoza/services/storage/internal/ledger"
 )
 
@@ -51,7 +52,7 @@ type UploadTicket struct {
 func (m *Manager) BeginUpload(ctx context.Context, actorID string, req UploadRequest) (UploadTicket, error) {
 	switch {
 	case req.SizeBytes < 1:
-		return UploadTicket{}, fmt.Errorf("%w: empty file", ErrInvalidUpload)
+		return UploadTicket{}, fmt.Errorf("%w: empty file", dam.ErrInvalidUpload)
 	case req.SizeBytes > m.cfg.MaxUploadBytes:
 		return UploadTicket{}, fmt.Errorf("%w: %d bytes, max %d", ErrUploadTooLarge, req.SizeBytes, m.cfg.MaxUploadBytes)
 	}
@@ -65,7 +66,7 @@ func (m *Manager) BeginUpload(ctx context.Context, actorID string, req UploadReq
 			return UploadTicket{}, err
 		}
 		if (!owner.IsZero() && owner != a.Owner) || (projectID != "" && projectID != a.ProjectID) {
-			return UploadTicket{}, fmt.Errorf("%w: owner or project doesn't match the asset's", ErrInvalidUpload)
+			return UploadTicket{}, fmt.Errorf("%w: owner or project doesn't match the asset's", dam.ErrInvalidUpload)
 		}
 		owner, projectID = a.Owner, a.ProjectID
 	}
@@ -80,7 +81,7 @@ func (m *Manager) BeginUpload(ctx context.Context, actorID string, req UploadReq
 	if err != nil {
 		return UploadTicket{}, err
 	}
-	u, err := m.store.CreateUpload(ctx, Upload{
+	u, err := m.store.CreateUpload(ctx, dam.Upload{
 		Owner: owner, ProjectID: projectID, CreatedBy: actorID,
 		AssetID: req.AssetID,
 		Name:    req.Name, Description: req.Description, Tags: req.Tags, FolderID: req.FolderID,
@@ -114,12 +115,12 @@ func (m *Manager) BeginUpload(ctx context.Context, actorID string, req UploadReq
 // segment: a "/" or ".." in it could otherwise produce a key outside the
 // layout (path.Join would turn "projects/../library" into "library").
 func objectKey(projectID string, kind ledger.Kind) (string, error) {
-	id := newID()
+	id := dam.NewID()
 	if projectID == "" {
 		return path.Join("library", string(kind), id), nil
 	}
 	if strings.ContainsAny(projectID, `/\`) || projectID == "." || projectID == ".." {
-		return "", fmt.Errorf("%w: project ID %q can't be used in a storage key", ErrInvalidUpload, projectID)
+		return "", fmt.Errorf("%w: project ID %q can't be used in a storage key", dam.ErrInvalidUpload, projectID)
 	}
 	return path.Join("projects", projectID, string(kind), id), nil
 }

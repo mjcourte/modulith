@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 
 	"gyoza/platform/blob"
+	"gyoza/services/storage/internal/dam"
 	"gyoza/services/storage/internal/ledger"
 	sm "gyoza/services/storage/internal/manager"
 )
@@ -18,7 +19,7 @@ import (
 type testManager struct {
 	*sm.Manager // embedded: tm.BeginUpload(...) calls the Manager's method
 	blobs       *blob.Memory
-	store       *sm.MemoryStore
+	store       *dam.MemoryStore
 	ledger      *ledger.Memory
 	authz       *sm.RuleAuthorizer
 }
@@ -39,7 +40,7 @@ func newTestManagerWith(t *testing.T, cfg sm.Config, wrap func(*blob.Memory) blo
 	t.Helper()
 	tm := testManager{
 		blobs:  blob.NewMemory(),
-		store:  sm.NewMemoryStore(),
+		store:  dam.NewMemoryStore(),
 		ledger: ledger.NewMemory(),
 		authz:  sm.NewRuleAuthorizer(),
 	}
@@ -63,9 +64,9 @@ func newAssetRequest() sm.UploadRequest {
 
 // pendingUploads lists every pending session, by asking for sessions that
 // will have expired a year from now.
-func pendingUploads(t *testing.T, s sm.Store) []sm.Upload {
+func pendingUploads(t *testing.T, s dam.Store) []dam.Upload {
 	t.Helper()
-	ups, err := s.ListExpiredUploads(t.Context(), time.Now().AddDate(1, 0, 0), sm.MaxPageSize)
+	ups, err := s.ListExpiredUploads(t.Context(), time.Now().AddDate(1, 0, 0), dam.MaxPageSize)
 	if err != nil {
 		t.Fatalf("ListExpiredUploads: %v", err)
 	}
@@ -73,8 +74,8 @@ func pendingUploads(t *testing.T, s sm.Store) []sm.Upload {
 }
 
 func TestNewManagerConfig(t *testing.T) {
-	deps := func() (ledger.Service, sm.Store, blob.Store, sm.Authorizer) {
-		return ledger.NewMemory(), sm.NewMemoryStore(), blob.NewMemory(), sm.AllowAll{}
+	deps := func() (ledger.Service, dam.Store, blob.Store, sm.Authorizer) {
+		return ledger.NewMemory(), dam.NewMemoryStore(), blob.NewMemory(), sm.AllowAll{}
 	}
 	l, s, b, a := deps()
 	m, err := sm.NewManager(l, s, b, a, sm.Config{Bucket: "b"})
@@ -132,7 +133,7 @@ func TestBeginUploadNewAsset(t *testing.T) {
 	}
 
 	// Nothing reaches the DAM or the ledger until CompleteUpload.
-	if page, _ := tm.store.ListAssets(t.Context(), sm.AssetQuery{Owner: acme}); len(page.Assets) != 0 {
+	if page, _ := tm.store.ListAssets(t.Context(), dam.AssetQuery{Owner: acme}); len(page.Assets) != 0 {
 		t.Errorf("BeginUpload created %d assets", len(page.Assets))
 	}
 	if objs, _ := tm.ledger.List(t.Context(), ledger.ListQuery{Owner: acme}); len(objs.Objects) != 0 {
@@ -173,7 +174,7 @@ func TestBeginUploadKeyLayout(t *testing.T) {
 func TestBeginUploadNewVersion(t *testing.T) {
 	tm := newTestManager(t)
 	ctx := t.Context()
-	asset := mustCreateAsset(t, tm.store, sm.Asset{Owner: acme, ProjectID: "p1"}, "image/png")
+	asset := mustCreateAsset(t, tm.store, dam.Asset{Owner: acme, ProjectID: "p1"}, "image/png")
 
 	ticket, err := tm.BeginUpload(ctx, "member", sm.UploadRequest{AssetID: asset.ID, ContentType: "image/jpeg", SizeBytes: 100})
 	if err != nil {
@@ -185,20 +186,20 @@ func TestBeginUploadNewVersion(t *testing.T) {
 	}
 
 	conflicting := sm.UploadRequest{AssetID: asset.ID, Owner: alice, ContentType: "image/png", SizeBytes: 100}
-	if _, err := tm.BeginUpload(ctx, "member", conflicting); !errors.Is(err, sm.ErrInvalidUpload) {
+	if _, err := tm.BeginUpload(ctx, "member", conflicting); !errors.Is(err, dam.ErrInvalidUpload) {
 		t.Errorf("version with a different owner = %v, want ErrInvalidUpload", err)
 	}
 	other := sm.UploadRequest{AssetID: asset.ID, ContentType: "video/mp4", SizeBytes: 100}
-	if _, err := tm.BeginUpload(ctx, "member", other); !errors.Is(err, sm.ErrInvalidAsset) {
+	if _, err := tm.BeginUpload(ctx, "member", other); !errors.Is(err, dam.ErrInvalidAsset) {
 		t.Errorf("version of another category = %v, want ErrInvalidAsset", err)
 	}
 	if err := tm.store.MarkAssetDeleted(ctx, asset.ID); err != nil {
 		t.Fatalf("MarkAssetDeleted: %v", err)
 	}
-	if _, err := tm.BeginUpload(ctx, "member", sm.UploadRequest{AssetID: asset.ID, ContentType: "image/png", SizeBytes: 100}); !errors.Is(err, sm.ErrAssetNotFound) {
+	if _, err := tm.BeginUpload(ctx, "member", sm.UploadRequest{AssetID: asset.ID, ContentType: "image/png", SizeBytes: 100}); !errors.Is(err, dam.ErrAssetNotFound) {
 		t.Errorf("version of a trashed asset = %v, want ErrAssetNotFound", err)
 	}
-	if _, err := tm.BeginUpload(ctx, "member", sm.UploadRequest{AssetID: uuid.NewString(), ContentType: "image/png", SizeBytes: 100}); !errors.Is(err, sm.ErrAssetNotFound) {
+	if _, err := tm.BeginUpload(ctx, "member", sm.UploadRequest{AssetID: uuid.NewString(), ContentType: "image/png", SizeBytes: 100}); !errors.Is(err, dam.ErrAssetNotFound) {
 		t.Errorf("version of a missing asset = %v, want ErrAssetNotFound", err)
 	}
 }
@@ -218,13 +219,13 @@ func TestBeginUploadRejects(t *testing.T) {
 		want  error
 	}{
 		{"too large", "member", with(func(r *sm.UploadRequest) { r.SizeBytes = sm.DefaultMaxUploadBytes + 1 }), sm.ErrUploadTooLarge},
-		{"empty file", "member", with(func(r *sm.UploadRequest) { r.SizeBytes = 0 }), sm.ErrInvalidUpload},
+		{"empty file", "member", with(func(r *sm.UploadRequest) { r.SizeBytes = 0 }), dam.ErrInvalidUpload},
 		{"stranger", "stranger", newAssetRequest(), sm.ErrForbidden},
 		{"no user", "", newAssetRequest(), sm.ErrForbidden},
 		{"someone else's library", "member", with(func(r *sm.UploadRequest) { r.Owner = alice }), sm.ErrForbidden},
-		{"project ID with a slash", "member", with(func(r *sm.UploadRequest) { r.ProjectID = "../library" }), sm.ErrInvalidUpload},
-		{"blank name", "member", with(func(r *sm.UploadRequest) { r.Name = " " }), sm.ErrInvalidAsset},
-		{"no content type", "member", with(func(r *sm.UploadRequest) { r.ContentType = "" }), sm.ErrInvalidUpload},
+		{"project ID with a slash", "member", with(func(r *sm.UploadRequest) { r.ProjectID = "../library" }), dam.ErrInvalidUpload},
+		{"blank name", "member", with(func(r *sm.UploadRequest) { r.Name = " " }), dam.ErrInvalidAsset},
+		{"no content type", "member", with(func(r *sm.UploadRequest) { r.ContentType = "" }), dam.ErrInvalidUpload},
 	}
 	tm.authz.AllowProject("member", "../library", sm.AccessWrite) // so the slash case reaches the key check
 	for _, tt := range tests {

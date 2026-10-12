@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 
 	"gyoza/platform/blob"
+	"gyoza/services/storage/internal/dam"
 	"gyoza/services/storage/internal/ledger"
 	sm "gyoza/services/storage/internal/manager"
 )
@@ -51,9 +52,9 @@ func liveLedgerObjects(t *testing.T, tm testManager) []ledger.Object {
 	return page.Objects
 }
 
-func acmeAssets(t *testing.T, tm testManager) []sm.Asset {
+func acmeAssets(t *testing.T, tm testManager) []dam.Asset {
 	t.Helper()
-	page, err := tm.store.ListAssets(t.Context(), sm.AssetQuery{Owner: acme})
+	page, err := tm.store.ListAssets(t.Context(), dam.AssetQuery{Owner: acme})
 	if err != nil {
 		t.Fatalf("ListAssets: %v", err)
 	}
@@ -69,7 +70,7 @@ func TestCompleteUploadNewAsset(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CompleteUpload: %v", err)
 	}
-	if a.Name != "Logo" || a.Owner != acme || a.CreatedBy != "member" || a.Category != sm.CategoryImage || a.CurrentVersion != 1 {
+	if a.Name != "Logo" || a.Owner != acme || a.CreatedBy != "member" || a.Category != dam.CategoryImage || a.CurrentVersion != 1 {
 		t.Errorf("asset = %+v", a)
 	}
 
@@ -178,7 +179,7 @@ func TestCompleteUploadResultOutlivesExpiry(t *testing.T) {
 func TestCompleteUploadDistrustsStorage(t *testing.T) {
 	tm := newTestManagerWith(t, sm.Config{Bucket: testBucket}, func(b *blob.Memory) blob.Store { return lyingBlobs{b} })
 	ticket := beginAndPut(t, tm, "member", newAssetRequest())
-	if _, err := tm.CompleteUpload(t.Context(), "member", ticket.UploadID); !errors.Is(err, sm.ErrInvalidUpload) {
+	if _, err := tm.CompleteUpload(t.Context(), "member", ticket.UploadID); !errors.Is(err, dam.ErrInvalidUpload) {
 		t.Errorf("CompleteUpload = %v, want ErrInvalidUpload", err)
 	}
 	if n := len(liveLedgerObjects(t, tm)); n != 0 {
@@ -242,11 +243,11 @@ func (l lyingBlobs) Stat(ctx context.Context, bucket, key string) (blob.Info, er
 // overlapping calls have recorded the file in the ledger before any of them
 // can finish the upload.
 type gatedStore struct {
-	*sm.MemoryStore
+	*dam.MemoryStore
 	arrived *barrier
 }
 
-func (g *gatedStore) CompleteUpload(ctx context.Context, id string, v sm.Version) (sm.Asset, error) {
+func (g *gatedStore) CompleteUpload(ctx context.Context, id string, v dam.Version) (dam.Asset, error) {
 	g.arrived.arrive()
 	g.arrived.await()
 	return g.MemoryStore.CompleteUpload(ctx, id, v)
@@ -335,7 +336,7 @@ func TestCompleteUploadRejects(t *testing.T) {
 	}{
 		{"missing upload", func(t *testing.T, tm testManager) (string, string) {
 			return "member", uuid.NewString()
-		}, sm.ErrUploadNotFound},
+		}, dam.ErrUploadNotFound},
 		{"another user", func(t *testing.T, tm testManager) (string, string) {
 			tm.authz.AllowOwner("colleague", acme, sm.AccessWrite) // may write, but didn't begin it
 			return "colleague", beginAndPut(t, tm, "member", newAssetRequest()).UploadID
@@ -365,7 +366,7 @@ func TestCompleteUploadRejects(t *testing.T) {
 			return "member", ticket.UploadID
 		}, sm.ErrContentMismatch},
 		{"expired", func(t *testing.T, tm testManager) (string, string) {
-			u, err := tm.store.CreateUpload(t.Context(), sm.Upload{
+			u, err := tm.store.CreateUpload(t.Context(), dam.Upload{
 				Owner: acme, CreatedBy: "member", Name: "Late", Bucket: testBucket, Key: "library/asset/" + uuid.NewString(),
 				ContentType: "image/png", SizeBytes: 10, ExpiresAt: time.Now().Add(-time.Minute),
 			})
@@ -373,7 +374,7 @@ func TestCompleteUploadRejects(t *testing.T) {
 				t.Fatalf("CreateUpload: %v", err)
 			}
 			return "member", u.ID
-		}, sm.ErrUploadExpired},
+		}, dam.ErrUploadExpired},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"gyoza/platform/blob"
+	"gyoza/services/storage/internal/dam"
 	"gyoza/services/storage/internal/ledger"
 	sm "gyoza/services/storage/internal/manager"
 )
@@ -68,7 +69,7 @@ func TestCleanupExpiredUploads(t *testing.T) {
 		t.Errorf("removed %d expired uploads, want 2", r.ExpiredUploads)
 	}
 	for _, id := range []string{abandoned.UploadID, halfDone.UploadID} {
-		if _, err := tm.store.GetUpload(ctx, id); !errors.Is(err, sm.ErrUploadNotFound) {
+		if _, err := tm.store.GetUpload(ctx, id); !errors.Is(err, dam.ErrUploadNotFound) {
 			t.Errorf("session %s after cleanup = %v, want ErrUploadNotFound", id, err)
 		}
 	}
@@ -85,7 +86,7 @@ func TestCleanupExpiredUploads(t *testing.T) {
 func TestCleanupPurgesTrash(t *testing.T) {
 	tm := newTestManager(t)
 	ctx := t.Context()
-	folder, err := tm.CreateFolder(ctx, "member", sm.Folder{Owner: acme, Name: "Old"})
+	folder, err := tm.CreateFolder(ctx, "member", dam.Folder{Owner: acme, Name: "Old"})
 	if err != nil {
 		t.Fatalf("CreateFolder: %v", err)
 	}
@@ -116,10 +117,10 @@ func TestCleanupPurgesTrash(t *testing.T) {
 	if want := (sm.CleanupReport{CompletedUploads: 3, Assets: 1, Folders: 1}); r != want {
 		t.Errorf("after a week: %+v, want %+v", r, want)
 	}
-	if _, err := tm.store.GetAsset(ctx, a.ID); !errors.Is(err, sm.ErrAssetNotFound) {
+	if _, err := tm.store.GetAsset(ctx, a.ID); !errors.Is(err, dam.ErrAssetNotFound) {
 		t.Errorf("purged asset: %v, want ErrAssetNotFound", err)
 	}
-	if _, err := tm.store.GetFolder(ctx, folder.ID); !errors.Is(err, sm.ErrFolderNotFound) {
+	if _, err := tm.store.GetFolder(ctx, folder.ID); !errors.Is(err, dam.ErrFolderNotFound) {
 		t.Errorf("purged folder: %v, want ErrFolderNotFound", err)
 	}
 	for _, v := range versions {
@@ -172,7 +173,7 @@ func TestRestoreEndsWithRetention(t *testing.T) {
 	tm := newTestManager(t)
 	ctx := t.Context()
 	a, _ := uploadAsset(t, tm, "member", newAssetRequest())
-	folder, _ := tm.CreateFolder(ctx, "member", sm.Folder{Owner: acme, Name: "F"})
+	folder, _ := tm.CreateFolder(ctx, "member", dam.Folder{Owner: acme, Name: "F"})
 	if err := tm.DeleteAsset(ctx, "member", a.ID); err != nil {
 		t.Fatalf("DeleteAsset: %v", err)
 	}
@@ -184,10 +185,10 @@ func TestRestoreEndsWithRetention(t *testing.T) {
 	tooLate := trashed.Add(sm.DefaultTrashRetention - sm.ClockSkew + time.Minute)
 
 	sm.SetClock(tm.Manager, func() time.Time { return tooLate })
-	if _, err := tm.RestoreAsset(ctx, "member", a.ID); !errors.Is(err, sm.ErrAssetNotFound) {
+	if _, err := tm.RestoreAsset(ctx, "member", a.ID); !errors.Is(err, dam.ErrAssetNotFound) {
 		t.Errorf("RestoreAsset too late = %v, want ErrAssetNotFound", err)
 	}
-	if _, err := tm.RestoreFolder(ctx, "member", folder.ID); !errors.Is(err, sm.ErrFolderNotFound) {
+	if _, err := tm.RestoreFolder(ctx, "member", folder.ID); !errors.Is(err, dam.ErrFolderNotFound) {
 		t.Errorf("RestoreFolder too late = %v, want ErrFolderNotFound", err)
 	}
 
@@ -240,7 +241,7 @@ func TestCleanupResumesAfterFailure(t *testing.T) {
 	if r := mustCleanup(t, tm, later); r.Assets != 2 {
 		t.Errorf("next run purged %d assets, want 2", r.Assets)
 	}
-	if page, _ := tm.store.ListAssets(ctx, sm.AssetQuery{Owner: acme, IncludeDeleted: true}); len(page.Assets) != 0 {
+	if page, _ := tm.store.ListAssets(ctx, dam.AssetQuery{Owner: acme, IncludeDeleted: true}); len(page.Assets) != 0 {
 		t.Errorf("%d assets left after the second run", len(page.Assets))
 	}
 }
@@ -260,7 +261,7 @@ func TestRunCleanupStops(t *testing.T) {
 	}()
 	deadline := time.Now().Add(5 * time.Second)
 	for {
-		if _, err := tm.store.GetUpload(t.Context(), u.ID); errors.Is(err, sm.ErrUploadNotFound) {
+		if _, err := tm.store.GetUpload(t.Context(), u.ID); errors.Is(err, dam.ErrUploadNotFound) {
 			break // the first run happened
 		}
 		if time.Now().After(deadline) {

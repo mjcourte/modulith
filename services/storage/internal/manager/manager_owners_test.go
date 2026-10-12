@@ -4,6 +4,7 @@ import (
 	"errors"
 	"testing"
 
+	"gyoza/services/storage/internal/dam"
 	"gyoza/services/storage/internal/ledger"
 	sm "gyoza/services/storage/internal/manager"
 )
@@ -89,7 +90,7 @@ func TestRemoveUserWithOrg(t *testing.T) {
 		t.Errorf("member's asset creator = %q, want member", g.CreatedBy)
 	}
 	// Her half-finished upload can't land anymore.
-	if _, err := tm.CompleteUpload(ctx, "alice", pending.UploadID); !errors.Is(err, sm.ErrUploadExpired) {
+	if _, err := tm.CompleteUpload(ctx, "alice", pending.UploadID); !errors.Is(err, dam.ErrUploadExpired) {
 		t.Errorf("completing her pending upload = %v, want ErrUploadExpired", err)
 	}
 	if again, err := tm.RemoveUser(ctx, "alice", "acme"); err != nil || again.Transfer.Assets != 0 {
@@ -121,7 +122,7 @@ func TestRemoveUserWithoutOrg(t *testing.T) {
 	if objs := ledgerObjects(t, tm, alice, true); len(objs) != 1 || objs[0].CreatedBy != "" {
 		t.Errorf("her ledger objects = %+v; want 1, deleted, creator cleared", objs)
 	}
-	if _, err := tm.RemoveUser(ctx, "", ""); !errors.Is(err, sm.ErrInvalidQuery) {
+	if _, err := tm.RemoveUser(ctx, "", ""); !errors.Is(err, dam.ErrInvalidQuery) {
 		t.Errorf("no user = %v, want ErrInvalidQuery", err)
 	}
 }

@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"mime"
 	"path"
-	"slices"
 	"strings"
 	"time"
 	"unicode/utf8"
 
+	"gyoza/services/storage/internal/dam"
 	"gyoza/services/storage/internal/ledger"
 )
 
@@ -34,7 +34,7 @@ func (m *Manager) DownloadURL(ctx context.Context, actorID, assetID string, vers
 		return Download{}, err
 	}
 	if a.DeletedAt != nil {
-		return Download{}, ErrAssetNotFound
+		return Download{}, dam.ErrAssetNotFound
 	}
 	// Permission before the version lookup, so a user without access can't
 	// probe which versions exist.
@@ -53,7 +53,7 @@ func (m *Manager) DownloadURL(ctx context.Context, actorID, assetID string, vers
 	obj, err := m.ledger.Get(ctx, v.ObjectID)
 	if err != nil || obj.DeletedAt != nil {
 		// The asset and the ledger disagree; don't hand out a link to nothing.
-		return Download{}, fmt.Errorf("%w: version %d's file is missing from the ledger", ErrAssetNotFound, version)
+		return Download{}, fmt.Errorf("%w: version %d's file is missing from the ledger", dam.ErrAssetNotFound, version)
 	}
 	return m.presignDownload(ctx, obj, downloadFilename(a.Name, v.ContentType))
 }
@@ -115,7 +115,7 @@ func downloadFilename(name, contentType string) string {
 
 	var b strings.Builder
 	for _, r := range strings.TrimSpace(name) {
-		if r < 0x20 || r == 0x7f || strings.ContainsRune(forbiddenFolderChars, r) {
+		if r < 0x20 || r == 0x7f || strings.ContainsRune(dam.ForbiddenNameChars, r) {
 			r = '_'
 		}
 		b.WriteRune(r)
@@ -129,7 +129,7 @@ func downloadFilename(name, contentType string) string {
 		clean = string([]rune(clean)[:maxFilenameRunes])
 	}
 	clean = strings.TrimRight(clean, ". ")
-	if base, _, _ := strings.Cut(clean, "."); slices.Contains(reservedFolderNames, strings.ToLower(base)) {
+	if dam.IsReservedName(clean) {
 		clean = "_" + clean // "CON" can't be a file name on Windows
 	}
 	if clean == "" {

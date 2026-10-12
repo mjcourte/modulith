@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"gyoza/platform/blob"
+	"gyoza/services/storage/internal/dam"
 	"gyoza/services/storage/internal/ledger"
 )
 
@@ -17,37 +18,37 @@ import (
 // It's safe to call again, from a retry, a timeout or a double click, even
 // overlapping: every path ends with one asset (or version) and one ledger
 // object, because the ledger object's ID was chosen when the upload began.
-func (m *Manager) CompleteUpload(ctx context.Context, actorID, uploadID string) (Asset, error) {
+func (m *Manager) CompleteUpload(ctx context.Context, actorID, uploadID string) (dam.Asset, error) {
 	u, err := m.store.GetUpload(ctx, uploadID)
 	if err != nil {
-		return Asset{}, err
+		return dam.Asset{}, err
 	}
 	// Only the user who began the upload may finish it, and only while they
 	// still may write there (permissions can change mid-upload).
 	if actorID == "" || actorID != u.CreatedBy {
-		return Asset{}, fmt.Errorf("%w: only the user who began an upload can complete it", ErrForbidden)
+		return dam.Asset{}, fmt.Errorf("%w: only the user who began an upload can complete it", ErrForbidden)
 	}
 	if err := m.canWrite(ctx, actorID, u.Owner, u.ProjectID); err != nil {
-		return Asset{}, err
+		return dam.Asset{}, err
 	}
 
 	if u.CompletedAt != nil {
 		return m.store.GetAsset(ctx, u.ResultAssetID) // already done: same result again
 	}
-	if u.expired(time.Now()) {
-		return Asset{}, fmt.Errorf("%w: expired at %s", ErrUploadExpired, u.ExpiresAt.Format(time.RFC3339))
+	if u.Expired(time.Now()) {
+		return dam.Asset{}, fmt.Errorf("%w: expired at %s", dam.ErrUploadExpired, u.ExpiresAt.Format(time.RFC3339))
 	}
 
 	if err := m.checkUploadedFile(ctx, u); err != nil {
-		return Asset{}, err
+		return dam.Asset{}, err
 	}
 
 	if err := m.recordInLedger(ctx, u); err != nil {
-		return Asset{}, err
+		return dam.Asset{}, err
 	}
 	// Overlapping calls all get here; the Store lets one complete the
 	// session and hands the others the same asset.
-	return m.store.CompleteUpload(ctx, u.ID, Version{
+	return m.store.CompleteUpload(ctx, u.ID, dam.Version{
 		ObjectID:    u.ObjectID,
 		ContentType: u.ContentType,
 		SizeBytes:   u.SizeBytes,
@@ -58,7 +59,7 @@ func (m *Manager) CompleteUpload(ctx context.Context, actorID, uploadID string) 
 // checkUploadedFile confirms the file is in S3 with the signed size and type,
 // and that its first bytes match the declared type. A rejected file is left
 // in place: the cleanup job deletes it when the session expires.
-func (m *Manager) checkUploadedFile(ctx context.Context, u Upload) error {
+func (m *Manager) checkUploadedFile(ctx context.Context, u dam.Upload) error {
 	info, err := m.blobs.Stat(ctx, u.Bucket, u.Key)
 	if errors.Is(err, blob.ErrNotFound) {
 		return fmt.Errorf("%w: upload the file to the ticket's URL first", ErrNotUploaded)
@@ -69,7 +70,7 @@ func (m *Manager) checkUploadedFile(ctx context.Context, u Upload) error {
 	// The presigned URL signs both, so S3 shouldn't let these differ; check anyway.
 	if info.Size != u.SizeBytes || info.ContentType != u.ContentType {
 		return fmt.Errorf("%w: stored %s, %d bytes; expected %s, %d bytes",
-			ErrInvalidUpload, info.ContentType, info.Size, u.ContentType, u.SizeBytes)
+			dam.ErrInvalidUpload, info.ContentType, info.Size, u.ContentType, u.SizeBytes)
 	}
 	prefix, err := m.blobs.ReadPrefix(ctx, u.Bucket, u.Key, SniffLen)
 	if err != nil {
@@ -82,7 +83,7 @@ func (m *Manager) checkUploadedFile(ctx context.Context, u Upload) error {
 // session chose up front. Doing it again (a retry, an overlapping call, or a
 // resumed attempt that crashed after this step) finds the object already
 // there, so there is never more than one ledger object per upload.
-func (m *Manager) recordInLedger(ctx context.Context, u Upload) error {
+func (m *Manager) recordInLedger(ctx context.Context, u dam.Upload) error {
 	_, err := m.ledger.Create(ctx, ledger.Object{
 		ID:          u.ObjectID,
 		Owner:       u.Owner,
