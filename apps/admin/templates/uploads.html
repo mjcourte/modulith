@@ -1,0 +1,11 @@
+{{define "content"}}
+<h1>Uploads</h1>
+<table><tr><th>id</th><th>owner</th><th>by</th><th>name</th><th>type</th><th>size</th><th>created</th><th>status</th></tr>
+{{range $u := .Data}}<tr>
+  <td class="mono">{{.ID}}</td><td>{{template "owner" .}}</td><td><a href="/users/{{.CreatedBy}}">{{.CreatedBy}}</a></td>
+  <td>{{.Name}}{{with .AssetID}} <span class="muted">new version of</span> <a href="/assets/{{.}}">asset</a>{{end}}</td>
+  <td>{{.ContentType}}</td><td>{{bytes .SizeBytes}}</td><td>{{time .CreatedAt}}</td>
+  <td>{{if .CompletedAt}}done {{time .CompletedAt}}{{with .ResultAssetID}} → <a href="/assets/{{.}}">v{{$u.ResultVersion}}</a>{{end}}{{else}}pending, expires {{time .ExpiresAt}}{{end}}</td>
+</tr>{{end}}
+</table>
+{{end}}

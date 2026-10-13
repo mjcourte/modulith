@@ -1,0 +1,27 @@
+{{define "content"}}
+<h1>Users</h1>
+<div class="box">
+  <form method="post" action="/users">
+    <strong>Sign in a new user</strong>
+    <input name="name" placeholder="name" required>
+    <input name="email" type="email" placeholder="email" required>
+    <input name="id" placeholder="id (default dev-…)">
+    <button>Create</button>
+  </form>
+</div>
+<input type="search" name="q" value="{{.Query.Get "q"}}" placeholder="search id, email, name"
+       hx-get="/users" hx-trigger="input changed delay:250ms, search" hx-select="#rows" hx-target="#rows" hx-swap="outerHTML" hx-push-url="true">
+<table id="rows">
+<tr><th>name</th><th>email</th><th>id</th><th>org</th><th>created</th><th></th></tr>
+{{range .Data}}
+<tr {{if .DeletingAt}}class="trashed"{{end}}>
+  <td><a href="/users/{{.ID}}">{{.Name}}</a></td>
+  <td>{{.Email}}{{if not .EmailVerified}} <span class="muted">(unverified)</span>{{end}}</td>
+  <td class="mono">{{.ID}}</td>
+  <td>{{if .OrgID}}<a href="/orgs/{{deref .OrgID}}">{{deref .OrgName}}</a> <span class="muted">{{deref .Role}}</span>{{end}}</td>
+  <td>{{time .CreatedAt}}{{if .DeletingAt}} <span class="muted">deleting</span>{{end}}</td>
+  <td><form method="post" action="/act" class="inline"><input type="hidden" name="actor" value="{{.ID}}"><button>act as</button></form></td>
+</tr>
+{{end}}
+</table>
+{{end}}

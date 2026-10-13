@@ -1,0 +1,37 @@
+{{define "content"}}
+{{with .Data}}{{$org := .Org}}
+<h1>{{$org.Name}} <span class="muted mono">{{$org.ID}}</span></h1>
+<dl>
+  <dt>created</dt><dd>{{time $org.CreatedAt}}</dd>
+  {{if $org.DeletingAt}}<dt>deleting since</dt><dd>{{time $org.DeletingAt}}</dd>{{end}}
+  <dt>storage</dt><dd>{{.Usage.Objects}} objects, {{bytes .Usage.Bytes}} · <a href="/objects?owner_kind=org&owner_id={{$org.ID}}">ledger</a> · <a href="/folders?owner_kind=org&owner_id={{$org.ID}}">folders</a></dd>
+</dl>
+<div class="box">
+  <form method="post" action="/orgs/{{$org.ID}}/rename"><input name="name" value="{{$org.Name}}"><button>Rename</button></form>
+  <form method="post" action="/orgs/{{$org.ID}}/invites"><input name="email" type="email" placeholder="email" required>
+    <select name="role"><option>member</option><option>admin</option></select><button>Invite</button></form>
+  <form method="post" action="/orgs/{{$org.ID}}/delete" onsubmit="return confirm('Delete this org and everything it owns?')"><button class="danger">Delete org</button></form>
+</div>
+
+<h2>Members ({{len .Members}})</h2>
+<table><tr><th>user</th><th>email</th><th>role</th><th>joined</th><th></th></tr>
+{{range .Members}}<tr><td><a href="/users/{{.UserID}}">{{.Name}}</a></td><td>{{.Email}}</td><td>{{.Role}}</td><td>{{time .JoinedAt}}</td>
+<td>
+  <form method="post" action="/orgs/{{$org.ID}}/members/{{.UserID}}/role" class="inline">
+    {{if eq .Role "admin"}}<input type="hidden" name="role" value="member"><button>make member</button>
+    {{else}}<input type="hidden" name="role" value="admin"><button>make admin</button>{{end}}
+  </form>
+  <form method="post" action="/orgs/{{$org.ID}}/members/{{.UserID}}/remove" class="inline" onsubmit="return confirm('Remove this member?')"><button class="danger">remove</button></form>
+</td></tr>{{end}}
+</table>
+
+<h2>Invites ({{len .Invites}})</h2>
+{{template "inviteTable" .Invites}}
+
+<h2>Projects ({{len .Projects}})</h2>
+{{template "projectTable" .Projects}}
+
+<h2>Assets ({{len .Assets}})</h2>
+{{template "assetTable" .Assets}}
+{{end}}
+{{end}}

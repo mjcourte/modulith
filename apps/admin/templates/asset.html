@@ -1,0 +1,59 @@
+{{define "content"}}
+{{with .Data}}{{$a := .Asset}}
+<h1>{{$a.Name}} <span class="muted mono">{{$a.ID}}</span>{{template "orphan" $a}}</h1>
+<dl>
+  <dt>owner</dt><dd>{{template "owner" $a}}</dd>
+  {{if $a.ProjectID}}<dt>project</dt><dd><a href="/projects/{{$a.ProjectID}}" class="mono">{{$a.ProjectID}}</a></dd>{{end}}
+  <dt>folder</dt><dd>{{if $a.FolderID}}<a href="/assets?folder_id={{deref $a.FolderID}}">{{deref $a.FolderName}}</a>{{else}}<span class="muted">root</span>{{end}}</dd>
+  <dt>type</dt><dd>{{$a.Category}} · {{$a.ContentType}}</dd>
+  <dt>current version</dt><dd>{{$a.CurrentVersion}}</dd>
+  {{if $a.Description}}<dt>description</dt><dd>{{$a.Description}}</dd>{{end}}
+  {{if $a.Tags}}<dt>tags</dt><dd>{{range $a.Tags}}<code>{{.}}</code> {{end}}</dd>{{end}}
+  <dt>created</dt><dd>{{time $a.CreatedAt}} by <a href="/users/{{$a.CreatedBy}}">{{$a.CreatedBy}}</a></dd>
+  <dt>updated</dt><dd>{{time $a.UpdatedAt}}</dd>
+  {{if $a.DeletedAt}}<dt>trashed</dt><dd>{{time $a.DeletedAt}}</dd>{{end}}
+</dl>
+<div class="box">
+  <form method="post" action="/assets/upload" enctype="multipart/form-data">
+    <strong>Upload a new version</strong> <input type="hidden" name="asset_id" value="{{$a.ID}}">
+    <input type="file" name="file" required><button>Upload</button>
+  </form>
+  {{if $a.DeletedAt}}
+  <form method="post" action="/assets/{{$a.ID}}/restore"><button>Restore from trash</button></form>
+  {{else}}
+  <form method="post" action="/assets/{{$a.ID}}/delete"><button class="danger">Move to trash</button></form>
+  {{end}}
+</div>
+
+<h2>Versions ({{len .Versions}})</h2>
+<table><tr><th>#</th><th>object</th><th>type</th><th>size</th><th>media</th><th>created</th><th></th></tr>
+{{range .Versions}}<tr>
+  <td>{{.Number}}{{if eq .Number $a.CurrentVersion}} <span class="muted">current</span>{{end}}</td>
+  <td class="mono"><a href="/objects?q={{.ObjectID}}">{{.ObjectID}}</a></td>
+  <td>{{.ContentType}}</td><td>{{bytes .SizeBytes}}</td>
+  <td>{{if .MediaStatus}}{{deref .MediaStatus}}{{if .Width}} · {{deref .Width}}×{{deref .Height}}{{end}}{{if .DurationUs}} · {{deref .DurationUs}}µs{{end}}{{if .MediaError}} <span class="muted">{{deref .MediaError}}</span>{{end}}
+      {{if .Details}}<details><summary>details</summary><pre>{{deref .Details}}</pre></details>{{end}}{{end}}</td>
+  <td>{{time .CreatedAt}} by {{.CreatedBy}}</td>
+  <td>
+    <a href="/assets/{{$a.ID}}/download?v={{.Number}}">download</a>
+    {{if ne .Number $a.CurrentVersion}}<form method="post" action="/assets/{{$a.ID}}/revert" class="inline"><input type="hidden" name="version" value="{{.Number}}"><button>revert to</button></form>{{end}}
+  </td>
+</tr>{{end}}
+</table>
+
+<h2>Used by projects ({{len .Uses}})</h2>
+{{template "useTable" .Uses}}
+<div class="box">
+  {{if .Projects}}
+  <form method="post" action="/uses">
+    <strong>Use in project</strong>
+    <input type="hidden" name="asset_id" value="{{$a.ID}}">
+    <select name="project_id">{{range .Projects}}<option value="{{.ID}}">{{.Name}} ({{.Access}})</option>{{end}}</select>
+    version <select name="version">{{range .Versions}}<option {{if eq .Number $a.CurrentVersion}}selected{{end}}>{{.Number}}</option>{{end}}</select>
+    <button>Record use</button>
+  </form>
+  <p class="muted" style="margin:4px 0 0">Projects the acting user can write. A project may only use its own or its owner's assets in place (or gyoza's); anything else is refused with "fork required".</p>
+  {{else}}<span class="muted">Pick an acting user with a writable project to record a use.</span>{{end}}
+</div>
+{{end}}
+{{end}}

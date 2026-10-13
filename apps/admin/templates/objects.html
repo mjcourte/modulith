@@ -1,0 +1,25 @@
+{{define "content"}}
+<h1>Ledger objects</h1>
+<form method="get" action="/objects" class="filters">
+  <select name="owner_kind">
+    <option value="">any owner</option>
+    {{range $k := (list "user" "org" "project" "gyoza")}}<option {{if eq $k ($.Query.Get "owner_kind")}}selected{{end}}>{{$k}}</option>{{end}}
+  </select>
+  <input name="owner_id" value="{{.Query.Get "owner_id"}}" placeholder="owner id" size="38">
+  <input type="search" name="q" value="{{.Query.Get "q"}}" placeholder="search id, key">
+  <button>Filter</button>
+</form>
+{{if .Query.Get "owner_kind"}}
+<form method="post" action="/owners/delete-owned" class="filters" onsubmit="return confirm('Delete every file this owner has? (storage DeleteOwned, the GDPR cascade)')">
+  <input type="hidden" name="owner_kind" value="{{.Query.Get "owner_kind"}}"><input type="hidden" name="owner_id" value="{{.Query.Get "owner_id"}}">
+  <button class="danger">DeleteOwned for this owner</button>
+</form>
+{{end}}
+<table><tr><th>id</th><th>owner</th><th>kind</th><th>key</th><th>size</th><th>type</th><th>created</th></tr>
+{{range .Data}}<tr {{if .DeletedAt}}class="trashed"{{end}}>
+  <td class="mono">{{.ID}}</td><td>{{template "owner" .}}{{with .ProjectID}} · <a href="/projects/{{.}}">project</a>{{end}}</td>
+  <td>{{deref .Kind}}</td><td class="mono">{{.Bucket}}/{{.Key}}</td><td>{{bytes .SizeBytes}}</td><td>{{.ContentType}}</td>
+  <td>{{time .CreatedAt}}{{if .DeletedAt}} <span class="muted">deleted {{time .DeletedAt}}</span>{{end}}</td>
+</tr>{{end}}
+</table>
+{{end}}

@@ -1,0 +1,16 @@
+{{define "content"}}
+<h1>Assets</h1>
+{{template "uploadForm"}}
+<form method="get" action="/assets" class="filters">
+  <select name="owner_kind">
+    <option value="">any owner</option>
+    {{range $k := (list "user" "org" "project" "gyoza")}}<option {{if eq $k ($.Query.Get "owner_kind")}}selected{{end}}>{{$k}}</option>{{end}}
+  </select>
+  <input name="owner_id" value="{{.Query.Get "owner_id"}}" placeholder="owner id" size="38">
+  <input name="folder_id" value="{{.Query.Get "folder_id"}}" placeholder="folder id" size="38">
+  <input type="search" name="q" value="{{.Query.Get "q"}}" placeholder="search id, name">
+  <label><input type="checkbox" name="trashed" {{if .Query.Get "trashed"}}checked{{end}}> include trashed</label>
+  <button>Filter</button>
+</form>
+<div id="rows">{{template "assetTable" .Data}}</div>
+{{end}}
