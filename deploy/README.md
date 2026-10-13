@@ -29,8 +29,8 @@ docker compose -f deploy/monolith/compose.yaml down -v        # stop, delete dat
 # The monolith, on localhost:9090:
 docker compose -f deploy/monolith/compose.yaml --profile app up -d --build --wait
 
-# Distributed: storage on localhost:9091, iam on localhost:9093, mediaprocessor
-# reachable only by storage.
+# Distributed: storage on localhost:9091, iam on localhost:9093, documents on
+# localhost:9094, mediaprocessor reachable only by storage.
 docker compose -f deploy/distributed/compose.yaml up -d --build --wait
 ```
 
@@ -38,4 +38,5 @@ docker compose -f deploy/distributed/compose.yaml up -d --build --wait
 - The distributed file includes the monolith's dependencies under its own project name (`gyoza-distributed`), so it has its own data volumes. Both publish the same host ports, so run one at a time.
 - mediaprocessor gets no environment at all: no database, no S3 credentials (see `services/mediaprocessor/PLAN.md`, "Isolating ffprobe").
 - storage and iam call each other (permission checks one way, deletions the other); gRPC connects lazily, so neither waits for the other to start.
-- Not containerised yet: the services not built yet (gateway, documentmanager, exporter, mcp).
+- documents needs no database and no S3 credentials: its snapshots go through storage (the bytes by presigned URL), and it shares the NATS cluster.
+- Not containerised yet: the services not built yet (gateway, exporter, mcp).

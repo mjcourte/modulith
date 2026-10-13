@@ -187,3 +187,21 @@ one owner with 20k objects.
 - **When to act:** cleanup load shows up in S3 request costs or database load.
 - **Fix:** a Postgres advisory lock (`pg_try_advisory_lock`) so one replica
   runs each round, or move the job to `platform/jobs` once it exists.
+
+## Snapshots (`storage.snapshots`)
+
+### Open
+
+#### Retention ranks every snapshot on each cleanup run
+
+- **Now:** `ListSnapshotsBeyondKeep` numbers every completed snapshot per
+  project (`row_number()` over the whole table) to find those beyond the
+  newest `SnapshotKeep`, on every cleanup run (default every 10 minutes).
+- **Cost:** a full scan of `storage.snapshots`: at most 100 rows per project
+  once retention has caught up, so it grows with the number of projects. Not
+  measured; cheap while projects are few.
+- **Fix:** track projects that gained a snapshot since the last run, or prune
+  each project right after `CompleteSnapshot` (delete versions at or below
+  `version - keep`), which needs no scan at all.
+- **When to act:** cleanup query time shows up, or projects reach the tens of
+  thousands.

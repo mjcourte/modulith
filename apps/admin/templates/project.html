@@ -47,6 +47,18 @@
   {{else}}<span class="muted">No assets this project can use in place.</span>{{end}}
 </div>
 
+<h2>Document</h2>
+{{if .DocumentErr}}<p class="muted">{{.DocumentErr}}</p>{{else}}<pre class="box">{{.Document}}</pre>{{end}}
+
+<h3>Snapshots ({{len .Snapshots}})</h3>
+<p class="muted">Stored versions, newest first. Reverting (as the acting user, who needs write access) applies one fresh edit that sets the document back to that version; it doesn't delete history, and can itself be reverted.</p>
+<table><tr><th>version</th><th>covers seq</th><th>last edit</th><th>size</th><th>stored</th><th></th></tr>
+{{range .Snapshots}}<tr><td>v{{.Version}}</td><td>{{.Seq}}</td>
+<td>{{if .EditedBy}}<a href="/users/{{deref .EditedBy}}">{{deref .EditedBy}}</a>{{else}}<span class="muted">unknown</span>{{end}}{{if .EditedAt}} · {{time .EditedAt}}{{end}}</td>
+<td>{{.SizeBytes}} B</td><td>{{time .CompletedAt}}</td>
+<td><form method="post" action="/projects/{{$p.ID}}/revert" class="inline" onsubmit="return confirm('Revert the document to v{{.Version}}?')"><input type="hidden" name="version" value="{{.Version}}"><button class="danger">revert</button></form></td></tr>{{end}}
+</table>
+
 <h2>Project-owned assets ({{len .Assets}})</h2>
 {{template "assetTable" .Assets}}
 <p class="muted">To upload for this project, use the form on <a href="/assets?owner_kind=project&owner_id={{$p.ID}}">Assets</a> with owner <code>project</code> / <code>{{$p.ID}}</code>.</p>

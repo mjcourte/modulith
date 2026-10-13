@@ -57,7 +57,7 @@ func (o Owner) Validate() error {
 type Kind string
 
 const (
-	KindSnapshot Kind = "snapshot" // document snapshot written by the document manager
+	KindSnapshot Kind = "snapshot" // document snapshot written by the documents service
 	KindAsset    Kind = "asset"    // user-uploaded or generated asset
 	KindExport   Kind = "export"   // rendered output
 )

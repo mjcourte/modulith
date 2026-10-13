@@ -21,6 +21,7 @@ type OwnerDeletion struct {
 	LedgerObjects int                // ledger objects newly marked deleted
 	Trash         dam.FolderDeletion // DAM folders and assets trashed, under one DeletionID
 	Uses          int                // a project's asset uses forgotten (projects only)
+	Snapshots     int                // a project's snapshot records removed (projects only; their objects are in LedgerObjects)
 }
 
 // DeleteOwned trashes everything owner owns: a deleted project's files, an
@@ -36,15 +37,20 @@ func (m *Manager) DeleteOwned(ctx context.Context, owner ledger.Owner) (OwnerDel
 	if err != nil {
 		return OwnerDeletion{}, fmt.Errorf("delete ledger objects of %v: %w", owner, err)
 	}
-	var uses int
+	var uses, snaps int
 	if owner.Kind == ledger.OwnerProject {
 		// A deleted project uses nothing. Other projects' uses of its files are
 		// kept: they read them until the purge, like any trashed asset.
 		if uses, err = m.store.ForgetProjectUses(ctx, owner.ID); err != nil {
 			return OwnerDeletion{}, err
 		}
+		// Its snapshots' objects were trashed above (the project owns them);
+		// without the records, LatestSnapshot can't point at them.
+		if snaps, err = m.snaps.DeleteProject(ctx, owner.ID); err != nil {
+			return OwnerDeletion{}, err
+		}
 	}
-	return OwnerDeletion{LedgerObjects: n, Trash: trash, Uses: uses}, nil
+	return OwnerDeletion{LedgerObjects: n, Trash: trash, Uses: uses, Snapshots: snaps}, nil
 }
 
 // UserRemoval reports what RemoveUser did.
@@ -55,9 +61,11 @@ type UserRemoval struct {
 	Transfer      dam.OwnerTransfer
 	LedgerObjects int // ledger objects transferred or deleted
 	Deleted       OwnerDeletion
-	// Creator references removed (GDPR), in the ledger and the DAM.
-	ClearedLedger int
-	ClearedDAM    int
+	// Creator references removed (GDPR), in the ledger, the DAM and as
+	// snapshots' last editor.
+	ClearedLedger    int
+	ClearedDAM       int
+	ClearedSnapshots int
 }
 
 // RemoveUser handles a user leaving. Their pending uploads are expired. If
@@ -98,6 +106,9 @@ func (m *Manager) RemoveUser(ctx context.Context, userID, orgID string) (UserRem
 	}
 	if r.ClearedLedger, err = m.ledger.ClearCreatedBy(ctx, userID); err != nil {
 		return UserRemoval{}, fmt.Errorf("clear ledger creators: %w", err)
+	}
+	if r.ClearedSnapshots, err = m.snaps.ClearEditedBy(ctx, userID); err != nil {
+		return UserRemoval{}, fmt.Errorf("clear snapshot editors: %w", err)
 	}
 	return r, nil
 }

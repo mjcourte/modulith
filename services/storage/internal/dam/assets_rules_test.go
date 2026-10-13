@@ -237,7 +237,7 @@ func TestAssetRefJSON(t *testing.T) {
 	}
 }
 
-// Copy IDs are the contract with documentmanager (it computes a clone's
+// Copy IDs are the contract with documents (it computes a clone's
 // refs): deterministic, distinct per input, valid UUIDv7s dated like the
 // project they're made for.
 func TestCopyAssetID(t *testing.T) {

@@ -85,6 +85,22 @@ type StorageObject struct {
 	DeletedAt   *time.Time
 }
 
+type StorageSnapshot struct {
+	ObjectID    string
+	ProjectID   string
+	Seq         int64
+	Version     *int32
+	EditedBy    *string
+	EditedAt    *time.Time
+	Bucket      string
+	Key         string
+	ContentType string
+	SizeBytes   int64
+	ExpiresAt   time.Time
+	CreatedAt   time.Time
+	CompletedAt *time.Time
+}
+
 type StorageUpload struct {
 	ID            string
 	OwnerKind     string

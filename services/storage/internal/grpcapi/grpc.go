@@ -52,6 +52,11 @@ var wireErrors = []struct {
 	{dam.ErrFolderNotEmpty, codes.FailedPrecondition, "FOLDER_NOT_EMPTY"},
 	{dam.ErrUploadExpired, codes.FailedPrecondition, "UPLOAD_EXPIRED"},
 	{manager.ErrNotUploaded, codes.FailedPrecondition, "NOT_UPLOADED"},
+	{manager.ErrSnapshotNotFound, codes.NotFound, "SNAPSHOT_NOT_FOUND"},
+	{manager.ErrInvalidSnapshot, codes.InvalidArgument, "INVALID_SNAPSHOT"},
+	{manager.ErrSnapshotTooLarge, codes.InvalidArgument, "SNAPSHOT_TOO_LARGE"},
+	{manager.ErrSnapshotStale, codes.FailedPrecondition, "STALE"},
+	{manager.ErrSnapshotExpired, codes.FailedPrecondition, "SNAPSHOT_EXPIRED"},
 }
 
 // toStatus turns a Service error into a gRPC status for the server to return.
@@ -368,4 +373,22 @@ func refToProto(r dam.AssetRef) *pb.AssetRef {
 
 func refFromProto(p *pb.AssetRef) dam.AssetRef {
 	return dam.AssetRef{AssetID: p.GetAssetId(), Version: int(p.GetVersion())}
+}
+
+// ---- Snapshots
+
+func snapshotToProto(r manager.SnapshotRef) *pb.Snapshot {
+	return &pb.Snapshot{
+		ProjectId: r.ProjectID, ObjectId: r.ObjectID, Version: int32(r.Version), Seq: r.Seq,
+		EditedBy: r.EditedBy, EditedAt: timestamp(r.EditedAt),
+		ContentType: r.ContentType, SizeBytes: r.SizeBytes, CreatedAt: timestamp(r.CreatedAt),
+	}
+}
+
+func snapshotFromProto(p *pb.Snapshot) manager.SnapshotRef {
+	return manager.SnapshotRef{
+		ProjectID: p.GetProjectId(), ObjectID: p.GetObjectId(), Version: int(p.GetVersion()), Seq: p.GetSeq(),
+		EditedBy: p.GetEditedBy(), EditedAt: timeOf(p.GetEditedAt()),
+		ContentType: p.GetContentType(), SizeBytes: p.GetSizeBytes(), CreatedAt: timeOf(p.GetCreatedAt()),
+	}
 }

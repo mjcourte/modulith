@@ -59,6 +59,11 @@ const (
 	StorageService_RecordAssetUse_FullMethodName     = "/gyoza.storage.v1.StorageService/RecordAssetUse"
 	StorageService_ForgetAssetUse_FullMethodName     = "/gyoza.storage.v1.StorageService/ForgetAssetUse"
 	StorageService_CopyProjectFiles_FullMethodName   = "/gyoza.storage.v1.StorageService/CopyProjectFiles"
+	StorageService_BeginSnapshot_FullMethodName      = "/gyoza.storage.v1.StorageService/BeginSnapshot"
+	StorageService_CompleteSnapshot_FullMethodName   = "/gyoza.storage.v1.StorageService/CompleteSnapshot"
+	StorageService_GetLatestSnapshot_FullMethodName  = "/gyoza.storage.v1.StorageService/GetLatestSnapshot"
+	StorageService_ListSnapshots_FullMethodName      = "/gyoza.storage.v1.StorageService/ListSnapshots"
+	StorageService_GetSnapshotURL_FullMethodName     = "/gyoza.storage.v1.StorageService/GetSnapshotURL"
 )
 
 // StorageServiceClient is the client API for StorageService service.
@@ -100,13 +105,22 @@ type StorageServiceClient interface {
 	// gyoza's files: anything else is PERMISSION_DENIED / FORK_REQUIRED.
 	ResolveRef(ctx context.Context, in *ResolveRefRequest, opts ...grpc.CallOption) (*ResolveRefResponse, error)
 	ForkAsset(ctx context.Context, in *ForkAssetRequest, opts ...grpc.CallOption) (*ForkAssetResponse, error)
-	// Called by documentmanager for the user editing the document; never
+	// Called by documents for the user editing the document; never
 	// exposed to browsers.
 	RecordAssetUse(ctx context.Context, in *RecordAssetUseRequest, opts ...grpc.CallOption) (*RecordAssetUseResponse, error)
 	ForgetAssetUse(ctx context.Context, in *ForgetAssetUseRequest, opts ...grpc.CallOption) (*ForgetAssetUseResponse, error)
 	// A clone's files, called by iam only (it decides who may clone);
 	// resumable, and repeating a finished copy changes nothing.
 	CopyProjectFiles(ctx context.Context, in *CopyProjectFilesRequest, opts ...grpc.CallOption) (*CopyProjectFilesResponse, error)
+	// Document snapshots, called by documents only (no actor: saves run on a
+	// timer); never exposed to browsers. Begin, PUT the bytes to the URL, then
+	// Complete, which returns only once S3 holds the object. A snapshot at an
+	// earlier stream sequence than the latest is FAILED_PRECONDITION / STALE.
+	BeginSnapshot(ctx context.Context, in *BeginSnapshotRequest, opts ...grpc.CallOption) (*BeginSnapshotResponse, error)
+	CompleteSnapshot(ctx context.Context, in *CompleteSnapshotRequest, opts ...grpc.CallOption) (*CompleteSnapshotResponse, error)
+	GetLatestSnapshot(ctx context.Context, in *GetLatestSnapshotRequest, opts ...grpc.CallOption) (*GetLatestSnapshotResponse, error)
+	ListSnapshots(ctx context.Context, in *ListSnapshotsRequest, opts ...grpc.CallOption) (*ListSnapshotsResponse, error)
+	GetSnapshotURL(ctx context.Context, in *GetSnapshotURLRequest, opts ...grpc.CallOption) (*GetSnapshotURLResponse, error)
 }
 
 type storageServiceClient struct {
@@ -387,6 +401,56 @@ func (c *storageServiceClient) CopyProjectFiles(ctx context.Context, in *CopyPro
 	return out, nil
 }
 
+func (c *storageServiceClient) BeginSnapshot(ctx context.Context, in *BeginSnapshotRequest, opts ...grpc.CallOption) (*BeginSnapshotResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BeginSnapshotResponse)
+	err := c.cc.Invoke(ctx, StorageService_BeginSnapshot_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *storageServiceClient) CompleteSnapshot(ctx context.Context, in *CompleteSnapshotRequest, opts ...grpc.CallOption) (*CompleteSnapshotResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CompleteSnapshotResponse)
+	err := c.cc.Invoke(ctx, StorageService_CompleteSnapshot_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *storageServiceClient) GetLatestSnapshot(ctx context.Context, in *GetLatestSnapshotRequest, opts ...grpc.CallOption) (*GetLatestSnapshotResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetLatestSnapshotResponse)
+	err := c.cc.Invoke(ctx, StorageService_GetLatestSnapshot_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *storageServiceClient) ListSnapshots(ctx context.Context, in *ListSnapshotsRequest, opts ...grpc.CallOption) (*ListSnapshotsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListSnapshotsResponse)
+	err := c.cc.Invoke(ctx, StorageService_ListSnapshots_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *storageServiceClient) GetSnapshotURL(ctx context.Context, in *GetSnapshotURLRequest, opts ...grpc.CallOption) (*GetSnapshotURLResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetSnapshotURLResponse)
+	err := c.cc.Invoke(ctx, StorageService_GetSnapshotURL_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // StorageServiceServer is the server API for StorageService service.
 // All implementations must embed UnimplementedStorageServiceServer
 // for forward compatibility.
@@ -426,13 +490,22 @@ type StorageServiceServer interface {
 	// gyoza's files: anything else is PERMISSION_DENIED / FORK_REQUIRED.
 	ResolveRef(context.Context, *ResolveRefRequest) (*ResolveRefResponse, error)
 	ForkAsset(context.Context, *ForkAssetRequest) (*ForkAssetResponse, error)
-	// Called by documentmanager for the user editing the document; never
+	// Called by documents for the user editing the document; never
 	// exposed to browsers.
 	RecordAssetUse(context.Context, *RecordAssetUseRequest) (*RecordAssetUseResponse, error)
 	ForgetAssetUse(context.Context, *ForgetAssetUseRequest) (*ForgetAssetUseResponse, error)
 	// A clone's files, called by iam only (it decides who may clone);
 	// resumable, and repeating a finished copy changes nothing.
 	CopyProjectFiles(context.Context, *CopyProjectFilesRequest) (*CopyProjectFilesResponse, error)
+	// Document snapshots, called by documents only (no actor: saves run on a
+	// timer); never exposed to browsers. Begin, PUT the bytes to the URL, then
+	// Complete, which returns only once S3 holds the object. A snapshot at an
+	// earlier stream sequence than the latest is FAILED_PRECONDITION / STALE.
+	BeginSnapshot(context.Context, *BeginSnapshotRequest) (*BeginSnapshotResponse, error)
+	CompleteSnapshot(context.Context, *CompleteSnapshotRequest) (*CompleteSnapshotResponse, error)
+	GetLatestSnapshot(context.Context, *GetLatestSnapshotRequest) (*GetLatestSnapshotResponse, error)
+	ListSnapshots(context.Context, *ListSnapshotsRequest) (*ListSnapshotsResponse, error)
+	GetSnapshotURL(context.Context, *GetSnapshotURLRequest) (*GetSnapshotURLResponse, error)
 	mustEmbedUnimplementedStorageServiceServer()
 }
 
@@ -523,6 +596,21 @@ func (UnimplementedStorageServiceServer) ForgetAssetUse(context.Context, *Forget
 }
 func (UnimplementedStorageServiceServer) CopyProjectFiles(context.Context, *CopyProjectFilesRequest) (*CopyProjectFilesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method CopyProjectFiles not implemented")
+}
+func (UnimplementedStorageServiceServer) BeginSnapshot(context.Context, *BeginSnapshotRequest) (*BeginSnapshotResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method BeginSnapshot not implemented")
+}
+func (UnimplementedStorageServiceServer) CompleteSnapshot(context.Context, *CompleteSnapshotRequest) (*CompleteSnapshotResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CompleteSnapshot not implemented")
+}
+func (UnimplementedStorageServiceServer) GetLatestSnapshot(context.Context, *GetLatestSnapshotRequest) (*GetLatestSnapshotResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetLatestSnapshot not implemented")
+}
+func (UnimplementedStorageServiceServer) ListSnapshots(context.Context, *ListSnapshotsRequest) (*ListSnapshotsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListSnapshots not implemented")
+}
+func (UnimplementedStorageServiceServer) GetSnapshotURL(context.Context, *GetSnapshotURLRequest) (*GetSnapshotURLResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetSnapshotURL not implemented")
 }
 func (UnimplementedStorageServiceServer) mustEmbedUnimplementedStorageServiceServer() {}
 func (UnimplementedStorageServiceServer) testEmbeddedByValue()                        {}
@@ -1031,6 +1119,96 @@ func _StorageService_CopyProjectFiles_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _StorageService_BeginSnapshot_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BeginSnapshotRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StorageServiceServer).BeginSnapshot(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StorageService_BeginSnapshot_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StorageServiceServer).BeginSnapshot(ctx, req.(*BeginSnapshotRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _StorageService_CompleteSnapshot_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CompleteSnapshotRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StorageServiceServer).CompleteSnapshot(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StorageService_CompleteSnapshot_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StorageServiceServer).CompleteSnapshot(ctx, req.(*CompleteSnapshotRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _StorageService_GetLatestSnapshot_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetLatestSnapshotRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StorageServiceServer).GetLatestSnapshot(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StorageService_GetLatestSnapshot_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StorageServiceServer).GetLatestSnapshot(ctx, req.(*GetLatestSnapshotRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _StorageService_ListSnapshots_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListSnapshotsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StorageServiceServer).ListSnapshots(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StorageService_ListSnapshots_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StorageServiceServer).ListSnapshots(ctx, req.(*ListSnapshotsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _StorageService_GetSnapshotURL_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetSnapshotURLRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StorageServiceServer).GetSnapshotURL(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StorageService_GetSnapshotURL_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StorageServiceServer).GetSnapshotURL(ctx, req.(*GetSnapshotURLRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // StorageService_ServiceDesc is the grpc.ServiceDesc for StorageService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1145,6 +1323,26 @@ var StorageService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CopyProjectFiles",
 			Handler:    _StorageService_CopyProjectFiles_Handler,
+		},
+		{
+			MethodName: "BeginSnapshot",
+			Handler:    _StorageService_BeginSnapshot_Handler,
+		},
+		{
+			MethodName: "CompleteSnapshot",
+			Handler:    _StorageService_CompleteSnapshot_Handler,
+		},
+		{
+			MethodName: "GetLatestSnapshot",
+			Handler:    _StorageService_GetLatestSnapshot_Handler,
+		},
+		{
+			MethodName: "ListSnapshots",
+			Handler:    _StorageService_ListSnapshots_Handler,
+		},
+		{
+			MethodName: "GetSnapshotURL",
+			Handler:    _StorageService_GetSnapshotURL_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -235,7 +235,7 @@ func (s *Server) DeleteOwned(ctx context.Context, req *pb.DeleteOwnedRequest) (*
 	if err != nil {
 		return nil, toStatus(err)
 	}
-	return &pb.DeleteOwnedResponse{LedgerObjects: int32(d.LedgerObjects), Trash: deletionToProto(d.Trash), Uses: int32(d.Uses)}, nil
+	return &pb.DeleteOwnedResponse{LedgerObjects: int32(d.LedgerObjects), Trash: deletionToProto(d.Trash), Uses: int32(d.Uses), Snapshots: int32(d.Snapshots)}, nil
 }
 
 func (s *Server) RemoveUser(ctx context.Context, req *pb.RemoveUserRequest) (*pb.RemoveUserResponse, error) {
@@ -253,6 +253,7 @@ func (s *Server) RemoveUser(ctx context.Context, req *pb.RemoveUserRequest) (*pb
 		Deleted:              deletionToProto(r.Deleted.Trash),
 		ClearedLedger:        int32(r.ClearedLedger),
 		ClearedDam:           int32(r.ClearedDAM),
+		ClearedSnapshots:     int32(r.ClearedSnapshots),
 	}
 	if !r.TransferredTo.IsZero() {
 		resp.TransferredTo = ownerToProto(r.TransferredTo)
@@ -298,4 +299,54 @@ func (s *Server) CopyProjectFiles(ctx context.Context, req *pb.CopyProjectFilesR
 		return nil, toStatus(err)
 	}
 	return &pb.CopyProjectFilesResponse{Folders: int32(r.Folders), Assets: int32(r.Assets), Uses: int32(r.Uses)}, nil
+}
+
+// ---- Document snapshots
+
+func (s *Server) BeginSnapshot(ctx context.Context, req *pb.BeginSnapshotRequest) (*pb.BeginSnapshotResponse, error) {
+	t, err := s.svc.BeginSnapshot(ctx, manager.SnapshotRequest{
+		ProjectID: req.GetProjectId(), Seq: req.GetSeq(),
+		EditedBy: req.GetEditedBy(), EditedAt: timeOf(req.GetEditedAt()),
+		ContentType: req.GetContentType(), SizeBytes: req.GetSizeBytes(),
+	})
+	if err != nil {
+		return nil, toStatus(err)
+	}
+	return &pb.BeginSnapshotResponse{ObjectId: t.ObjectID, Url: t.URL, Headers: t.Headers, ExpiresAt: timestamp(t.ExpiresAt)}, nil
+}
+
+func (s *Server) CompleteSnapshot(ctx context.Context, req *pb.CompleteSnapshotRequest) (*pb.CompleteSnapshotResponse, error) {
+	r, err := s.svc.CompleteSnapshot(ctx, req.GetProjectId(), req.GetObjectId())
+	if err != nil {
+		return nil, toStatus(err)
+	}
+	return &pb.CompleteSnapshotResponse{Snapshot: snapshotToProto(r)}, nil
+}
+
+func (s *Server) GetLatestSnapshot(ctx context.Context, req *pb.GetLatestSnapshotRequest) (*pb.GetLatestSnapshotResponse, error) {
+	r, err := s.svc.LatestSnapshot(ctx, req.GetProjectId())
+	if err != nil {
+		return nil, toStatus(err)
+	}
+	return &pb.GetLatestSnapshotResponse{Snapshot: snapshotToProto(r)}, nil
+}
+
+func (s *Server) ListSnapshots(ctx context.Context, req *pb.ListSnapshotsRequest) (*pb.ListSnapshotsResponse, error) {
+	page, err := s.svc.ListSnapshots(ctx, req.GetProjectId(), req.GetPageToken())
+	if err != nil {
+		return nil, toStatus(err)
+	}
+	resp := &pb.ListSnapshotsResponse{NextPageToken: page.NextPageToken}
+	for _, r := range page.Snapshots {
+		resp.Snapshots = append(resp.Snapshots, snapshotToProto(r))
+	}
+	return resp, nil
+}
+
+func (s *Server) GetSnapshotURL(ctx context.Context, req *pb.GetSnapshotURLRequest) (*pb.GetSnapshotURLResponse, error) {
+	d, err := s.svc.SnapshotURL(ctx, req.GetProjectId(), req.GetObjectId())
+	if err != nil {
+		return nil, toStatus(err)
+	}
+	return &pb.GetSnapshotURLResponse{Download: downloadToProto(d)}, nil
 }

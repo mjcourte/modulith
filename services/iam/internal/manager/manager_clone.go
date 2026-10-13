@@ -7,7 +7,7 @@ package manager
 //
 //  1. create the project row (ProjectCloning, ClonedFrom the source)
 //  2. storage copies the files (CopyProjectFiles: resumable, idempotent)
-//  3. (later) documentmanager copies the document and rewrites its refs
+//  3. (later) documents copies the document and rewrites its refs
 //  4. mark it ready
 
 import (

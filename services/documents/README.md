@@ -1,9 +1,24 @@
-# Document Manager
+# Documents
 
 - transacts/log rolls snapshots to RustFS/S3
 - recieves deltas from any entry point, and uses engine go api to update
-- never touches S3 directly: snapshot reads and writes go through the storage service over gRPC (`StorageService`; the snapshot calls are still to be designed, see [storage/PLAN.md](../storage/PLAN.md))
+- never touches S3 directly: snapshot reads and writes go through the storage service over gRPC (`StorageService` snapshot calls, see the storage README "Document snapshots"; the bytes go to S3 by presigned URL)
 - snapshot convention (agreed with storage): storage records every snapshot in its ledger with `Kind=snapshot`, a vendor MIME type (e.g. `application/vnd.gyoza.app+flatbuffers`), and an S3 key under `projects/{projectID}/snapshot/{id}` (see the storage README "S3 key layout"). Snapshots are not DAM assets
+
+## Status (2026-10-12)
+
+Built and running in `cmd/gyoza` and `cmd/documents` (gRPC `DocumentsService`, port 9094 standalone). Layout, one `doc.go` per package:
+
+| Path | What |
+| --- | --- |
+| `documents.go`, `wiring.go` | public surface; `SettingsFromEnv`, `Open`, `StartConsumer`; `IAMAuthorizer` (`iam_authz.go`) |
+| `internal/live` | open documents: load once, debounced saves, TTL eviction |
+| `internal/manager` | `Service`: Get, Query, Init, Update; `ApplyDelta` for the consumer; asset uses |
+| `internal/snapshots` | `Store`: `Memory` (tests), `StorageStore` (S3 through storage, durable) |
+| `internal/wal` | the NATS write-ahead log: publish, replay by Direct Get, the one consumer |
+| `internal/grpcapi` | `DocumentsService` server and client |
+
+The engine is `internal/engine`'s mock until the native one exists. Decisions and what's next: PLAN.md.
 
 ## Internal Methods
 
@@ -61,13 +76,13 @@ I'm going to say S3 a bunch, but i mean S3 or RustFS.
 
 Streams and subjects are defined in `platform/nats` (see its README).
 
-- Consumes `document.{projectID}.delta` (durable pull consumer) and publishes to it.
-- The only publisher of `document.{projectID}.snapshot`, never a consumer. The message is a pointer (version, last delta sequence covered, storage object ID), not the snapshot bytes.
-- After a snapshot is stored in S3 through storage: publish the pointer, then `PurgeDeltas(projectID, coveredSeq)`. Order matters: purging first would lose deltas if the publish fails.
+- Both subjects are in the one `DOCUMENTS` stream. The service has one consumer for all projects (durable pull, `document.*.delta`) and publishes deltas too; per-project reads (the latest pointer, catching up on load) use Direct Get, never a consumer.
+- The only publisher of `document.{projectID}.snapshot`. The message is a pointer (version, last delta sequence covered, storage object ID), not the snapshot bytes.
+- After a snapshot is stored in S3 through storage: publish the pointer, then `Compact(projectID, coveredSeq)`. Order matters: compacting first would lose deltas if the publish fails.
 - Whitelist based filter to allow FE P2P NATS usage eg userstate cursor etc. (userstate is core NATS, not JetStream)
 
 ## Load management and replication
 
 As a monolith this is basically impossible so lets leave this to a hypothetical never future.
-Basically need a router/load balancer service and eg PG table that assigns project(s) to documentmanager(s),
+Basically need a router/load balancer service and eg PG table that assigns project(s) to documents(s),
 and routes whatever gRPC calls..

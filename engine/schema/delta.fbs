@@ -1,0 +1,15 @@
+include "common.fbs";
+namespace fbs;
+
+// One edit. Every register in it carries the delta's own stamp, so a
+// register's stamp field is left unset here. lamport 0 means "unstamped":
+// the receiving replica stamps it with its next clock tick. (replica,
+// lamport) is the op ID, also used as the NATS Nats-Msg-Id.
+table Delta {
+  replica: string;
+  lamport: ulong;
+  sets: [Register];
+}
+
+file_identifier "GYDL";
+root_type Delta;

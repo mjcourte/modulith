@@ -1,0 +1,12 @@
+include "common.fbs";
+namespace fbs;
+
+// A document's full state. registers are sorted by key and each carries its
+// own stamp, so replicas that converged produce byte-identical snapshots.
+table Snapshot {
+  clock: ulong;
+  registers: [Register];
+}
+
+file_identifier "GYSN";
+root_type Snapshot;

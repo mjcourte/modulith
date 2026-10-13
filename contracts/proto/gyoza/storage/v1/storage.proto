@@ -57,13 +57,23 @@ service StorageService {
   // gyoza's files: anything else is PERMISSION_DENIED / FORK_REQUIRED.
   rpc ResolveRef(ResolveRefRequest) returns (ResolveRefResponse);
   rpc ForkAsset(ForkAssetRequest) returns (ForkAssetResponse);
-  // Called by documentmanager for the user editing the document; never
+  // Called by documents for the user editing the document; never
   // exposed to browsers.
   rpc RecordAssetUse(RecordAssetUseRequest) returns (RecordAssetUseResponse);
   rpc ForgetAssetUse(ForgetAssetUseRequest) returns (ForgetAssetUseResponse);
   // A clone's files, called by iam only (it decides who may clone);
   // resumable, and repeating a finished copy changes nothing.
   rpc CopyProjectFiles(CopyProjectFilesRequest) returns (CopyProjectFilesResponse);
+
+  // Document snapshots, called by documents only (no actor: saves run on a
+  // timer); never exposed to browsers. Begin, PUT the bytes to the URL, then
+  // Complete, which returns only once S3 holds the object. A snapshot at an
+  // earlier stream sequence than the latest is FAILED_PRECONDITION / STALE.
+  rpc BeginSnapshot(BeginSnapshotRequest) returns (BeginSnapshotResponse);
+  rpc CompleteSnapshot(CompleteSnapshotRequest) returns (CompleteSnapshotResponse);
+  rpc GetLatestSnapshot(GetLatestSnapshotRequest) returns (GetLatestSnapshotResponse);
+  rpc ListSnapshots(ListSnapshotsRequest) returns (ListSnapshotsResponse);
+  rpc GetSnapshotURL(GetSnapshotURLRequest) returns (GetSnapshotURLResponse);
 }
 
 // ---- Shared messages
@@ -396,6 +406,8 @@ message DeleteOwnedResponse {
   FolderDeletion trash = 2;
   // A deleted project's asset uses forgotten (projects only).
   int32 uses = 3;
+  // A deleted project's snapshot records removed (projects only).
+  int32 snapshots = 4;
 }
 
 message RemoveUserRequest {
@@ -416,6 +428,7 @@ message RemoveUserResponse {
   FolderDeletion deleted = 8;
   int32 cleared_ledger = 9;
   int32 cleared_dam = 10;
+  int32 cleared_snapshots = 11;
 }
 
 enum OwnerKind {
@@ -487,4 +500,72 @@ message CopyProjectFilesResponse {
   int32 folders = 1;
   int32 assets = 2;
   int32 uses = 3;
+}
+
+// ---- Document snapshots
+
+message Snapshot {
+  string project_id = 1;
+  string object_id = 2;
+  // 1 for the project's first snapshot, then +1 per snapshot.
+  int32 version = 3;
+  // Last delta stream sequence the snapshot covers.
+  uint64 seq = 4;
+  // The last change it holds: who made it (empty once that user is deleted)
+  // and when.
+  string edited_by = 5;
+  google.protobuf.Timestamp edited_at = 6;
+  string content_type = 7;
+  int64 size_bytes = 8;
+  google.protobuf.Timestamp created_at = 9;
+}
+
+message BeginSnapshotRequest {
+  string project_id = 1;
+  uint64 seq = 2;
+  string edited_by = 3;
+  google.protobuf.Timestamp edited_at = 4;
+  // A snapshot type, e.g. application/vnd.gyoza.app+flatbuffers; version=1.
+  string content_type = 5;
+  int64 size_bytes = 6;
+}
+message BeginSnapshotResponse {
+  string object_id = 1;
+  // PUT the bytes here with exactly these headers.
+  string url = 2;
+  map<string, string> headers = 3;
+  google.protobuf.Timestamp expires_at = 4;
+}
+
+message CompleteSnapshotRequest {
+  string project_id = 1;
+  string object_id = 2;
+}
+message CompleteSnapshotResponse {
+  Snapshot snapshot = 1;
+}
+
+message GetLatestSnapshotRequest {
+  string project_id = 1;
+}
+message GetLatestSnapshotResponse {
+  Snapshot snapshot = 1;
+}
+
+message ListSnapshotsRequest {
+  string project_id = 1;
+  string page_token = 2;
+}
+message ListSnapshotsResponse {
+  // Newest first.
+  repeated Snapshot snapshots = 1;
+  string next_page_token = 2;
+}
+
+message GetSnapshotURLRequest {
+  string project_id = 1;
+  string object_id = 2;
+}
+message GetSnapshotURLResponse {
+  Download download = 1;
 }

@@ -106,6 +106,21 @@ func (e *Env) Duration(name string, def time.Duration) time.Duration {
 	return d
 }
 
+// PositiveInt returns the value of name parsed as a positive whole number,
+// or def if it is unset.
+func (e *Env) PositiveInt(name string, def int64) int64 {
+	v, ok := e.get(name)
+	if !ok {
+		return def
+	}
+	n, err := strconv.ParseInt(v, 10, 64)
+	if err != nil || n <= 0 {
+		e.errs = append(e.errs, fmt.Errorf("%s: want a positive whole number, got %q", name, v))
+		return def
+	}
+	return n
+}
+
 // Bool returns the value of name parsed as a boolean ("true", "false", "1",
 // "0" and the other forms strconv.ParseBool accepts), or def if it is unset.
 func (e *Env) Bool(name string, def bool) bool {

@@ -77,6 +77,7 @@ require (
 	github.com/go-sql-driver/mysql v1.10.0 // indirect
 	github.com/gofrs/flock v0.13.1 // indirect
 	github.com/google/cel-go v0.28.0 // indirect
+	github.com/google/flatbuffers v25.2.10+incompatible // indirect
 	github.com/google/go-containerregistry v0.22.1 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect

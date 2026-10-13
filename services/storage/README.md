@@ -4,7 +4,7 @@ One service for every file Gyoza keeps in S3: presigned uploads and downloads,
 the DAM (assets, versions, folders, trash), the cleanup job, and the ledger
 that records each S3 object. Other services never touch S3 or the storage
 schema themselves; they call storage (in-process in the monolith, gRPC when
-distributed). That includes documentmanager's snapshots (see PLAN.md).
+distributed). That includes the documents service's snapshots (see PLAN.md).
 
 ## Decisions
 
@@ -23,7 +23,7 @@ Every object stored in S3 has one row in `storage.objects`, whatever uses it (as
 - an object's lifetime follows its owner: deleting an owner deletes everything it owns
 - `CreatedBy` is the user who uploaded/produced it; can differ from the owner (e.g. org assets)
 - `ProjectID` is optional and means "associated with this project", whoever owns it. A project-owned object always has `ProjectID` set to its owner (enforced on create)
-- a project has exactly one document (or none until the document manager initializes it), per the engine's `App`, so there is no separate document scope
+- a project has exactly one document (or none until the documents service initializes it), per the engine's `App`, so there is no separate document scope
 - `Kind`: snapshot, asset, export (initial set). It says what **role** a stored object plays. Not to be confused with the DAM's `Category` (image, video, font, ...), which says what **kind of media** an asset is and exists only for DAM assets
 - `ContentType`: the object's MIME type. Document snapshots should use a dedicated vendor type (e.g. `application/vnd.gyoza.app+flatbuffers`) so a snapshot's format is known from the ledger alone
 - user/org/project IDs are opaque strings owned by iam, not foreign keys
@@ -76,7 +76,7 @@ library/{kind}/{id}                 objects with no project (user/org asset libr
 - presign tokens (memory fake): `crypto/rand.Text()`, since they only need to be unguessable
 - table IDs (assets, and later folders and upload sessions): UUIDv7 via `github.com/google/uuid`. They start with a timestamp, so ID order is creation order: paging orders by ID alone, and Postgres inserts land at the end of the index (cheaper than the ledger's random IDs, see OPTIMIZATIONS.md)
 - ordering is guaranteed within one process (the library adds a sequence number inside each millisecond). Across replicas, IDs made in the same millisecond may interleave; paging stays correct, "oldest first" is just approximate to the millisecond
-- copies (clones, forks) get derived IDs instead (`dam.CopyAssetID`, `CopyFolderID`, `CopyObjectID`), so a retried copy lands on the same rows and documentmanager can compute a clone's refs. They're shaped like UUIDv7s: the 48-bit timestamp is the project's ID's (the clone, or the project a fork is made in), the rest a SHA-256 of the inputs. A project's copies sort together near the project's creation, not at copy time
+- copies (clones, forks) get derived IDs instead (`dam.CopyAssetID`, `CopyFolderID`, `CopyObjectID`), so a retried copy lands on the same rows and documents can compute a clone's refs. They're shaped like UUIDv7s: the 48-bit timestamp is the project's ID's (the clone, or the project a fork is made in), the rest a SHA-256 of the inputs. A project's copies sort together near the project's creation, not at copy time
 
 ## DAM
 
@@ -88,7 +88,7 @@ enforces are in `assets_rules.go`; limits are constants at the top of `assets.go
 - **versions**: each upload of a file is a version pointing at a ledger object. Append-only: a new upload becomes version N+1 and current; "revert" makes an older version current again without copying anything; reverting to the current version changes nothing (not even `UpdatedAt`), so retries are harmless. Versions are removed only together with their asset
 - **tags**: free-form, normalised (trimmed, lowercased, deduplicated, sorted), so "Logo", " logo" and "LOGO" are one tag. A set per asset; `Tags` in an update replaces the whole set
 - **categories**: `image`, `vector`, `video`, `audio`, `font`, `pdf`, `json`, `text`, `other`, derived from the MIME type with `CategoryOf`, so an asset's kind is known without reading bytes or asking the ledger. Fixed for the asset's life: a new version must have the same category (png -> jpeg yes, image -> video no)
-- **document snapshots are not assets**: nobody names, tags or re-uploads them, and their history is the document's own log. They live only in the ledger (`Kind=snapshot`), written through storage by documentmanager. A `document` category comes only if library templates/components are designed later
+- **document snapshots are not assets**: nobody names, tags or re-uploads them, and their history is the document's own log. They live only in the ledger (`Kind=snapshot`), written through storage by documents. A `document` category comes only if library templates/components are designed later
 - **listing**: exactly one scope (project or owner) plus optional tag and category filters; oldest first, exact thanks to UUIDv7. Folder listing arrives with folders; name search later
 - **deletion**: soft. A deleted asset stays readable (get, versions, list with `IncludeDeleted`) but can't be changed: update, add version and revert return `ErrAssetNotFound`
 - **asset names aren't unique**: an asset is identified by its ID, so its name is just a label and several assets in one folder may share it. Wherever a unique name is needed it's resolved on the way out: browsers number duplicate downloads themselves, and a future zip export or sync should number them as it writes ("Logo.png", "Logo (2).png")
@@ -104,7 +104,7 @@ enforces are in `assets_rules.go`; limits are constants at the top of `assets.go
 Built 2026-10-12 (PLAN.md phase 2), for cloning projects and for documents that use library files.
 
 - **refs**: a document points at `AssetRef{AssetID, Version}`, always pinned (`Version >= 1`), written `"id@3"` (`MarshalText`, so also as a JSON map key; one text form per ref). New uploads and reverts never move a ref; "update available" is `ref.Version < asset.CurrentVersion`
-- **uses**: `storage.asset_uses` (migration 00004) records which versions each project uses: `(project, asset, version)`, kept by documentmanager through `RecordAssetUse` / `ForgetAssetUse` (idempotent; for the user editing the document, service to service). Purging an asset drops its uses (`ON DELETE CASCADE` from its versions); deleting a project forgets its own
+- **uses**: `storage.asset_uses` (migration 00004) records which versions each project uses: `(project, asset, version)`, kept by documents through `RecordAssetUse` / `ForgetAssetUse` (idempotent; for the user editing the document, service to service). Purging an asset drops its uses (`ON DELETE CASCADE` from its versions); deleting a project forgets its own
 - **reading through a project**: `ResolveRef(actor, project, ref)` returns the asset, the version and a download link. Allowed if the actor reads the project and either it uses that exact version or the actor reads the asset directly. A used asset keeps resolving from the trash (`DeletedAt` set, for the UI) until the purge; direct access serves live assets only, like `DownloadURL`. `ListTrash` reports how many projects use each trashed asset
 - **rule A, what a project may use in place**: its own files, its owner's library (same user or org), and gyoza's shared files (nobody can delete those). Anything else is refused with `ErrForkRequired` (together with `ErrForbidden`): the client forks it. So no project depends on files another owner controls and may purge. Recording a use also needs write on the project and read on the asset. The project's owner comes from iam (`Authorizer.ProjectOwner`)
 - **forks**: `ForkAsset(actor, project, ref, target, via)` copies one version into a new asset owned by the project (default) or its owner, and moves the project's use to it. The actor needs write on the project, and read on the version through the project's use, through project `via`'s use (copying out of a shared project: no more than they could download), or directly. A used asset in the trash can be forked, rescuing it before the purge
@@ -131,7 +131,8 @@ Tests force real overlap with wrappers that embed the memory fakes and hold call
 2. **completed upload sessions** older than the retention period
 3. **trashed assets** older than the retention period: for each version, delete the file and purge its ledger object, then purge the asset and its versions from the Store
 4. **trashed folders** older than the retention period (anything trashed still inside them moves to the top level)
-5. **other deleted ledger objects** older than the retention period (e.g. a deleted project's exports): delete the file, purge the object
+. **abandoned snapshot uploads** (pending past their expiry, less the skew margin): delete the file, purge the ledger object if a completion got that far, delete the record
+7. **old snapshots** beyond each project's newest `GYOZA_SNAPSHOT_KEEP` (default 100): deleted at once, not trashed: they're past the revert window by definition
 
 - **retention**: `GYOZA_TRASH_RETENTION`, default 7 days (168h), at least 1h
 - **restore ends where purging starts**: `RestoreAsset`/`RestoreFolder` refuse items whose retention has run out (less the 5 min skew margin) with not-found, and only those items are purged, so a restore never races the deletion of its files
@@ -139,9 +140,19 @@ Tests force real overlap with wrappers that embed the memory fakes and hold call
 - a run stops at the first failure and reports what it did; the next run retries from there (see OPTIMIZATIONS.md for the "stuck item" caveat)
 - known limitation: restoring an asset trashed by `DeleteOwned` (its owner was deleted) doesn't bring its ledger objects back; after the retention period the ledger step deletes their files. Owners don't come back, so nothing can restore those today
 
+## Document snapshots
+
+Written by the documents service only (no actor: its saves run on a timer; no gateway routes). Code: `internal/snapshots` (the `storage.snapshots` table, migration 00005; `Memory`, `Postgres`, shared suite) and `internal/manager/manager_snapshots.go`.
+
+- **two-phase, like uploads:** `BeginSnapshot(projectID, seq, editedBy, editedAt, contentType, size)` checks the project exists (`ProjectOwner`), the type (`application/vnd.gyoza.app+flatbuffers` or `application/json`, with parameters) and the size (`GYOZA_SNAPSHOT_MAX_BYTES`, default 32 MiB), records a pending row and presigns a PUT to `projects/{project}/snapshot/{id}`. `CompleteSnapshot` checks the object in S3 (size and type), records it in the ledger (`Kind=snapshot`, owned by the project, `CreatedBy` = the last editor), then gives it the next version. It returns only once S3 holds the object, which is what lets documents compact its deltas
+- **never back in time:** a snapshot covering an earlier delta stream sequence than the project's latest is refused (`ErrSnapshotStale`, gRPC `FAILED_PRECONDITION`/`STALE`), early at Begin and atomically at Complete (a per-project advisory lock, plus `UNIQUE (project_id, version)`). A refused one's object and ledger row are removed. Equal sequences are allowed
+- **last edit, `touch`-style:** each snapshot records who made the last change it holds and when (`edited_by`, `edited_at`). Informational, not authorised. Cleared when the user is deleted (`RemoveUser`)
+- `LatestSnapshot`, `ListSnapshots` (newest first, 50 a page, for administrative reverts), `SnapshotURL` (presigned GET; only the project's own, completed snapshots)
+- deleting a project trashes its snapshot objects with its other files (the project owns them) and removes the records (`DeleteOwned`)
+
 ## API
 
-- in-process: the `Service` interface (`storage.go`, defined in `internal/manager/service.go`), implemented by `*Manager`. Callers (the gateway, iam, documentmanager) depend on `Service`, never on `*Manager`
+- in-process: the `Service` interface (`storage.go`, defined in `internal/manager/service.go`), implemented by `*Manager`. Callers (the gateway, iam, documents) depend on `Service`, never on `*Manager`
 - over the network: `StorageService` in `contracts/proto/gyoza/storage/v1/storage.proto`. `GRPCServer` exposes any `Service`; `GRPCClient` is a `Service` calling one remotely, with the same types and errors. The ledger has no API of its own
 - every call carries `actor_id`, set by the gateway from the signed-in session; the service trusts it, so it must only be reachable from inside the platform
 - errors: there are more sentinels than gRPC has codes, so each status carries a `google.rpc.ErrorInfo` per matching sentinel (domain `storage.gyoza`, reason e.g. `ASSET_NOT_FOUND`; `FOLDER_NOT_EMPTY` adds `folders`/`assets` counts); `FORK_REQUIRED` always comes with `FORBIDDEN`, so clients that only know "forbidden" still refuse. The client rebuilds them, so `errors.Is(err, ErrNameTaken)` and `errors.As(err, &notEmpty)` work across the wire. The table is `wireErrors` in `internal/manager/grpc.go`. Unexpected errors are logged on the server and sent as a bare INTERNAL
@@ -165,8 +176,9 @@ Tests force real overlap with wrappers that embed the memory fakes and hold call
 | Path                      | What                                                                                                                                                                                                                                                            |
 | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `storage.go`, `wiring.go` | the public surface: type aliases (`Owner`, `Service`, `Config`, ...), constructors, `Migrate`, `RegisterGRPC`, `NewGRPCClient`; `Settings`/`SettingsFromEnv`, `Open`, `StartCleanup` for the binaries                                                           |
-| `internal/db/`            | the `storage` schema: `migrations/` (goose, embedded, `Migrate`), `ledger.sql`, `manager.sql` and `uses.sql` (queries), `sqlc.yaml` and the generated code. Regenerate with `go generate ./services/storage/...`                                                            |
+| `internal/db/`            | the `storage` schema: `migrations/` (goose, embedded, `Migrate`), `ledger.sql`, `manager.sql`, `uses.sql` and `snapshots.sql` (queries), `sqlc.yaml` and the generated code. Regenerate with `go generate ./services/storage/...`                                                            |
 | `internal/ledger/`        | the ledger: `Service` with `Memory` and `Postgres`, shared suite `runServiceTests`                                                                                                                                                                              |
+| `internal/snapshots/`     | document snapshot records: `Store` with `Memory` and `Postgres`, shared suite `runStoreTests`                                                                                                                                                                   |
 | `internal/dam/`           | the DAM data: the `Store` interface, types, rules, `MemoryStore` and `Postgres` (files below)                                                                                                                                                                   |
 | `internal/manager/`       | the logic: `Manager`, `Authorizer`, the `Service` interface (files below)                                                                                                                                                                                       |
 | `internal/grpcapi/`       | `StorageService` adapters: `Server` wraps any `Service`, `Client` is a `Service` over the wire (files below)                                                                                                                                                    |

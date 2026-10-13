@@ -4,7 +4,7 @@ version: "2"
 sql:
   - engine: postgresql
     schema: migrations
-    queries: [ledger.sql, manager.sql, uses.sql]
+    queries: [ledger.sql, manager.sql, uses.sql, snapshots.sql]
     gen:
       go:
         package: db

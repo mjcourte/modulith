@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"gyoza/services/storage/internal/ledger"
+	"gyoza/services/storage/internal/snapshots"
 )
 
 const (
@@ -32,6 +33,8 @@ type CleanupReport struct {
 	Assets           int // trashed assets, with every version's file
 	Folders          int // trashed folders
 	Objects          int // other deleted ledger objects, with their files
+	ExpiredSnapshots int // abandoned snapshot uploads, with their files
+	OldSnapshots     int // snapshots beyond each project's newest SnapshotKeep, with their files
 }
 
 // Cleanup removes, as of now:
@@ -43,6 +46,8 @@ type CleanupReport struct {
 //     files and ledger objects, then folders;
 //   - any other ledger object deleted longer ago than the retention period
 //     (e.g. a deleted project's exports), with its file.
+//   - snapshot uploads abandoned before completing, and snapshots beyond each
+//     project's newest SnapshotKeep, with their files and ledger objects.
 //
 // It stops at the first failure and returns what it did so far; the next run
 // retries from there.
@@ -70,7 +75,35 @@ func (m *Manager) Cleanup(ctx context.Context, now time.Time) (CleanupReport, er
 	if r.Objects, err = m.purgeLedgerObjects(ctx, cutoff); err != nil {
 		return r, fmt.Errorf("purge ledger objects: %w", err)
 	}
+	if r.ExpiredSnapshots, err = m.cleanSnapshots(ctx, func() ([]snapshots.Snapshot, error) {
+		return m.snaps.ListExpiredPending(ctx, now.Add(-clockSkew), cleanupBatch)
+	}); err != nil {
+		return r, fmt.Errorf("expired snapshots: %w", err)
+	}
+	if r.OldSnapshots, err = m.cleanSnapshots(ctx, func() ([]snapshots.Snapshot, error) {
+		return m.snaps.ListBeyondKeep(ctx, m.cfg.SnapshotKeep, cleanupBatch)
+	}); err != nil {
+		return r, fmt.Errorf("old snapshots: %w", err)
+	}
 	return r, nil
+}
+
+// cleanSnapshots drops every snapshot list returns, batch by batch: its
+// object, ledger row and record. Old snapshots go at once rather than
+// through the trash: they're past the revert window by definition.
+func (m *Manager) cleanSnapshots(ctx context.Context, list func() ([]snapshots.Snapshot, error)) (int, error) {
+	return drain(ctx, func() (int, error) {
+		batch, err := list()
+		if err != nil {
+			return 0, err
+		}
+		for i, s := range batch {
+			if err := m.dropSnapshot(ctx, s); err != nil {
+				return i, err
+			}
+		}
+		return len(batch), nil
+	})
 }
 
 // drain calls batch until it does less than a full batch, adding up the counts.

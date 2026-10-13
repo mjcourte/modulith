@@ -12,6 +12,7 @@ import (
 	"gyoza/services/storage/internal/dam"
 	"gyoza/services/storage/internal/ledger"
 	sm "gyoza/services/storage/internal/manager"
+	"gyoza/services/storage/internal/snapshots"
 )
 
 // testManager is a Manager built from memory fakes, with the fakes kept so
@@ -20,6 +21,7 @@ type testManager struct {
 	*sm.Manager // embedded: tm.BeginUpload(...) calls the Manager's method
 	blobs       *blob.Memory
 	store       *dam.MemoryStore
+	snaps       *snapshots.Memory
 	ledger      *ledger.Memory
 	authz       *sm.RuleAuthorizer
 }
@@ -41,6 +43,7 @@ func newTestManagerWith(t *testing.T, cfg sm.Config, wrap func(*blob.Memory) blo
 	tm := testManager{
 		blobs:  blob.NewMemory(),
 		store:  dam.NewMemoryStore(),
+		snaps:  snapshots.NewMemory(),
 		ledger: ledger.NewMemory(),
 		authz:  sm.NewRuleAuthorizer(),
 	}
@@ -49,7 +52,7 @@ func newTestManagerWith(t *testing.T, cfg sm.Config, wrap func(*blob.Memory) blo
 	if wrap != nil {
 		blobs = wrap(tm.blobs)
 	}
-	m, err := sm.NewManager(tm.ledger, tm.store, blobs, tm.authz, cfg)
+	m, err := sm.NewManager(tm.ledger, tm.store, tm.snaps, blobs, tm.authz, cfg)
 	if err != nil {
 		t.Fatalf("NewManager: %v", err)
 	}
@@ -78,28 +81,31 @@ func TestNewManagerConfig(t *testing.T) {
 		return ledger.NewMemory(), dam.NewMemoryStore(), blob.NewMemory(), sm.AllowAll{}
 	}
 	l, s, b, a := deps()
-	m, err := sm.NewManager(l, s, b, a, sm.Config{Bucket: "b"})
+	m, err := sm.NewManager(l, s, snapshots.NewMemory(), b, a, sm.Config{Bucket: "b"})
 	if err != nil {
 		t.Fatalf("NewManager: %v", err)
 	}
-	want := sm.Config{Bucket: "b", UploadURLTTL: sm.DefaultUploadURLTTL, DownloadURLTTL: sm.DefaultDownloadURLTTL, MaxUploadBytes: sm.DefaultMaxUploadBytes, TrashRetention: sm.DefaultTrashRetention}
+	want := sm.Config{Bucket: "b", UploadURLTTL: sm.DefaultUploadURLTTL, DownloadURLTTL: sm.DefaultDownloadURLTTL, MaxUploadBytes: sm.DefaultMaxUploadBytes, TrashRetention: sm.DefaultTrashRetention,
+		SnapshotKeep: sm.DefaultSnapshotKeep, MaxSnapshotBytes: sm.DefaultMaxSnapshotBytes}
 	if got := m.Config(); got != want {
 		t.Errorf("Config() = %+v, want defaults %+v", got, want)
 	}
 
 	bad := map[string]sm.Config{
-		"no bucket":             {},
-		"upload TTL over 7d":    {Bucket: "b", UploadURLTTL: 8 * 24 * time.Hour},
-		"negative download TTL": {Bucket: "b", DownloadURLTTL: -time.Second},
-		"max over 5 GiB":        {Bucket: "b", MaxUploadBytes: sm.MaxSinglePutBytes + 1},
-		"trash kept under 1h":   {Bucket: "b", TrashRetention: time.Minute},
+		"no bucket":               {},
+		"upload TTL over 7d":      {Bucket: "b", UploadURLTTL: 8 * 24 * time.Hour},
+		"negative download TTL":   {Bucket: "b", DownloadURLTTL: -time.Second},
+		"negative snapshot keep":  {Bucket: "b", SnapshotKeep: -1},
+		"snapshot cap over 5 GiB": {Bucket: "b", MaxSnapshotBytes: 6 << 30},
+		"max over 5 GiB":          {Bucket: "b", MaxUploadBytes: sm.MaxSinglePutBytes + 1},
+		"trash kept under 1h":     {Bucket: "b", TrashRetention: time.Minute},
 	}
 	for name, cfg := range bad {
-		if _, err := sm.NewManager(l, s, b, a, cfg); err == nil {
+		if _, err := sm.NewManager(l, s, snapshots.NewMemory(), b, a, cfg); err == nil {
 			t.Errorf("%s: NewManager succeeded, want an error", name)
 		}
 	}
-	if _, err := sm.NewManager(nil, s, b, a, sm.Config{Bucket: "b"}); err == nil {
+	if _, err := sm.NewManager(nil, s, snapshots.NewMemory(), b, a, sm.Config{Bucket: "b"}); err == nil {
 		t.Error("NewManager without a ledger succeeded, want an error")
 	}
 }

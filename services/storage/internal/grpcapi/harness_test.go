@@ -7,6 +7,7 @@ import (
 	"gyoza/services/storage/internal/dam"
 	"gyoza/services/storage/internal/ledger"
 	"gyoza/services/storage/internal/manager"
+	"gyoza/services/storage/internal/snapshots"
 )
 
 // testManager is a Manager on memory fakes, kept so tests can compare the
@@ -33,7 +34,7 @@ func newTestManager(t *testing.T) testManager {
 	tm := testManager{blobs: blob.NewMemory(), store: dam.NewMemoryStore(), ledger: ledger.NewMemory()}
 	tm.authz = manager.NewRuleAuthorizer()
 	tm.authz.AllowOwner("member", acme, manager.AccessWrite)
-	m, err := manager.NewManager(tm.ledger, tm.store, tm.blobs, tm.authz, manager.Config{Bucket: testBucket})
+	m, err := manager.NewManager(tm.ledger, tm.store, snapshots.NewMemory(), tm.blobs, tm.authz, manager.Config{Bucket: testBucket})
 	if err != nil {
 		t.Fatalf("NewManager: %v", err)
 	}

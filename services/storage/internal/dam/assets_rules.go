@@ -325,7 +325,7 @@ func (r *AssetRef) UnmarshalText(b []byte) error {
 // CopyAssetID is the ID of the copy of src made into target for project
 // projectID (a clone, or the project a fork happens in): asset version 1 of
 // that ID. The same inputs always give the same ID, so a retried copy lands
-// on the same asset, and documentmanager can work out a clone's rewritten
+// on the same asset, and documents can work out a clone's rewritten
 // refs ({CopyAssetID(clone, cloneOwner, ref), 1}) without a mapping table.
 func CopyAssetID(projectID string, target ledger.Owner, src AssetRef) string {
 	return derivedID(projectID, "asset", string(target.Kind), target.ID, src.AssetID, strconv.Itoa(src.Version))

@@ -3000,7 +3000,9 @@ type DeleteOwnedResponse struct {
 	LedgerObjects int32                  `protobuf:"varint,1,opt,name=ledger_objects,json=ledgerObjects,proto3" json:"ledger_objects,omitempty"`
 	Trash         *FolderDeletion        `protobuf:"bytes,2,opt,name=trash,proto3" json:"trash,omitempty"`
 	// A deleted project's asset uses forgotten (projects only).
-	Uses          int32 `protobuf:"varint,3,opt,name=uses,proto3" json:"uses,omitempty"`
+	Uses int32 `protobuf:"varint,3,opt,name=uses,proto3" json:"uses,omitempty"`
+	// A deleted project's snapshot records removed (projects only).
+	Snapshots     int32 `protobuf:"varint,4,opt,name=snapshots,proto3" json:"snapshots,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3052,6 +3054,13 @@ func (x *DeleteOwnedResponse) GetTrash() *FolderDeletion {
 func (x *DeleteOwnedResponse) GetUses() int32 {
 	if x != nil {
 		return x.Uses
+	}
+	return 0
+}
+
+func (x *DeleteOwnedResponse) GetSnapshots() int32 {
+	if x != nil {
+		return x.Snapshots
 	}
 	return 0
 }
@@ -3122,6 +3131,7 @@ type RemoveUserResponse struct {
 	Deleted              *FolderDeletion `protobuf:"bytes,8,opt,name=deleted,proto3" json:"deleted,omitempty"`
 	ClearedLedger        int32           `protobuf:"varint,9,opt,name=cleared_ledger,json=clearedLedger,proto3" json:"cleared_ledger,omitempty"`
 	ClearedDam           int32           `protobuf:"varint,10,opt,name=cleared_dam,json=clearedDam,proto3" json:"cleared_dam,omitempty"`
+	ClearedSnapshots     int32           `protobuf:"varint,11,opt,name=cleared_snapshots,json=clearedSnapshots,proto3" json:"cleared_snapshots,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -3222,6 +3232,13 @@ func (x *RemoveUserResponse) GetClearedLedger() int32 {
 func (x *RemoveUserResponse) GetClearedDam() int32 {
 	if x != nil {
 		return x.ClearedDam
+	}
+	return 0
+}
+
+func (x *RemoveUserResponse) GetClearedSnapshots() int32 {
+	if x != nil {
+		return x.ClearedSnapshots
 	}
 	return 0
 }
@@ -3838,6 +3855,657 @@ func (x *CopyProjectFilesResponse) GetUses() int32 {
 	return 0
 }
 
+type Snapshot struct {
+	state     protoimpl.MessageState `protogen:"open.v1"`
+	ProjectId string                 `protobuf:"bytes,1,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
+	ObjectId  string                 `protobuf:"bytes,2,opt,name=object_id,json=objectId,proto3" json:"object_id,omitempty"`
+	// 1 for the project's first snapshot, then +1 per snapshot.
+	Version int32 `protobuf:"varint,3,opt,name=version,proto3" json:"version,omitempty"`
+	// Last delta stream sequence the snapshot covers.
+	Seq uint64 `protobuf:"varint,4,opt,name=seq,proto3" json:"seq,omitempty"`
+	// The last change it holds: who made it (empty once that user is deleted)
+	// and when.
+	EditedBy      string                 `protobuf:"bytes,5,opt,name=edited_by,json=editedBy,proto3" json:"edited_by,omitempty"`
+	EditedAt      *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=edited_at,json=editedAt,proto3" json:"edited_at,omitempty"`
+	ContentType   string                 `protobuf:"bytes,7,opt,name=content_type,json=contentType,proto3" json:"content_type,omitempty"`
+	SizeBytes     int64                  `protobuf:"varint,8,opt,name=size_bytes,json=sizeBytes,proto3" json:"size_bytes,omitempty"`
+	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Snapshot) Reset() {
+	*x = Snapshot{}
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[63]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Snapshot) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Snapshot) ProtoMessage() {}
+
+func (x *Snapshot) ProtoReflect() protoreflect.Message {
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[63]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Snapshot.ProtoReflect.Descriptor instead.
+func (*Snapshot) Descriptor() ([]byte, []int) {
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{63}
+}
+
+func (x *Snapshot) GetProjectId() string {
+	if x != nil {
+		return x.ProjectId
+	}
+	return ""
+}
+
+func (x *Snapshot) GetObjectId() string {
+	if x != nil {
+		return x.ObjectId
+	}
+	return ""
+}
+
+func (x *Snapshot) GetVersion() int32 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
+}
+
+func (x *Snapshot) GetSeq() uint64 {
+	if x != nil {
+		return x.Seq
+	}
+	return 0
+}
+
+func (x *Snapshot) GetEditedBy() string {
+	if x != nil {
+		return x.EditedBy
+	}
+	return ""
+}
+
+func (x *Snapshot) GetEditedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.EditedAt
+	}
+	return nil
+}
+
+func (x *Snapshot) GetContentType() string {
+	if x != nil {
+		return x.ContentType
+	}
+	return ""
+}
+
+func (x *Snapshot) GetSizeBytes() int64 {
+	if x != nil {
+		return x.SizeBytes
+	}
+	return 0
+}
+
+func (x *Snapshot) GetCreatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
+type BeginSnapshotRequest struct {
+	state     protoimpl.MessageState `protogen:"open.v1"`
+	ProjectId string                 `protobuf:"bytes,1,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
+	Seq       uint64                 `protobuf:"varint,2,opt,name=seq,proto3" json:"seq,omitempty"`
+	EditedBy  string                 `protobuf:"bytes,3,opt,name=edited_by,json=editedBy,proto3" json:"edited_by,omitempty"`
+	EditedAt  *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=edited_at,json=editedAt,proto3" json:"edited_at,omitempty"`
+	// A snapshot type, e.g. application/vnd.gyoza.app+flatbuffers; version=1.
+	ContentType   string `protobuf:"bytes,5,opt,name=content_type,json=contentType,proto3" json:"content_type,omitempty"`
+	SizeBytes     int64  `protobuf:"varint,6,opt,name=size_bytes,json=sizeBytes,proto3" json:"size_bytes,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BeginSnapshotRequest) Reset() {
+	*x = BeginSnapshotRequest{}
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[64]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BeginSnapshotRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BeginSnapshotRequest) ProtoMessage() {}
+
+func (x *BeginSnapshotRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[64]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BeginSnapshotRequest.ProtoReflect.Descriptor instead.
+func (*BeginSnapshotRequest) Descriptor() ([]byte, []int) {
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{64}
+}
+
+func (x *BeginSnapshotRequest) GetProjectId() string {
+	if x != nil {
+		return x.ProjectId
+	}
+	return ""
+}
+
+func (x *BeginSnapshotRequest) GetSeq() uint64 {
+	if x != nil {
+		return x.Seq
+	}
+	return 0
+}
+
+func (x *BeginSnapshotRequest) GetEditedBy() string {
+	if x != nil {
+		return x.EditedBy
+	}
+	return ""
+}
+
+func (x *BeginSnapshotRequest) GetEditedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.EditedAt
+	}
+	return nil
+}
+
+func (x *BeginSnapshotRequest) GetContentType() string {
+	if x != nil {
+		return x.ContentType
+	}
+	return ""
+}
+
+func (x *BeginSnapshotRequest) GetSizeBytes() int64 {
+	if x != nil {
+		return x.SizeBytes
+	}
+	return 0
+}
+
+type BeginSnapshotResponse struct {
+	state    protoimpl.MessageState `protogen:"open.v1"`
+	ObjectId string                 `protobuf:"bytes,1,opt,name=object_id,json=objectId,proto3" json:"object_id,omitempty"`
+	// PUT the bytes here with exactly these headers.
+	Url           string                 `protobuf:"bytes,2,opt,name=url,proto3" json:"url,omitempty"`
+	Headers       map[string]string      `protobuf:"bytes,3,rep,name=headers,proto3" json:"headers,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	ExpiresAt     *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BeginSnapshotResponse) Reset() {
+	*x = BeginSnapshotResponse{}
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[65]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BeginSnapshotResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BeginSnapshotResponse) ProtoMessage() {}
+
+func (x *BeginSnapshotResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[65]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BeginSnapshotResponse.ProtoReflect.Descriptor instead.
+func (*BeginSnapshotResponse) Descriptor() ([]byte, []int) {
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{65}
+}
+
+func (x *BeginSnapshotResponse) GetObjectId() string {
+	if x != nil {
+		return x.ObjectId
+	}
+	return ""
+}
+
+func (x *BeginSnapshotResponse) GetUrl() string {
+	if x != nil {
+		return x.Url
+	}
+	return ""
+}
+
+func (x *BeginSnapshotResponse) GetHeaders() map[string]string {
+	if x != nil {
+		return x.Headers
+	}
+	return nil
+}
+
+func (x *BeginSnapshotResponse) GetExpiresAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.ExpiresAt
+	}
+	return nil
+}
+
+type CompleteSnapshotRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ProjectId     string                 `protobuf:"bytes,1,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
+	ObjectId      string                 `protobuf:"bytes,2,opt,name=object_id,json=objectId,proto3" json:"object_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CompleteSnapshotRequest) Reset() {
+	*x = CompleteSnapshotRequest{}
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[66]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CompleteSnapshotRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CompleteSnapshotRequest) ProtoMessage() {}
+
+func (x *CompleteSnapshotRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[66]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CompleteSnapshotRequest.ProtoReflect.Descriptor instead.
+func (*CompleteSnapshotRequest) Descriptor() ([]byte, []int) {
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{66}
+}
+
+func (x *CompleteSnapshotRequest) GetProjectId() string {
+	if x != nil {
+		return x.ProjectId
+	}
+	return ""
+}
+
+func (x *CompleteSnapshotRequest) GetObjectId() string {
+	if x != nil {
+		return x.ObjectId
+	}
+	return ""
+}
+
+type CompleteSnapshotResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Snapshot      *Snapshot              `protobuf:"bytes,1,opt,name=snapshot,proto3" json:"snapshot,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CompleteSnapshotResponse) Reset() {
+	*x = CompleteSnapshotResponse{}
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[67]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CompleteSnapshotResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CompleteSnapshotResponse) ProtoMessage() {}
+
+func (x *CompleteSnapshotResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[67]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CompleteSnapshotResponse.ProtoReflect.Descriptor instead.
+func (*CompleteSnapshotResponse) Descriptor() ([]byte, []int) {
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{67}
+}
+
+func (x *CompleteSnapshotResponse) GetSnapshot() *Snapshot {
+	if x != nil {
+		return x.Snapshot
+	}
+	return nil
+}
+
+type GetLatestSnapshotRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ProjectId     string                 `protobuf:"bytes,1,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetLatestSnapshotRequest) Reset() {
+	*x = GetLatestSnapshotRequest{}
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[68]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetLatestSnapshotRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetLatestSnapshotRequest) ProtoMessage() {}
+
+func (x *GetLatestSnapshotRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[68]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetLatestSnapshotRequest.ProtoReflect.Descriptor instead.
+func (*GetLatestSnapshotRequest) Descriptor() ([]byte, []int) {
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{68}
+}
+
+func (x *GetLatestSnapshotRequest) GetProjectId() string {
+	if x != nil {
+		return x.ProjectId
+	}
+	return ""
+}
+
+type GetLatestSnapshotResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Snapshot      *Snapshot              `protobuf:"bytes,1,opt,name=snapshot,proto3" json:"snapshot,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetLatestSnapshotResponse) Reset() {
+	*x = GetLatestSnapshotResponse{}
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[69]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetLatestSnapshotResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetLatestSnapshotResponse) ProtoMessage() {}
+
+func (x *GetLatestSnapshotResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[69]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetLatestSnapshotResponse.ProtoReflect.Descriptor instead.
+func (*GetLatestSnapshotResponse) Descriptor() ([]byte, []int) {
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{69}
+}
+
+func (x *GetLatestSnapshotResponse) GetSnapshot() *Snapshot {
+	if x != nil {
+		return x.Snapshot
+	}
+	return nil
+}
+
+type ListSnapshotsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ProjectId     string                 `protobuf:"bytes,1,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
+	PageToken     string                 `protobuf:"bytes,2,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListSnapshotsRequest) Reset() {
+	*x = ListSnapshotsRequest{}
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[70]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListSnapshotsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListSnapshotsRequest) ProtoMessage() {}
+
+func (x *ListSnapshotsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[70]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListSnapshotsRequest.ProtoReflect.Descriptor instead.
+func (*ListSnapshotsRequest) Descriptor() ([]byte, []int) {
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{70}
+}
+
+func (x *ListSnapshotsRequest) GetProjectId() string {
+	if x != nil {
+		return x.ProjectId
+	}
+	return ""
+}
+
+func (x *ListSnapshotsRequest) GetPageToken() string {
+	if x != nil {
+		return x.PageToken
+	}
+	return ""
+}
+
+type ListSnapshotsResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Newest first.
+	Snapshots     []*Snapshot `protobuf:"bytes,1,rep,name=snapshots,proto3" json:"snapshots,omitempty"`
+	NextPageToken string      `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListSnapshotsResponse) Reset() {
+	*x = ListSnapshotsResponse{}
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[71]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListSnapshotsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListSnapshotsResponse) ProtoMessage() {}
+
+func (x *ListSnapshotsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[71]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListSnapshotsResponse.ProtoReflect.Descriptor instead.
+func (*ListSnapshotsResponse) Descriptor() ([]byte, []int) {
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{71}
+}
+
+func (x *ListSnapshotsResponse) GetSnapshots() []*Snapshot {
+	if x != nil {
+		return x.Snapshots
+	}
+	return nil
+}
+
+func (x *ListSnapshotsResponse) GetNextPageToken() string {
+	if x != nil {
+		return x.NextPageToken
+	}
+	return ""
+}
+
+type GetSnapshotURLRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ProjectId     string                 `protobuf:"bytes,1,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
+	ObjectId      string                 `protobuf:"bytes,2,opt,name=object_id,json=objectId,proto3" json:"object_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetSnapshotURLRequest) Reset() {
+	*x = GetSnapshotURLRequest{}
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[72]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetSnapshotURLRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetSnapshotURLRequest) ProtoMessage() {}
+
+func (x *GetSnapshotURLRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[72]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetSnapshotURLRequest.ProtoReflect.Descriptor instead.
+func (*GetSnapshotURLRequest) Descriptor() ([]byte, []int) {
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{72}
+}
+
+func (x *GetSnapshotURLRequest) GetProjectId() string {
+	if x != nil {
+		return x.ProjectId
+	}
+	return ""
+}
+
+func (x *GetSnapshotURLRequest) GetObjectId() string {
+	if x != nil {
+		return x.ObjectId
+	}
+	return ""
+}
+
+type GetSnapshotURLResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Download      *Download              `protobuf:"bytes,1,opt,name=download,proto3" json:"download,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetSnapshotURLResponse) Reset() {
+	*x = GetSnapshotURLResponse{}
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[73]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetSnapshotURLResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetSnapshotURLResponse) ProtoMessage() {}
+
+func (x *GetSnapshotURLResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[73]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetSnapshotURLResponse.ProtoReflect.Descriptor instead.
+func (*GetSnapshotURLResponse) Descriptor() ([]byte, []int) {
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{73}
+}
+
+func (x *GetSnapshotURLResponse) GetDownload() *Download {
+	if x != nil {
+		return x.Download
+	}
+	return nil
+}
+
 var File_gyoza_storage_v1_storage_proto protoreflect.FileDescriptor
 
 const file_gyoza_storage_v1_storage_proto_rawDesc = "" +
@@ -4068,14 +4736,15 @@ const file_gyoza_storage_v1_storage_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\x05R\x05value:\x028\x01\"C\n" +
 	"\x12DeleteOwnedRequest\x12-\n" +
-	"\x05owner\x18\x01 \x01(\v2\x17.gyoza.storage.v1.OwnerR\x05owner\"\x88\x01\n" +
+	"\x05owner\x18\x01 \x01(\v2\x17.gyoza.storage.v1.OwnerR\x05owner\"\xa6\x01\n" +
 	"\x13DeleteOwnedResponse\x12%\n" +
 	"\x0eledger_objects\x18\x01 \x01(\x05R\rledgerObjects\x126\n" +
 	"\x05trash\x18\x02 \x01(\v2 .gyoza.storage.v1.FolderDeletionR\x05trash\x12\x12\n" +
-	"\x04uses\x18\x03 \x01(\x05R\x04uses\"C\n" +
+	"\x04uses\x18\x03 \x01(\x05R\x04uses\x12\x1c\n" +
+	"\tsnapshots\x18\x04 \x01(\x05R\tsnapshots\"C\n" +
 	"\x11RemoveUserRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x15\n" +
-	"\x06org_id\x18\x02 \x01(\tR\x05orgId\"\xe7\x03\n" +
+	"\x06org_id\x18\x02 \x01(\tR\x05orgId\"\x94\x04\n" +
 	"\x12RemoveUserResponse\x12'\n" +
 	"\x0fexpired_uploads\x18\x01 \x01(\x05R\x0eexpiredUploads\x12>\n" +
 	"\x0etransferred_to\x18\x02 \x01(\v2\x17.gyoza.storage.v1.OwnerR\rtransferredTo\x12-\n" +
@@ -4088,7 +4757,8 @@ const file_gyoza_storage_v1_storage_proto_rawDesc = "" +
 	"\x0ecleared_ledger\x18\t \x01(\x05R\rclearedLedger\x12\x1f\n" +
 	"\vcleared_dam\x18\n" +
 	" \x01(\x05R\n" +
-	"clearedDam\"H\n" +
+	"clearedDam\x12+\n" +
+	"\x11cleared_snapshots\x18\v \x01(\x05R\x10clearedSnapshots\"H\n" +
 	"\x05Owner\x12/\n" +
 	"\x04kind\x18\x01 \x01(\x0e2\x1b.gyoza.storage.v1.OwnerKindR\x04kind\x12\x0e\n" +
 	"\x02id\x18\x02 \x01(\tR\x02id\"{\n" +
@@ -4129,13 +4799,69 @@ const file_gyoza_storage_v1_storage_proto_rawDesc = "" +
 	"\x18CopyProjectFilesResponse\x12\x18\n" +
 	"\afolders\x18\x01 \x01(\x05R\afolders\x12\x16\n" +
 	"\x06assets\x18\x02 \x01(\x05R\x06assets\x12\x12\n" +
-	"\x04uses\x18\x03 \x01(\x05R\x04uses*~\n" +
+	"\x04uses\x18\x03 \x01(\x05R\x04uses\"\xc5\x02\n" +
+	"\bSnapshot\x12\x1d\n" +
+	"\n" +
+	"project_id\x18\x01 \x01(\tR\tprojectId\x12\x1b\n" +
+	"\tobject_id\x18\x02 \x01(\tR\bobjectId\x12\x18\n" +
+	"\aversion\x18\x03 \x01(\x05R\aversion\x12\x10\n" +
+	"\x03seq\x18\x04 \x01(\x04R\x03seq\x12\x1b\n" +
+	"\tedited_by\x18\x05 \x01(\tR\beditedBy\x127\n" +
+	"\tedited_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\beditedAt\x12!\n" +
+	"\fcontent_type\x18\a \x01(\tR\vcontentType\x12\x1d\n" +
+	"\n" +
+	"size_bytes\x18\b \x01(\x03R\tsizeBytes\x129\n" +
+	"\n" +
+	"created_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"\xdf\x01\n" +
+	"\x14BeginSnapshotRequest\x12\x1d\n" +
+	"\n" +
+	"project_id\x18\x01 \x01(\tR\tprojectId\x12\x10\n" +
+	"\x03seq\x18\x02 \x01(\x04R\x03seq\x12\x1b\n" +
+	"\tedited_by\x18\x03 \x01(\tR\beditedBy\x127\n" +
+	"\tedited_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\beditedAt\x12!\n" +
+	"\fcontent_type\x18\x05 \x01(\tR\vcontentType\x12\x1d\n" +
+	"\n" +
+	"size_bytes\x18\x06 \x01(\x03R\tsizeBytes\"\x8d\x02\n" +
+	"\x15BeginSnapshotResponse\x12\x1b\n" +
+	"\tobject_id\x18\x01 \x01(\tR\bobjectId\x12\x10\n" +
+	"\x03url\x18\x02 \x01(\tR\x03url\x12N\n" +
+	"\aheaders\x18\x03 \x03(\v24.gyoza.storage.v1.BeginSnapshotResponse.HeadersEntryR\aheaders\x129\n" +
+	"\n" +
+	"expires_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\x1a:\n" +
+	"\fHeadersEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"U\n" +
+	"\x17CompleteSnapshotRequest\x12\x1d\n" +
+	"\n" +
+	"project_id\x18\x01 \x01(\tR\tprojectId\x12\x1b\n" +
+	"\tobject_id\x18\x02 \x01(\tR\bobjectId\"R\n" +
+	"\x18CompleteSnapshotResponse\x126\n" +
+	"\bsnapshot\x18\x01 \x01(\v2\x1a.gyoza.storage.v1.SnapshotR\bsnapshot\"9\n" +
+	"\x18GetLatestSnapshotRequest\x12\x1d\n" +
+	"\n" +
+	"project_id\x18\x01 \x01(\tR\tprojectId\"S\n" +
+	"\x19GetLatestSnapshotResponse\x126\n" +
+	"\bsnapshot\x18\x01 \x01(\v2\x1a.gyoza.storage.v1.SnapshotR\bsnapshot\"T\n" +
+	"\x14ListSnapshotsRequest\x12\x1d\n" +
+	"\n" +
+	"project_id\x18\x01 \x01(\tR\tprojectId\x12\x1d\n" +
+	"\n" +
+	"page_token\x18\x02 \x01(\tR\tpageToken\"y\n" +
+	"\x15ListSnapshotsResponse\x128\n" +
+	"\tsnapshots\x18\x01 \x03(\v2\x1a.gyoza.storage.v1.SnapshotR\tsnapshots\x12&\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"S\n" +
+	"\x15GetSnapshotURLRequest\x12\x1d\n" +
+	"\n" +
+	"project_id\x18\x01 \x01(\tR\tprojectId\x12\x1b\n" +
+	"\tobject_id\x18\x02 \x01(\tR\bobjectId\"P\n" +
+	"\x16GetSnapshotURLResponse\x126\n" +
+	"\bdownload\x18\x01 \x01(\v2\x1a.gyoza.storage.v1.DownloadR\bdownload*~\n" +
 	"\tOwnerKind\x12\x1a\n" +
 	"\x16OWNER_KIND_UNSPECIFIED\x10\x00\x12\x16\n" +
 	"\x12OWNER_KIND_PROJECT\x10\x01\x12\x13\n" +
 	"\x0fOWNER_KIND_USER\x10\x02\x12\x12\n" +
 	"\x0eOWNER_KIND_ORG\x10\x03\x12\x14\n" +
-	"\x10OWNER_KIND_GYOZA\x10\x042\x98\x14\n" +
+	"\x10OWNER_KIND_GYOZA\x10\x042\x9a\x18\n" +
 	"\x0eStorageService\x12Z\n" +
 	"\vBeginUpload\x12$.gyoza.storage.v1.BeginUploadRequest\x1a%.gyoza.storage.v1.BeginUploadResponse\x12c\n" +
 	"\x0eCompleteUpload\x12'.gyoza.storage.v1.CompleteUploadRequest\x1a(.gyoza.storage.v1.CompleteUploadResponse\x12c\n" +
@@ -4167,7 +4893,12 @@ const file_gyoza_storage_v1_storage_proto_rawDesc = "" +
 	"\tForkAsset\x12\".gyoza.storage.v1.ForkAssetRequest\x1a#.gyoza.storage.v1.ForkAssetResponse\x12c\n" +
 	"\x0eRecordAssetUse\x12'.gyoza.storage.v1.RecordAssetUseRequest\x1a(.gyoza.storage.v1.RecordAssetUseResponse\x12c\n" +
 	"\x0eForgetAssetUse\x12'.gyoza.storage.v1.ForgetAssetUseRequest\x1a(.gyoza.storage.v1.ForgetAssetUseResponse\x12i\n" +
-	"\x10CopyProjectFiles\x12).gyoza.storage.v1.CopyProjectFilesRequest\x1a*.gyoza.storage.v1.CopyProjectFilesResponseB\xb9\x01\n" +
+	"\x10CopyProjectFiles\x12).gyoza.storage.v1.CopyProjectFilesRequest\x1a*.gyoza.storage.v1.CopyProjectFilesResponse\x12`\n" +
+	"\rBeginSnapshot\x12&.gyoza.storage.v1.BeginSnapshotRequest\x1a'.gyoza.storage.v1.BeginSnapshotResponse\x12i\n" +
+	"\x10CompleteSnapshot\x12).gyoza.storage.v1.CompleteSnapshotRequest\x1a*.gyoza.storage.v1.CompleteSnapshotResponse\x12l\n" +
+	"\x11GetLatestSnapshot\x12*.gyoza.storage.v1.GetLatestSnapshotRequest\x1a+.gyoza.storage.v1.GetLatestSnapshotResponse\x12`\n" +
+	"\rListSnapshots\x12&.gyoza.storage.v1.ListSnapshotsRequest\x1a'.gyoza.storage.v1.ListSnapshotsResponse\x12c\n" +
+	"\x0eGetSnapshotURL\x12'.gyoza.storage.v1.GetSnapshotURLRequest\x1a(.gyoza.storage.v1.GetSnapshotURLResponseB\xb9\x01\n" +
 	"\x14com.gyoza.storage.v1B\fStorageProtoP\x01Z1gyoza/contracts/gen/go/gyoza/storage/v1;storagev1\xa2\x02\x03GSX\xaa\x02\x10Gyoza.Storage.V1\xca\x02\x10Gyoza\\Storage\\V1\xe2\x02\x1cGyoza\\Storage\\V1\\GPBMetadata\xea\x02\x12Gyoza::Storage::V1b\x06proto3"
 
 var (
@@ -4183,7 +4914,7 @@ func file_gyoza_storage_v1_storage_proto_rawDescGZIP() []byte {
 }
 
 var file_gyoza_storage_v1_storage_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_gyoza_storage_v1_storage_proto_msgTypes = make([]protoimpl.MessageInfo, 65)
+var file_gyoza_storage_v1_storage_proto_msgTypes = make([]protoimpl.MessageInfo, 77)
 var file_gyoza_storage_v1_storage_proto_goTypes = []any{
 	(OwnerKind)(0),                     // 0: gyoza.storage.v1.OwnerKind
 	(*Asset)(nil),                      // 1: gyoza.storage.v1.Asset
@@ -4249,25 +4980,37 @@ var file_gyoza_storage_v1_storage_proto_goTypes = []any{
 	(*ForgetAssetUseResponse)(nil),     // 61: gyoza.storage.v1.ForgetAssetUseResponse
 	(*CopyProjectFilesRequest)(nil),    // 62: gyoza.storage.v1.CopyProjectFilesRequest
 	(*CopyProjectFilesResponse)(nil),   // 63: gyoza.storage.v1.CopyProjectFilesResponse
-	nil,                                // 64: gyoza.storage.v1.BeginUploadResponse.HeadersEntry
-	nil,                                // 65: gyoza.storage.v1.ListTrashResponse.UsesEntry
-	(*timestamppb.Timestamp)(nil),      // 66: google.protobuf.Timestamp
+	(*Snapshot)(nil),                   // 64: gyoza.storage.v1.Snapshot
+	(*BeginSnapshotRequest)(nil),       // 65: gyoza.storage.v1.BeginSnapshotRequest
+	(*BeginSnapshotResponse)(nil),      // 66: gyoza.storage.v1.BeginSnapshotResponse
+	(*CompleteSnapshotRequest)(nil),    // 67: gyoza.storage.v1.CompleteSnapshotRequest
+	(*CompleteSnapshotResponse)(nil),   // 68: gyoza.storage.v1.CompleteSnapshotResponse
+	(*GetLatestSnapshotRequest)(nil),   // 69: gyoza.storage.v1.GetLatestSnapshotRequest
+	(*GetLatestSnapshotResponse)(nil),  // 70: gyoza.storage.v1.GetLatestSnapshotResponse
+	(*ListSnapshotsRequest)(nil),       // 71: gyoza.storage.v1.ListSnapshotsRequest
+	(*ListSnapshotsResponse)(nil),      // 72: gyoza.storage.v1.ListSnapshotsResponse
+	(*GetSnapshotURLRequest)(nil),      // 73: gyoza.storage.v1.GetSnapshotURLRequest
+	(*GetSnapshotURLResponse)(nil),     // 74: gyoza.storage.v1.GetSnapshotURLResponse
+	nil,                                // 75: gyoza.storage.v1.BeginUploadResponse.HeadersEntry
+	nil,                                // 76: gyoza.storage.v1.ListTrashResponse.UsesEntry
+	nil,                                // 77: gyoza.storage.v1.BeginSnapshotResponse.HeadersEntry
+	(*timestamppb.Timestamp)(nil),      // 78: google.protobuf.Timestamp
 }
 var file_gyoza_storage_v1_storage_proto_depIdxs = []int32{
 	53, // 0: gyoza.storage.v1.Asset.owner:type_name -> gyoza.storage.v1.Owner
-	66, // 1: gyoza.storage.v1.Asset.created_at:type_name -> google.protobuf.Timestamp
-	66, // 2: gyoza.storage.v1.Asset.updated_at:type_name -> google.protobuf.Timestamp
-	66, // 3: gyoza.storage.v1.Asset.deleted_at:type_name -> google.protobuf.Timestamp
-	66, // 4: gyoza.storage.v1.Version.created_at:type_name -> google.protobuf.Timestamp
+	78, // 1: gyoza.storage.v1.Asset.created_at:type_name -> google.protobuf.Timestamp
+	78, // 2: gyoza.storage.v1.Asset.updated_at:type_name -> google.protobuf.Timestamp
+	78, // 3: gyoza.storage.v1.Asset.deleted_at:type_name -> google.protobuf.Timestamp
+	78, // 4: gyoza.storage.v1.Version.created_at:type_name -> google.protobuf.Timestamp
 	1,  // 5: gyoza.storage.v1.AssetPage.assets:type_name -> gyoza.storage.v1.Asset
 	53, // 6: gyoza.storage.v1.Folder.owner:type_name -> gyoza.storage.v1.Owner
-	66, // 7: gyoza.storage.v1.Folder.created_at:type_name -> google.protobuf.Timestamp
-	66, // 8: gyoza.storage.v1.Folder.updated_at:type_name -> google.protobuf.Timestamp
-	66, // 9: gyoza.storage.v1.Folder.deleted_at:type_name -> google.protobuf.Timestamp
-	66, // 10: gyoza.storage.v1.Download.expires_at:type_name -> google.protobuf.Timestamp
+	78, // 7: gyoza.storage.v1.Folder.created_at:type_name -> google.protobuf.Timestamp
+	78, // 8: gyoza.storage.v1.Folder.updated_at:type_name -> google.protobuf.Timestamp
+	78, // 9: gyoza.storage.v1.Folder.deleted_at:type_name -> google.protobuf.Timestamp
+	78, // 10: gyoza.storage.v1.Download.expires_at:type_name -> google.protobuf.Timestamp
 	53, // 11: gyoza.storage.v1.BeginUploadRequest.owner:type_name -> gyoza.storage.v1.Owner
-	64, // 12: gyoza.storage.v1.BeginUploadResponse.headers:type_name -> gyoza.storage.v1.BeginUploadResponse.HeadersEntry
-	66, // 13: gyoza.storage.v1.BeginUploadResponse.expires_at:type_name -> google.protobuf.Timestamp
+	75, // 12: gyoza.storage.v1.BeginUploadResponse.headers:type_name -> gyoza.storage.v1.BeginUploadResponse.HeadersEntry
+	78, // 13: gyoza.storage.v1.BeginUploadResponse.expires_at:type_name -> google.protobuf.Timestamp
 	1,  // 14: gyoza.storage.v1.CompleteUploadResponse.asset:type_name -> gyoza.storage.v1.Asset
 	7,  // 15: gyoza.storage.v1.GetDownloadURLResponse.download:type_name -> gyoza.storage.v1.Download
 	7,  // 16: gyoza.storage.v1.GetExportURLResponse.download:type_name -> gyoza.storage.v1.Download
@@ -4294,7 +5037,7 @@ var file_gyoza_storage_v1_storage_proto_depIdxs = []int32{
 	53, // 37: gyoza.storage.v1.ListTrashRequest.owner:type_name -> gyoza.storage.v1.Owner
 	5,  // 38: gyoza.storage.v1.ListTrashResponse.folders:type_name -> gyoza.storage.v1.Folder
 	4,  // 39: gyoza.storage.v1.ListTrashResponse.assets:type_name -> gyoza.storage.v1.AssetPage
-	65, // 40: gyoza.storage.v1.ListTrashResponse.uses:type_name -> gyoza.storage.v1.ListTrashResponse.UsesEntry
+	76, // 40: gyoza.storage.v1.ListTrashResponse.uses:type_name -> gyoza.storage.v1.ListTrashResponse.UsesEntry
 	53, // 41: gyoza.storage.v1.DeleteOwnedRequest.owner:type_name -> gyoza.storage.v1.Owner
 	6,  // 42: gyoza.storage.v1.DeleteOwnedResponse.trash:type_name -> gyoza.storage.v1.FolderDeletion
 	53, // 43: gyoza.storage.v1.RemoveUserResponse.transferred_to:type_name -> gyoza.storage.v1.Owner
@@ -4309,65 +5052,84 @@ var file_gyoza_storage_v1_storage_proto_depIdxs = []int32{
 	1,  // 52: gyoza.storage.v1.ForkAssetResponse.asset:type_name -> gyoza.storage.v1.Asset
 	3,  // 53: gyoza.storage.v1.RecordAssetUseRequest.ref:type_name -> gyoza.storage.v1.AssetRef
 	3,  // 54: gyoza.storage.v1.ForgetAssetUseRequest.ref:type_name -> gyoza.storage.v1.AssetRef
-	9,  // 55: gyoza.storage.v1.StorageService.BeginUpload:input_type -> gyoza.storage.v1.BeginUploadRequest
-	11, // 56: gyoza.storage.v1.StorageService.CompleteUpload:input_type -> gyoza.storage.v1.CompleteUploadRequest
-	13, // 57: gyoza.storage.v1.StorageService.GetDownloadURL:input_type -> gyoza.storage.v1.GetDownloadURLRequest
-	15, // 58: gyoza.storage.v1.StorageService.GetExportURL:input_type -> gyoza.storage.v1.GetExportURLRequest
-	17, // 59: gyoza.storage.v1.StorageService.GetAsset:input_type -> gyoza.storage.v1.GetAssetRequest
-	19, // 60: gyoza.storage.v1.StorageService.ListAssets:input_type -> gyoza.storage.v1.ListAssetsRequest
-	21, // 61: gyoza.storage.v1.StorageService.UpdateAsset:input_type -> gyoza.storage.v1.UpdateAssetRequest
-	23, // 62: gyoza.storage.v1.StorageService.DeleteAsset:input_type -> gyoza.storage.v1.DeleteAssetRequest
-	25, // 63: gyoza.storage.v1.StorageService.RestoreAsset:input_type -> gyoza.storage.v1.RestoreAssetRequest
-	27, // 64: gyoza.storage.v1.StorageService.ListVersions:input_type -> gyoza.storage.v1.ListVersionsRequest
-	29, // 65: gyoza.storage.v1.StorageService.RevertAsset:input_type -> gyoza.storage.v1.RevertAssetRequest
-	31, // 66: gyoza.storage.v1.StorageService.CreateFolder:input_type -> gyoza.storage.v1.CreateFolderRequest
-	33, // 67: gyoza.storage.v1.StorageService.RenameFolder:input_type -> gyoza.storage.v1.RenameFolderRequest
-	35, // 68: gyoza.storage.v1.StorageService.MoveFolder:input_type -> gyoza.storage.v1.MoveFolderRequest
-	37, // 69: gyoza.storage.v1.StorageService.DeleteFolder:input_type -> gyoza.storage.v1.DeleteFolderRequest
-	39, // 70: gyoza.storage.v1.StorageService.DeleteFolderTree:input_type -> gyoza.storage.v1.DeleteFolderTreeRequest
-	41, // 71: gyoza.storage.v1.StorageService.RestoreFolder:input_type -> gyoza.storage.v1.RestoreFolderRequest
-	43, // 72: gyoza.storage.v1.StorageService.ListFolderContents:input_type -> gyoza.storage.v1.ListFolderContentsRequest
-	45, // 73: gyoza.storage.v1.StorageService.GetFolderPath:input_type -> gyoza.storage.v1.GetFolderPathRequest
-	47, // 74: gyoza.storage.v1.StorageService.ListTrash:input_type -> gyoza.storage.v1.ListTrashRequest
-	49, // 75: gyoza.storage.v1.StorageService.DeleteOwned:input_type -> gyoza.storage.v1.DeleteOwnedRequest
-	51, // 76: gyoza.storage.v1.StorageService.RemoveUser:input_type -> gyoza.storage.v1.RemoveUserRequest
-	54, // 77: gyoza.storage.v1.StorageService.ResolveRef:input_type -> gyoza.storage.v1.ResolveRefRequest
-	56, // 78: gyoza.storage.v1.StorageService.ForkAsset:input_type -> gyoza.storage.v1.ForkAssetRequest
-	58, // 79: gyoza.storage.v1.StorageService.RecordAssetUse:input_type -> gyoza.storage.v1.RecordAssetUseRequest
-	60, // 80: gyoza.storage.v1.StorageService.ForgetAssetUse:input_type -> gyoza.storage.v1.ForgetAssetUseRequest
-	62, // 81: gyoza.storage.v1.StorageService.CopyProjectFiles:input_type -> gyoza.storage.v1.CopyProjectFilesRequest
-	10, // 82: gyoza.storage.v1.StorageService.BeginUpload:output_type -> gyoza.storage.v1.BeginUploadResponse
-	12, // 83: gyoza.storage.v1.StorageService.CompleteUpload:output_type -> gyoza.storage.v1.CompleteUploadResponse
-	14, // 84: gyoza.storage.v1.StorageService.GetDownloadURL:output_type -> gyoza.storage.v1.GetDownloadURLResponse
-	16, // 85: gyoza.storage.v1.StorageService.GetExportURL:output_type -> gyoza.storage.v1.GetExportURLResponse
-	18, // 86: gyoza.storage.v1.StorageService.GetAsset:output_type -> gyoza.storage.v1.GetAssetResponse
-	20, // 87: gyoza.storage.v1.StorageService.ListAssets:output_type -> gyoza.storage.v1.ListAssetsResponse
-	22, // 88: gyoza.storage.v1.StorageService.UpdateAsset:output_type -> gyoza.storage.v1.UpdateAssetResponse
-	24, // 89: gyoza.storage.v1.StorageService.DeleteAsset:output_type -> gyoza.storage.v1.DeleteAssetResponse
-	26, // 90: gyoza.storage.v1.StorageService.RestoreAsset:output_type -> gyoza.storage.v1.RestoreAssetResponse
-	28, // 91: gyoza.storage.v1.StorageService.ListVersions:output_type -> gyoza.storage.v1.ListVersionsResponse
-	30, // 92: gyoza.storage.v1.StorageService.RevertAsset:output_type -> gyoza.storage.v1.RevertAssetResponse
-	32, // 93: gyoza.storage.v1.StorageService.CreateFolder:output_type -> gyoza.storage.v1.CreateFolderResponse
-	34, // 94: gyoza.storage.v1.StorageService.RenameFolder:output_type -> gyoza.storage.v1.RenameFolderResponse
-	36, // 95: gyoza.storage.v1.StorageService.MoveFolder:output_type -> gyoza.storage.v1.MoveFolderResponse
-	38, // 96: gyoza.storage.v1.StorageService.DeleteFolder:output_type -> gyoza.storage.v1.DeleteFolderResponse
-	40, // 97: gyoza.storage.v1.StorageService.DeleteFolderTree:output_type -> gyoza.storage.v1.DeleteFolderTreeResponse
-	42, // 98: gyoza.storage.v1.StorageService.RestoreFolder:output_type -> gyoza.storage.v1.RestoreFolderResponse
-	44, // 99: gyoza.storage.v1.StorageService.ListFolderContents:output_type -> gyoza.storage.v1.ListFolderContentsResponse
-	46, // 100: gyoza.storage.v1.StorageService.GetFolderPath:output_type -> gyoza.storage.v1.GetFolderPathResponse
-	48, // 101: gyoza.storage.v1.StorageService.ListTrash:output_type -> gyoza.storage.v1.ListTrashResponse
-	50, // 102: gyoza.storage.v1.StorageService.DeleteOwned:output_type -> gyoza.storage.v1.DeleteOwnedResponse
-	52, // 103: gyoza.storage.v1.StorageService.RemoveUser:output_type -> gyoza.storage.v1.RemoveUserResponse
-	55, // 104: gyoza.storage.v1.StorageService.ResolveRef:output_type -> gyoza.storage.v1.ResolveRefResponse
-	57, // 105: gyoza.storage.v1.StorageService.ForkAsset:output_type -> gyoza.storage.v1.ForkAssetResponse
-	59, // 106: gyoza.storage.v1.StorageService.RecordAssetUse:output_type -> gyoza.storage.v1.RecordAssetUseResponse
-	61, // 107: gyoza.storage.v1.StorageService.ForgetAssetUse:output_type -> gyoza.storage.v1.ForgetAssetUseResponse
-	63, // 108: gyoza.storage.v1.StorageService.CopyProjectFiles:output_type -> gyoza.storage.v1.CopyProjectFilesResponse
-	82, // [82:109] is the sub-list for method output_type
-	55, // [55:82] is the sub-list for method input_type
-	55, // [55:55] is the sub-list for extension type_name
-	55, // [55:55] is the sub-list for extension extendee
-	0,  // [0:55] is the sub-list for field type_name
+	78, // 55: gyoza.storage.v1.Snapshot.edited_at:type_name -> google.protobuf.Timestamp
+	78, // 56: gyoza.storage.v1.Snapshot.created_at:type_name -> google.protobuf.Timestamp
+	78, // 57: gyoza.storage.v1.BeginSnapshotRequest.edited_at:type_name -> google.protobuf.Timestamp
+	77, // 58: gyoza.storage.v1.BeginSnapshotResponse.headers:type_name -> gyoza.storage.v1.BeginSnapshotResponse.HeadersEntry
+	78, // 59: gyoza.storage.v1.BeginSnapshotResponse.expires_at:type_name -> google.protobuf.Timestamp
+	64, // 60: gyoza.storage.v1.CompleteSnapshotResponse.snapshot:type_name -> gyoza.storage.v1.Snapshot
+	64, // 61: gyoza.storage.v1.GetLatestSnapshotResponse.snapshot:type_name -> gyoza.storage.v1.Snapshot
+	64, // 62: gyoza.storage.v1.ListSnapshotsResponse.snapshots:type_name -> gyoza.storage.v1.Snapshot
+	7,  // 63: gyoza.storage.v1.GetSnapshotURLResponse.download:type_name -> gyoza.storage.v1.Download
+	9,  // 64: gyoza.storage.v1.StorageService.BeginUpload:input_type -> gyoza.storage.v1.BeginUploadRequest
+	11, // 65: gyoza.storage.v1.StorageService.CompleteUpload:input_type -> gyoza.storage.v1.CompleteUploadRequest
+	13, // 66: gyoza.storage.v1.StorageService.GetDownloadURL:input_type -> gyoza.storage.v1.GetDownloadURLRequest
+	15, // 67: gyoza.storage.v1.StorageService.GetExportURL:input_type -> gyoza.storage.v1.GetExportURLRequest
+	17, // 68: gyoza.storage.v1.StorageService.GetAsset:input_type -> gyoza.storage.v1.GetAssetRequest
+	19, // 69: gyoza.storage.v1.StorageService.ListAssets:input_type -> gyoza.storage.v1.ListAssetsRequest
+	21, // 70: gyoza.storage.v1.StorageService.UpdateAsset:input_type -> gyoza.storage.v1.UpdateAssetRequest
+	23, // 71: gyoza.storage.v1.StorageService.DeleteAsset:input_type -> gyoza.storage.v1.DeleteAssetRequest
+	25, // 72: gyoza.storage.v1.StorageService.RestoreAsset:input_type -> gyoza.storage.v1.RestoreAssetRequest
+	27, // 73: gyoza.storage.v1.StorageService.ListVersions:input_type -> gyoza.storage.v1.ListVersionsRequest
+	29, // 74: gyoza.storage.v1.StorageService.RevertAsset:input_type -> gyoza.storage.v1.RevertAssetRequest
+	31, // 75: gyoza.storage.v1.StorageService.CreateFolder:input_type -> gyoza.storage.v1.CreateFolderRequest
+	33, // 76: gyoza.storage.v1.StorageService.RenameFolder:input_type -> gyoza.storage.v1.RenameFolderRequest
+	35, // 77: gyoza.storage.v1.StorageService.MoveFolder:input_type -> gyoza.storage.v1.MoveFolderRequest
+	37, // 78: gyoza.storage.v1.StorageService.DeleteFolder:input_type -> gyoza.storage.v1.DeleteFolderRequest
+	39, // 79: gyoza.storage.v1.StorageService.DeleteFolderTree:input_type -> gyoza.storage.v1.DeleteFolderTreeRequest
+	41, // 80: gyoza.storage.v1.StorageService.RestoreFolder:input_type -> gyoza.storage.v1.RestoreFolderRequest
+	43, // 81: gyoza.storage.v1.StorageService.ListFolderContents:input_type -> gyoza.storage.v1.ListFolderContentsRequest
+	45, // 82: gyoza.storage.v1.StorageService.GetFolderPath:input_type -> gyoza.storage.v1.GetFolderPathRequest
+	47, // 83: gyoza.storage.v1.StorageService.ListTrash:input_type -> gyoza.storage.v1.ListTrashRequest
+	49, // 84: gyoza.storage.v1.StorageService.DeleteOwned:input_type -> gyoza.storage.v1.DeleteOwnedRequest
+	51, // 85: gyoza.storage.v1.StorageService.RemoveUser:input_type -> gyoza.storage.v1.RemoveUserRequest
+	54, // 86: gyoza.storage.v1.StorageService.ResolveRef:input_type -> gyoza.storage.v1.ResolveRefRequest
+	56, // 87: gyoza.storage.v1.StorageService.ForkAsset:input_type -> gyoza.storage.v1.ForkAssetRequest
+	58, // 88: gyoza.storage.v1.StorageService.RecordAssetUse:input_type -> gyoza.storage.v1.RecordAssetUseRequest
+	60, // 89: gyoza.storage.v1.StorageService.ForgetAssetUse:input_type -> gyoza.storage.v1.ForgetAssetUseRequest
+	62, // 90: gyoza.storage.v1.StorageService.CopyProjectFiles:input_type -> gyoza.storage.v1.CopyProjectFilesRequest
+	65, // 91: gyoza.storage.v1.StorageService.BeginSnapshot:input_type -> gyoza.storage.v1.BeginSnapshotRequest
+	67, // 92: gyoza.storage.v1.StorageService.CompleteSnapshot:input_type -> gyoza.storage.v1.CompleteSnapshotRequest
+	69, // 93: gyoza.storage.v1.StorageService.GetLatestSnapshot:input_type -> gyoza.storage.v1.GetLatestSnapshotRequest
+	71, // 94: gyoza.storage.v1.StorageService.ListSnapshots:input_type -> gyoza.storage.v1.ListSnapshotsRequest
+	73, // 95: gyoza.storage.v1.StorageService.GetSnapshotURL:input_type -> gyoza.storage.v1.GetSnapshotURLRequest
+	10, // 96: gyoza.storage.v1.StorageService.BeginUpload:output_type -> gyoza.storage.v1.BeginUploadResponse
+	12, // 97: gyoza.storage.v1.StorageService.CompleteUpload:output_type -> gyoza.storage.v1.CompleteUploadResponse
+	14, // 98: gyoza.storage.v1.StorageService.GetDownloadURL:output_type -> gyoza.storage.v1.GetDownloadURLResponse
+	16, // 99: gyoza.storage.v1.StorageService.GetExportURL:output_type -> gyoza.storage.v1.GetExportURLResponse
+	18, // 100: gyoza.storage.v1.StorageService.GetAsset:output_type -> gyoza.storage.v1.GetAssetResponse
+	20, // 101: gyoza.storage.v1.StorageService.ListAssets:output_type -> gyoza.storage.v1.ListAssetsResponse
+	22, // 102: gyoza.storage.v1.StorageService.UpdateAsset:output_type -> gyoza.storage.v1.UpdateAssetResponse
+	24, // 103: gyoza.storage.v1.StorageService.DeleteAsset:output_type -> gyoza.storage.v1.DeleteAssetResponse
+	26, // 104: gyoza.storage.v1.StorageService.RestoreAsset:output_type -> gyoza.storage.v1.RestoreAssetResponse
+	28, // 105: gyoza.storage.v1.StorageService.ListVersions:output_type -> gyoza.storage.v1.ListVersionsResponse
+	30, // 106: gyoza.storage.v1.StorageService.RevertAsset:output_type -> gyoza.storage.v1.RevertAssetResponse
+	32, // 107: gyoza.storage.v1.StorageService.CreateFolder:output_type -> gyoza.storage.v1.CreateFolderResponse
+	34, // 108: gyoza.storage.v1.StorageService.RenameFolder:output_type -> gyoza.storage.v1.RenameFolderResponse
+	36, // 109: gyoza.storage.v1.StorageService.MoveFolder:output_type -> gyoza.storage.v1.MoveFolderResponse
+	38, // 110: gyoza.storage.v1.StorageService.DeleteFolder:output_type -> gyoza.storage.v1.DeleteFolderResponse
+	40, // 111: gyoza.storage.v1.StorageService.DeleteFolderTree:output_type -> gyoza.storage.v1.DeleteFolderTreeResponse
+	42, // 112: gyoza.storage.v1.StorageService.RestoreFolder:output_type -> gyoza.storage.v1.RestoreFolderResponse
+	44, // 113: gyoza.storage.v1.StorageService.ListFolderContents:output_type -> gyoza.storage.v1.ListFolderContentsResponse
+	46, // 114: gyoza.storage.v1.StorageService.GetFolderPath:output_type -> gyoza.storage.v1.GetFolderPathResponse
+	48, // 115: gyoza.storage.v1.StorageService.ListTrash:output_type -> gyoza.storage.v1.ListTrashResponse
+	50, // 116: gyoza.storage.v1.StorageService.DeleteOwned:output_type -> gyoza.storage.v1.DeleteOwnedResponse
+	52, // 117: gyoza.storage.v1.StorageService.RemoveUser:output_type -> gyoza.storage.v1.RemoveUserResponse
+	55, // 118: gyoza.storage.v1.StorageService.ResolveRef:output_type -> gyoza.storage.v1.ResolveRefResponse
+	57, // 119: gyoza.storage.v1.StorageService.ForkAsset:output_type -> gyoza.storage.v1.ForkAssetResponse
+	59, // 120: gyoza.storage.v1.StorageService.RecordAssetUse:output_type -> gyoza.storage.v1.RecordAssetUseResponse
+	61, // 121: gyoza.storage.v1.StorageService.ForgetAssetUse:output_type -> gyoza.storage.v1.ForgetAssetUseResponse
+	63, // 122: gyoza.storage.v1.StorageService.CopyProjectFiles:output_type -> gyoza.storage.v1.CopyProjectFilesResponse
+	66, // 123: gyoza.storage.v1.StorageService.BeginSnapshot:output_type -> gyoza.storage.v1.BeginSnapshotResponse
+	68, // 124: gyoza.storage.v1.StorageService.CompleteSnapshot:output_type -> gyoza.storage.v1.CompleteSnapshotResponse
+	70, // 125: gyoza.storage.v1.StorageService.GetLatestSnapshot:output_type -> gyoza.storage.v1.GetLatestSnapshotResponse
+	72, // 126: gyoza.storage.v1.StorageService.ListSnapshots:output_type -> gyoza.storage.v1.ListSnapshotsResponse
+	74, // 127: gyoza.storage.v1.StorageService.GetSnapshotURL:output_type -> gyoza.storage.v1.GetSnapshotURLResponse
+	96, // [96:128] is the sub-list for method output_type
+	64, // [64:96] is the sub-list for method input_type
+	64, // [64:64] is the sub-list for extension type_name
+	64, // [64:64] is the sub-list for extension extendee
+	0,  // [0:64] is the sub-list for field type_name
 }
 
 func init() { file_gyoza_storage_v1_storage_proto_init() }
@@ -4383,7 +5145,7 @@ func file_gyoza_storage_v1_storage_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_gyoza_storage_v1_storage_proto_rawDesc), len(file_gyoza_storage_v1_storage_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   65,
+			NumMessages:   77,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

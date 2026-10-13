@@ -22,6 +22,7 @@ import (
 	"gyoza/platform/config"
 	"gyoza/platform/postgres"
 	"gyoza/platform/shutdown"
+	"gyoza/services/documents"
 	"gyoza/services/iam"
 	"gyoza/services/storage"
 )
@@ -44,6 +45,7 @@ func run() error {
 	// The services it calls: a monolith serves both on one address.
 	iamAddr := env.String("GYOZA_ADMIN_IAM_ADDR", "localhost:9090")
 	storageAddr := env.String("GYOZA_ADMIN_STORAGE_ADDR", "localhost:9090")
+	docsAddr := env.String("GYOZA_ADMIN_DOCUMENTS_ADDR", "localhost:9090")
 	shutdownTimeout := env.Duration("GYOZA_SHUTDOWN_TIMEOUT", 20*time.Second)
 	if err := env.Err(); err != nil {
 		return err
@@ -71,8 +73,14 @@ func run() error {
 		return err
 	}
 	defer storageConn.Close()
+	docsConn, err := grpc.NewClient(docsAddr, creds)
+	if err != nil {
+		pool.Close()
+		return err
+	}
+	defer docsConn.Close()
 
-	handler, err := admin.New(pool, iam.NewGRPCClient(iamConn), storage.NewGRPCClient(storageConn))
+	handler, err := admin.New(pool, iam.NewGRPCClient(iamConn), storage.NewGRPCClient(storageConn), documents.NewGRPCClient(docsConn))
 	if err != nil {
 		pool.Close()
 		return err
@@ -85,7 +93,7 @@ func run() error {
 	server := &http.Server{Handler: handler, ReadHeaderTimeout: 10 * time.Second}
 	serveErr := make(chan error, 1)
 	go func() { serveErr <- server.Serve(lis) }()
-	slog.Info("admin started", "url", "http://"+lis.Addr().String(), "iam", iamAddr, "storage", storageAddr)
+	slog.Info("admin started", "url", "http://"+lis.Addr().String(), "iam", iamAddr, "storage", storageAddr, "documents", docsAddr)
 
 	select {
 	case <-ctx.Done():

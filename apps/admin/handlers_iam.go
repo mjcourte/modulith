@@ -1,11 +1,15 @@
 package admin
 
 import (
+	"bytes"
 	"crypto/rand"
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
+	"gyoza/internal/engine"
 	"gyoza/services/iam"
 	"gyoza/services/storage"
 )
@@ -223,6 +227,11 @@ type projectPage struct {
 	Assets  []AssetRow
 	Clones  []ProjectRow
 	Usable  []AssetRow // assets it may use in place, for "use asset"
+
+	Snapshots []SnapshotRow // stored versions, newest first, to revert to
+	// The live document as the acting user sees it (QueryDocument), or why not.
+	Document    string
+	DocumentErr string
 }
 
 func (s *server) showProject(w http.ResponseWriter, r *http.Request) {
@@ -236,7 +245,9 @@ func (s *server) showProject(w http.ResponseWriter, r *http.Request) {
 	if p.Shares, err = s.q.shares(ctx, id, ""); err == nil {
 		if p.Uses, err = s.q.uses(ctx, id, ""); err == nil {
 			if p.Assets, err = s.q.assets(ctx, "project", id, "", "", true); err == nil {
-				p.Usable, err = s.q.usableAssets(ctx, id)
+				if p.Usable, err = s.q.usableAssets(ctx, id); err == nil {
+					p.Snapshots, err = s.q.snapshots(ctx, id)
+				}
 			}
 		}
 	}
@@ -244,7 +255,40 @@ func (s *server) showProject(w http.ResponseWriter, r *http.Request) {
 		s.fail(w, err)
 		return
 	}
+	p.Document, p.DocumentErr = s.currentDocument(r, id)
 	s.render(w, r, "project", p.Project.Name, p)
+}
+
+// currentDocument is the project's live document as the acting user may read
+// it, pretty-printed, or why it can't be shown. Loading it creates it if the
+// project has none yet, as opening it in the editor would.
+func (s *server) currentDocument(r *http.Request, projectID string) (string, string) {
+	a, err := actor(r)
+	if err != nil {
+		return "", "pick an acting user to see the document"
+	}
+	v, err := s.docs.QueryDocument(r.Context(), a, projectID, engine.Query{Format: engine.QueryNative})
+	if err != nil {
+		return "", err.Error()
+	}
+	var pretty bytes.Buffer
+	if err := json.Indent(&pretty, v.Data, "", "  "); err != nil {
+		return string(v.Data), ""
+	}
+	return pretty.String(), ""
+}
+
+// revertDocument puts the project's document back to a stored version, as
+// the acting user (it needs write access).
+func (s *server) revertDocument(w http.ResponseWriter, r *http.Request) {
+	withActor(w, r, "document reverted", func(a string) error {
+		v, err := strconv.Atoi(r.FormValue("version"))
+		if err != nil {
+			return err
+		}
+		_, err = s.docs.RevertDocument(r.Context(), a, r.PathValue("id"), v)
+		return err
+	})
 }
 
 func (s *server) createProject(w http.ResponseWriter, r *http.Request) {

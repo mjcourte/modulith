@@ -3,6 +3,7 @@
 #   docker build --target gyoza .            # the monolith, with ffprobe
 #   docker build --target storage .
 #   docker build --target iam .
+#   docker build --target documents .
 #   docker build --target mediaprocessor .   # ffprobe, and no secrets at run time
 #
 # deploy/monolith and deploy/distributed build them through compose.
@@ -41,6 +42,12 @@ COPY --from=build /out/iam /usr/local/bin/
 ENV GYOZA_GRPC_ADDR=:9090
 EXPOSE 9090
 ENTRYPOINT ["iam"]
+
+FROM base AS documents
+COPY --from=build /out/documents /usr/local/bin/
+ENV GYOZA_GRPC_ADDR=:9090
+EXPOSE 9090
+ENTRYPOINT ["documents"]
 
 FROM base-ffprobe AS mediaprocessor
 COPY --from=build /out/mediaprocessor /usr/local/bin/

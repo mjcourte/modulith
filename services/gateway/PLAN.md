@@ -53,6 +53,27 @@ Not started. Decided while planning iam (2026-10-11). Related:
 - TypeScript client written by hand for now; an OpenAPI description can be added later
   to generate it.
 
+## NATS to WebSocket (decided 2026-10-12)
+
+Rule: one consumer per gateway instance, never one per project or socket
+([platform/nats](../../platform/nats/README.md)). Fan-out happens here.
+
+- One ordered (ephemeral) consumer per instance on the `DOCUMENTS` stream
+  (`document.>`), starting at new messages. Each message is routed by the project token
+  in its subject to the sockets that have that project open; projects with no sockets
+  are skipped. An ordered consumer recreates itself after a gap, so nothing per
+  project needs restarting.
+- Deltas and snapshot pointers are both forwarded; the client merges a pointed-to
+  snapshot (apps/web/PLAN.md).
+- Joining a project: register the socket for it first, then call documents'
+  `GetDocument` (the snapshot with the stream sequence it covers) and send it.
+  Deltas fanned out in between may be in the snapshot already; the client applies them
+  idempotently, so the overlap is harmless and nothing is lost.
+- User state: one core-NATS subscription per instance on `userstate.>`, fanned out the
+  same way.
+- Browser deltas: the gateway publishes them to `document.{p}.delta` after checking
+  write access (`CanWrite`), with the op ID as `Nats-Msg-Id`.
+
 ## Work (when the gateway is built)
 
 - SuperTokens init (ThirdParty/Google, Session), compose service for the core.
@@ -67,6 +88,6 @@ Not started. Decided while planning iam (2026-10-11). Related:
 
 ## Open
 
-- If browsers open WebSockets straight to documentmanager replicas (bypassing the
+- If browsers open WebSockets straight to documents replicas (bypassing the
   gateway), those replicas must verify SuperTokens tokens themselves (JWT + JWKS, no SDK
-  needed). See documentmanager/PLAN.md.
+  needed). See documents/PLAN.md.
