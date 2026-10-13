@@ -48,9 +48,10 @@ func Init(cfg Config, users Users, api http.Handler) (http.Handler, error) {
 	err := supertokens.Init(supertokens.TypeInput{
 		Supertokens: &supertokens.ConnectionInfo{ConnectionURI: cfg.CoreURL, APIKey: cfg.CoreAPIKey},
 		AppInfo: supertokens.AppInfo{
-			AppName:       "Gyoza",
-			APIDomain:     cfg.PublicURL,
-			WebsiteDomain: cfg.PublicURL,
+			AppName:         "Gyoza",
+			APIDomain:       cfg.PublicURL,
+			WebsiteDomain:   cfg.PublicURL,
+			WebsiteBasePath: new("/login"),
 		},
 		RecipeList: []supertokens.Recipe{
 			thirdparty.Init(&tpmodels.TypeInput{

@@ -4,7 +4,7 @@ One service for every file Gyoza keeps in S3: presigned uploads and downloads,
 the DAM (assets, versions, folders, trash), the cleanup job, and the ledger
 that records each S3 object. Other services never touch S3 or the storage
 schema themselves; they call storage (in-process in the monolith, gRPC when
-distributed). That includes the documents service's snapshots (see PLAN.md).
+distributed). That includes the documents service's snapshots.
 
 ## Decisions
 
@@ -101,7 +101,7 @@ enforces are in `assets_rules.go`; limits are constants at the top of `assets.go
 
 ## Asset refs, uses and copies
 
-Built 2026-10-12 (PLAN.md phase 2), for cloning projects and for documents that use library files.
+Built 2026-10-12, for cloning projects and for documents that use library files.
 
 - **refs**: a document points at `AssetRef{AssetID, Version}`, always pinned (`Version >= 1`), written `"id@3"` (`MarshalText`, so also as a JSON map key; one text form per ref). New uploads and reverts never move a ref; "update available" is `ref.Version < asset.CurrentVersion`
 - **uses**: `storage.asset_uses` (migration 00004) records which versions each project uses: `(project, asset, version)`, kept by documents through `RecordAssetUse` / `ForgetAssetUse` (idempotent; for the user editing the document, service to service). Purging an asset drops its uses (`ON DELETE CASCADE` from its versions); deleting a project forgets its own
@@ -237,7 +237,7 @@ Everything was mutation-checked: realistic bugs reintroduced one at a time are e
 
 ## Media metadata
 
-An image's, video's or audio file's properties (size, duration, codecs) are extracted once when it's stored, so they can be read without fetching the file. Built 2026-10-12; what's still open is in PLAN.md ("Next: media metadata on versions").
+An image's, video's or audio file's properties (size, duration, codecs) are extracted once when it's stored, so they can be read without fetching the file. Built 2026-10-12.
 
 - **per ledger object**: `storage.media_info` (migration 00002), keyed by object ID with `ON DELETE CASCADE`, so purging an object drops it. A version points at one object, so this is per version (a replacement file can have a different resolution), and any ledger object can have it. Calls on `ledger.Service`: `MarkMediaPending`, `SetMediaInfo`, `GetMediaInfo`, `ListPendingMedia` (`ledger/media.go`)
 - **columns**: `status` (`pending`, `ready`, `failed`), typed `width`/`height` (display size, after rotation) and `duration_us` for filtering and sorting, 0 = unknown; the rest as `details` jsonb (camelCase), so new fields need no migration; `error` and `attempts` for failures

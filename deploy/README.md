@@ -36,7 +36,7 @@ docker compose -f deploy/distributed/compose.yaml up -d --build --wait
 
 - Inside containers, presigned URLs name `http://s3:9000`, which the host can't resolve. Services probe each other's URLs fine; to upload by hand from the host, run the binary on the host instead (or PUT from inside a container).
 - The distributed file includes the monolith's dependencies under its own project name (`gyoza-distributed`), so it has its own data volumes. Both publish the same host ports, so run one at a time.
-- mediaprocessor gets no environment at all: no database, no S3 credentials (see `services/mediaprocessor/PLAN.md`, "Isolating ffprobe").
+- mediaprocessor gets no environment at all: no database, no S3 credentials.
 - storage and iam call each other (permission checks one way, deletions the other); gRPC connects lazily, so neither waits for the other to start.
 - documents needs no database and no S3 credentials: its snapshots go through storage (the bytes by presigned URL), and it shares the NATS cluster.
 - Not containerised yet: the services not built yet (gateway, exporter, mcp).

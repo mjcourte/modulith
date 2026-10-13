@@ -1,9 +1,22 @@
 # Plan notes: web app (`apps/web`)
 
-Not started. UI details the backend plans rely on (2026-10-11). Related:
+Step 1 (the sign-in shell) is done: see [README.md](README.md). The sections below are
+UI details the backend plans rely on (2026-10-11), to build one at a time. Related:
 [gateway/PLAN.md](../../services/gateway/PLAN.md),
-[iam/PLAN.md](../../services/iam/PLAN.md),
-[storage/PLAN.md](../../services/storage/PLAN.md).
+[iam/PLAN.md](../../services/iam/PLAN.md).
+
+## Open from step 1
+
+- **Gateway dev pages** (`/dev/signin`) were built for the public URL on :8080; untested
+  with it on :3000 (the proxy doesn't forward `/dev`).
+- **Bundle size:** Vite warns of a chunk over 500 kB (SuperTokens' prebuilt UI). Check it
+  stays out of the main chunk (`autoCodeSplitting`) before shipping.
+- **Sign-in look:** the prebuilt SuperTokens UI isn't themed to shadcn; theme it or
+  replace it with our own Google button (`redirectToThirdPartyLogin`).
+- **Navigation:** SuperTokens redirects with full page loads; wire it to the router
+  (`windowHandler`/`getRedirectionURL`) if that ever matters.
+- **Deliberately not yet:** tests (Vitest once there is logic worth testing), API type
+  generation (hand-written wire types until they hurt), a formatter check in CI.
 
 ## Step 1: kickstart (planned 2026-10-13)
 
