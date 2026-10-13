@@ -1,6 +1,6 @@
 # Media Processor
 
-Wraps `ffprobe` (and later ffmpeg). What's next: [PLAN.md](PLAN.md).
+Wraps `ffprobe` (and later ffmpeg).
 
 - **Probing** (built 2026-10-12): `Prober.Probe(ctx, url)` reads a video or audio file's metadata over HTTP range requests from a presigned URL and returns `Info`. Storage calls it from its probe job (storage README, "Media metadata"); mediaprocessor never calls storage (no cycle, no "report back"). It has no schema and no state.
 - **Layout**: `mediaprocessor.go` is the public surface (aliases, `NewFFprobe`, `RegisterGRPC`, `NewGRPCClient`); `internal/probe` runs ffprobe and normalises its output; `internal/grpcapi` is `MediaProcessorService` (`contracts/proto/gyoza/mediaprocessor/v1`).

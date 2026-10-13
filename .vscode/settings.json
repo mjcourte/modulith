@@ -1,0 +1,22 @@
+{
+  "go.formatTool": "goimports",
+  "[go]": {
+      "editor.defaultFormatter": "golang.go",
+      "editor.formatOnSave": true
+  },
+
+// "[javascript][typescript][typescriptreact]": {
+//     "editor.defaultFormatter": "oxc.oxc-vscode",
+//     "editor.formatOnSave": true,
+//     "editor.codeActionsOnSave": {
+//       "source.fixAll.oxc": "explicit"
+//     }
+// },
+"[javascript][typescript][typescriptreact]": {
+    "editor.defaultFormatter": "vscode.typescript-language-features",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit"
+    }
+},
+}

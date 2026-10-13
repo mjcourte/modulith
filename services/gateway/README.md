@@ -18,6 +18,8 @@ one session layer). Design and next steps: [PLAN.md](PLAN.md).
   `deploy/monolith/compose.yaml`, tables in the `supertokens` schema). Google only
   (ThirdParty recipe), cookie sessions only (never tokens in headers page scripts can
   read). SuperTokens serves `/auth/*`; everything under `/api` is behind `Require`.
+  The website base path is `/login` (apps/web's sign-in UI and Google callback,
+  `/login/callback/google`): on one origin it must differ from the API's `/auth`.
 - **Sign-in hook:** every successful sign-in also calls iam's `SignIn` (an upsert) with the
   SuperTokens user ID and Google's claims (`email_verified`, `name`, `picture`, the ID
   token preferred). If iam fails, the sign-in fails: no session without an iam user.

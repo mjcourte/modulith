@@ -1,7 +1,7 @@
 # Plan: documents (`services/documents`)
 
 Not started. The README describes what the service does; this plan covers all of it, in
-four phases. Related: [storage/PLAN.md](../storage/PLAN.md) (asset refs, usage,
+four phases. Related: [storage/README.md](../storage/README.md) (asset refs, usage,
 forking, snapshot calls), [iam/PLAN.md](../iam/PLAN.md) (cloning),
 [gateway/PLAN.md](../gateway/PLAN.md) (auth),
 [platform/nats](../../platform/nats/README.md) (the WAL).
@@ -214,7 +214,7 @@ binary may wire it.
 - Storage (a step in its own plan): `BeginSnapshot(actor, projectID) -> {objectID,
   putURL}`, `CompleteSnapshot`, `SnapshotURL(objectID)` and `LatestSnapshot(projectID)`,
   all service to service. Storage builds `projects/{id}/snapshot/{id}` and records the
-  ledger row. Update storage/PLAN.md "document snapshots" and `storage.proto`.
+  ledger row. Update storage's README ("document snapshots") and `storage.proto`.
 - `internal/snapshots/storage.go`: the real `Store` over those calls and `net/http`,
   run through the shared suite against the S3 test env.
   **Done (2026-10-12):** `StorageStore` with `HTTPTransfer`; the suite passes against
