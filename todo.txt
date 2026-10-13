@@ -1,5 +1,16 @@
-- Flesh out ffprobe in mediaprocessor so it is callable (eg upon media upload or some other's media sniff request? how will that work, i guess we can sniff and store in ledger?)
 - look into our engine mock a little more before building out docmgr
-- cmd/{services}/main.go files
 - when can we do gateway?
 - exporter defintely needs engine mock api
+
+
+Wiring IAM, AssetRefs.
+
+iam step 7: cloning
+
+- Who can clone: CloneProject(actor, source, target owner) needs read access to the source and ownership of the target (the actor's own library, or their org). A locked project can only be cloned into its own org.
+- What the clone gets: the source's name, a new ID and cloned_from. Shares aren't copied.
+- How it runs: the project starts in state cloning, which hides it and grants nothing. Then:
+  a. iam creates the project row.
+  b. storage runs CopyProjectFiles.
+  c. Later, documentmanager copies the document and rewrites its references.
+  d. iam marks the project ready.

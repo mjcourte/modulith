@@ -20,6 +20,7 @@ import (
 type OwnerDeletion struct {
 	LedgerObjects int                // ledger objects newly marked deleted
 	Trash         dam.FolderDeletion // DAM folders and assets trashed, under one DeletionID
+	Uses          int                // a project's asset uses forgotten (projects only)
 }
 
 // DeleteOwned trashes everything owner owns: a deleted project's files, an
@@ -35,7 +36,15 @@ func (m *Manager) DeleteOwned(ctx context.Context, owner ledger.Owner) (OwnerDel
 	if err != nil {
 		return OwnerDeletion{}, fmt.Errorf("delete ledger objects of %v: %w", owner, err)
 	}
-	return OwnerDeletion{LedgerObjects: n, Trash: trash}, nil
+	var uses int
+	if owner.Kind == ledger.OwnerProject {
+		// A deleted project uses nothing. Other projects' uses of its files are
+		// kept: they read them until the purge, like any trashed asset.
+		if uses, err = m.store.ForgetProjectUses(ctx, owner.ID); err != nil {
+			return OwnerDeletion{}, err
+		}
+	}
+	return OwnerDeletion{LedgerObjects: n, Trash: trash, Uses: uses}, nil
 }
 
 // UserRemoval reports what RemoveUser did.

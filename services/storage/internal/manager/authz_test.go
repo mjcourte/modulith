@@ -24,6 +24,7 @@ func TestRuleAuthorizer(t *testing.T) {
 	r.AllowOwner("member", acme, sm.AccessWrite)
 	r.AllowOwner("viewer", acme, sm.AccessRead)
 	r.AllowProject("guest", "p1", sm.AccessRead)
+	r.AllowProject("editor", "p1", sm.AccessWrite)
 	// A misconfigured rule for an empty user ID: calls without a user must
 	// still be refused, whatever the rules say.
 	r.AllowOwner("", acme, sm.AccessWrite)
@@ -44,6 +45,10 @@ func TestRuleAuthorizer(t *testing.T) {
 		{"guest can't write the shared project", "guest", true, "acme", "p1", false},
 		{"guest can't read outside the project", "guest", false, "acme", "", false},
 		{"guest can't read another project", "guest", false, "acme", "p2", false},
+		// As in iam: a project grants write only to files it owns.
+		{"project editor writes its files", "editor", true, "p1", "p1", true},
+		{"project editor reads associated files", "editor", false, "acme", "p1", true},
+		{"project editor can't write associated files", "editor", true, "acme", "p1", false},
 		{"stranger can't read", "stranger", false, "acme", "", false},
 		{"user writes own library", "alice", true, "alice", "", true},
 		{"user can't read someone else's", "alice", false, "bob", "", false},
@@ -51,7 +56,7 @@ func TestRuleAuthorizer(t *testing.T) {
 		{"no actor, even with a rule for it", "", true, "acme", "", false},
 	}
 	owners := map[string]struct{ kind, id string }{
-		"acme": {"org", "acme"}, "alice": {"user", "alice"}, "bob": {"user", "bob"},
+		"acme": {"org", "acme"}, "p1": {"project", "p1"}, "alice": {"user", "alice"}, "bob": {"user", "bob"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -60,6 +65,9 @@ func TestRuleAuthorizer(t *testing.T) {
 			if o.kind == "user" {
 				owner = alice
 				owner.ID = o.id
+			}
+			if o.kind == "project" {
+				owner = project
 			}
 			check := r.CanRead
 			if tt.write {

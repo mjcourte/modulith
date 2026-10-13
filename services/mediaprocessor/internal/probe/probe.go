@@ -1,4 +1,4 @@
-package mediaprocessor
+package probe
 
 import (
 	"context"
@@ -49,6 +49,10 @@ type Prober interface {
 
 // ErrNoMedia means the file has no audio or video streams.
 var ErrNoMedia = errors.New("mediaprocessor: no audio or video streams")
+
+// ErrUnavailable means a remote Prober couldn't be reached: the file wasn't
+// probed, so callers should retry it later rather than count it as failed.
+var ErrUnavailable = errors.New("mediaprocessor: unavailable")
 
 // probeTimeout bounds one ffprobe run, including its range requests.
 const probeTimeout = 30 * time.Second

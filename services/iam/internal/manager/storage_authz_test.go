@@ -191,3 +191,24 @@ func TestStorageAuthorizerShareFailure(t *testing.T) {
 		t.Errorf("CanRead during a share lookup failure = %v; want the failure, not ErrForbidden", err)
 	}
 }
+
+// ProjectOwner tells storage who owns a project; unknown and deleting
+// projects are refused like any other unknown project.
+func TestStorageAuthorizerProjectOwner(t *testing.T) {
+	w := newAuthzWorld(t)
+	ctx := t.Context()
+	a := manager.NewStorageAuthorizer(w.store)
+	for _, p := range []directory.Project{w.annP, w.acmeP, w.tmpl, w.cloning} {
+		if got, err := a.ProjectOwner(ctx, p.ID); err != nil || got != p.Owner {
+			t.Errorf("ProjectOwner(%s) = %v, %v; want %v", p.Name, got, err, p.Owner)
+		}
+	}
+	if _, err := w.store.MarkProjectDeleting(ctx, w.acmeP.ID); err != nil {
+		t.Fatalf("MarkProjectDeleting: %v", err)
+	}
+	for _, id := range []string{w.acmeP.ID, uuid.NewString(), ""} {
+		if _, err := a.ProjectOwner(ctx, id); !errors.Is(err, storage.ErrForbidden) {
+			t.Errorf("ProjectOwner(%q) = %v, want storage.ErrForbidden", id, err)
+		}
+	}
+}

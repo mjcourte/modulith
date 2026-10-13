@@ -76,7 +76,9 @@ func (e *FolderNotEmptyError) Unwrap() error { return ErrFolderNotEmpty }
 // destination, never clash on names, and can't be renamed or moved
 // (ErrFolderNotFound). A purge job removes them for good later.
 type FolderStore interface {
-	// CreateFolder stores a new folder, assigning its ID and timestamps.
+	// CreateFolder stores a new folder, assigning its timestamps, and its ID
+	// unless f.ID is set: then an already stored folder with that ID is
+	// returned unchanged, as CreateAsset does.
 	CreateFolder(ctx context.Context, f Folder) (Folder, error)
 	// GetFolder returns the folder, including trashed ones, or ErrFolderNotFound.
 	GetFolder(ctx context.Context, id string) (Folder, error)

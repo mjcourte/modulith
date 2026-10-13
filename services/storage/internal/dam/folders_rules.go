@@ -71,6 +71,9 @@ func folderNameKey(name string) string {
 // and a well-formed parent ID. Whether the parent exists, its owner, sibling
 // names and depth need stored data, so each Store checks those.
 func (f Folder) normalize() (Folder, error) {
+	if err := checkOptionalID(f.ID, "folder", ErrInvalidFolder); err != nil {
+		return f, err
+	}
 	if err := f.Owner.Validate(); err != nil {
 		return f, fmt.Errorf("%w: %w", ErrInvalidFolder, err)
 	}

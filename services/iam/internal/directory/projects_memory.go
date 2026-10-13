@@ -3,10 +3,12 @@ package directory
 // MemoryStore's ProjectStore methods (struct and lock in memory.go).
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"slices"
 	"strings"
+	"time"
 
 	"gyoza/services/storage"
 )
@@ -238,4 +240,20 @@ func (m *MemoryStore) Unshare(ctx context.Context, projectID, userID string) err
 	defer m.mu.Unlock()
 	delete(m.shares, shareKey{projectID, userID}) // missing is fine: safe to retry
 	return nil
+}
+
+func (m *MemoryStore) ListCloningProjects(ctx context.Context, before time.Time, limit int) ([]Project, error) {
+	if err := checkLimit(limit); err != nil {
+		return nil, err
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var out []Project
+	for _, p := range m.projects {
+		if p.State == ProjectCloning && p.DeletingAt == nil && p.CreatedAt.Before(before) {
+			out = append(out, p)
+		}
+	}
+	slices.SortFunc(out, func(a, b Project) int { return cmp.Or(a.CreatedAt.Compare(b.CreatedAt), cmp.Compare(a.ID, b.ID)) })
+	return out[:min(limit, len(out))], nil
 }

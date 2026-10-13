@@ -1,0 +1,30 @@
+# Regenerate after changing migrations/ or the query files:
+#   go generate ./services/iam/...
+version: "2"
+sql:
+  - engine: postgresql
+    schema: migrations
+    queries: [users.sql, orgs.sql, invites.sql, projects.sql, deletions.sql]
+    gen:
+      go:
+        package: db
+        out: .
+        sql_package: pgx/v5
+        emit_pointers_for_null_types: true
+        overrides:
+          # IDs are strings in Go; pgx converts to and from Postgres uuid.
+          - db_type: uuid
+            go_type: string
+          - db_type: uuid
+            nullable: true
+            go_type:
+              type: string
+              pointer: true
+          - db_type: timestamptz
+            go_type: time.Time
+          - db_type: timestamptz
+            nullable: true
+            go_type:
+              import: time
+              type: Time
+              pointer: true

@@ -114,6 +114,21 @@ func (m *Memory) Delete(ctx context.Context, bucket, key string) error {
 	return nil
 }
 
+func (m *Memory) Copy(ctx context.Context, bucket, srcKey, dstKey string) error {
+	if srcKey == dstKey {
+		return errCopyOntoItself
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	src, ok := m.blobs[blobRef{bucket: bucket, key: srcKey}]
+	if !ok {
+		return ErrNotFound
+	}
+	// Clone, so the two objects don't share one backing array.
+	m.blobs[blobRef{bucket: bucket, key: dstKey}] = storedBlob{data: bytes.Clone(src.data), contentType: src.contentType}
+	return nil
+}
+
 // Test helpers: these play the browser, using presigned URLs the way a
 // client would. Real code never calls them.
 

@@ -33,6 +33,14 @@ func checkFolderTx(ctx context.Context, q *db.Queries, folderID string, owner le
 
 // insertAssetTx stores a normalised asset with first as version 1.
 func insertAssetTx(ctx context.Context, q *db.Queries, a Asset, first Version) (Asset, error) {
+	if a.ID != "" {
+		// A chosen ID already stored: a retried copy gets the same asset.
+		if r, err := q.GetAsset(ctx, a.ID); err == nil {
+			return assetFromRow(r), nil
+		} else if !noRows(err) {
+			return Asset{}, fmt.Errorf("get asset: %w", err)
+		}
+	}
 	if a.FolderID != "" {
 		// Lock the tree so a concurrent rm -rf can't trash the folder between
 		// this check and the insert, leaving a live asset in a trashed folder.
@@ -44,7 +52,9 @@ func insertAssetTx(ctx context.Context, q *db.Queries, a Asset, first Version) (
 		}
 	}
 	t := now()
-	a.ID = NewID()
+	if a.ID == "" {
+		a.ID = NewID()
+	}
 	a.CreatedAt, a.UpdatedAt, a.DeletedAt, a.DeletionID = t, t, nil, ""
 	first.AssetID, first.Number, first.CreatedAt = a.ID, 1, t
 	err := q.InsertAsset(ctx, db.InsertAssetParams{

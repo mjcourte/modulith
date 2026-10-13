@@ -110,3 +110,17 @@ func (a *StorageAuthorizer) projectAccess(ctx context.Context, actorID, projectI
 	}
 	return access, err
 }
+
+// ProjectOwner tells storage who owns a project, so it can keep each project
+// using only its own (or its owner's) files in place. A missing project, or
+// one being deleted, is refused like any other unknown project.
+func (a *StorageAuthorizer) ProjectOwner(ctx context.Context, projectID string) (storage.Owner, error) {
+	p, err := a.store.GetProject(ctx, projectID)
+	if errors.Is(err, directory.ErrProjectNotFound) || (err == nil && p.DeletingAt != nil) {
+		return storage.Owner{}, fmt.Errorf("%w: unknown project %q", storage.ErrForbidden, projectID)
+	}
+	if err != nil {
+		return storage.Owner{}, err
+	}
+	return p.Owner, nil
+}

@@ -6,7 +6,6 @@ package storage
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -51,8 +50,9 @@ func SettingsFromEnv(env *config.Env) Settings {
 	}
 }
 
-// Open migrates the schema and builds the Manager on pool and S3.
-func Open(ctx context.Context, pool *pgxpool.Pool, s Settings) (*Manager, error) {
+// Open migrates the schema and builds the Manager on pool and S3, asking
+// authz (iam's, in-process or over gRPC) who may do what.
+func Open(ctx context.Context, pool *pgxpool.Pool, s Settings, authz Authorizer) (*Manager, error) {
 	if err := Migrate(ctx, pool); err != nil {
 		return nil, err
 	}
@@ -65,12 +65,7 @@ func Open(ctx context.Context, pool *pgxpool.Pool, s Settings) (*Manager, error)
 			return nil, err
 		}
 	}
-	// No iam yet, so nothing can answer "may this user do that?".
-	// Every caller is trusted until it exists: fine while only the platform
-	// itself can reach this service, never once browsers can.
-	slog.Warn("storage: authorization is allow-all until iam exists")
-
-	m, err := manager.NewManager(ledger.NewPostgres(pool), dam.NewPostgres(pool), blobs, AllowAll{}, s.Manager)
+	m, err := manager.NewManager(ledger.NewPostgres(pool), dam.NewPostgres(pool), blobs, authz, s.Manager)
 	if err != nil {
 		return nil, fmt.Errorf("storage: %w", err)
 	}

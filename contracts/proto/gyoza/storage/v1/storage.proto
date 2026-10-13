@@ -50,6 +50,20 @@ service StorageService {
   // Owner lifecycle, called by iam only; never exposed to browsers.
   rpc DeleteOwned(DeleteOwnedRequest) returns (DeleteOwnedResponse);
   rpc RemoveUser(RemoveUserRequest) returns (RemoveUserResponse);
+
+  // Asset refs: what a project's document uses. ResolveRef reads one (the
+  // project grants read on what it uses); ForkAsset copies one the actor may
+  // use but not change. A project uses in place only its own, its owner's and
+  // gyoza's files: anything else is PERMISSION_DENIED / FORK_REQUIRED.
+  rpc ResolveRef(ResolveRefRequest) returns (ResolveRefResponse);
+  rpc ForkAsset(ForkAssetRequest) returns (ForkAssetResponse);
+  // Called by documentmanager for the user editing the document; never
+  // exposed to browsers.
+  rpc RecordAssetUse(RecordAssetUseRequest) returns (RecordAssetUseResponse);
+  rpc ForgetAssetUse(ForgetAssetUseRequest) returns (ForgetAssetUseResponse);
+  // A clone's files, called by iam only (it decides who may clone);
+  // resumable, and repeating a finished copy changes nothing.
+  rpc CopyProjectFiles(CopyProjectFilesRequest) returns (CopyProjectFilesResponse);
 }
 
 // ---- Shared messages
@@ -83,6 +97,11 @@ message Version {
   int64 size_bytes = 5;
   string created_by = 6;
   google.protobuf.Timestamp created_at = 7;
+}
+
+message AssetRef {
+  string asset_id = 1;
+  int32 version = 2;
 }
 
 message AssetPage {
@@ -362,6 +381,8 @@ message ListTrashResponse {
   // On the first page only.
   repeated Folder folders = 1;
   AssetPage assets = 2;
+  // Projects using each trashed asset on this page; absent means none.
+  map<string, int32> uses = 3;
 }
 
 // ---- Owner lifecycle
@@ -373,6 +394,8 @@ message DeleteOwnedRequest {
 message DeleteOwnedResponse {
   int32 ledger_objects = 1;
   FolderDeletion trash = 2;
+  // A deleted project's asset uses forgotten (projects only).
+  int32 uses = 3;
 }
 
 message RemoveUserRequest {
@@ -410,3 +433,58 @@ message Owner {
   string id = 2;
 }
 
+// ---- Asset refs, uses and copies
+
+message ResolveRefRequest {
+  string actor_id = 1;
+  string project_id = 2;
+  AssetRef ref = 3;
+}
+message ResolveRefResponse {
+  // deleted_at is set if it's in the trash: it still resolves until the purge.
+  Asset asset = 1;
+  Version version = 2;
+  Download download = 3;
+}
+
+message ForkAssetRequest {
+  string actor_id = 1;
+  // The project the fork is made for: its use of ref moves to the copy.
+  string project_id = 2;
+  AssetRef ref = 3;
+  // The project itself when unset, or the project's owner (their library).
+  Owner target = 4;
+  // Optional: a project the actor reads that uses ref, when they can read it
+  // only through that project (copying out of a shared project).
+  string via_project_id = 5;
+}
+message ForkAssetResponse {
+  // The copy; its ref is {asset.id, 1}.
+  Asset asset = 1;
+}
+
+message RecordAssetUseRequest {
+  string actor_id = 1;
+  string project_id = 2;
+  AssetRef ref = 3;
+}
+message RecordAssetUseResponse {}
+
+message ForgetAssetUseRequest {
+  string actor_id = 1;
+  string project_id = 2;
+  AssetRef ref = 3;
+}
+message ForgetAssetUseResponse {}
+
+message CopyProjectFilesRequest {
+  // Recorded as the copies' creator; iam has already checked the clone.
+  string actor_id = 1;
+  string from_project_id = 2;
+  string to_project_id = 3;
+}
+message CopyProjectFilesResponse {
+  int32 folders = 1;
+  int32 assets = 2;
+  int32 uses = 3;
+}

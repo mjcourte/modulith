@@ -4,6 +4,7 @@ import (
 	"errors"
 	"gyoza/services/iam/internal/directory"
 	"gyoza/services/iam/internal/manager"
+	"gyoza/services/storage"
 	"testing"
 	"time"
 
@@ -12,12 +13,20 @@ import (
 
 func newManager(t *testing.T) (*manager.Manager, *directory.MemoryStore) {
 	t.Helper()
+	m, s, _ := newManagerWithFiles(t)
+	return m, s
+}
+
+// newManagerWithFiles also returns the storage the Manager's cascades call.
+func newManagerWithFiles(t *testing.T) (*manager.Manager, *directory.MemoryStore, *storage.Memory) {
+	t.Helper()
 	s := directory.NewMemoryStore()
-	m, err := manager.NewManager(s, manager.Config{})
+	files := newFilesFor(t, s)
+	m, err := manager.NewManager(s, files, manager.NoIdentityProvider{}, manager.Config{})
 	if err != nil {
 		t.Fatalf("NewManager: %v", err)
 	}
-	return m, s
+	return m, s, files
 }
 
 // signIn signs a user in through the Manager, as the gateway's hook would,
@@ -59,11 +68,17 @@ func TestNewManagerConfig(t *testing.T) {
 	if got := m.Config().InviteTTL; got != manager.DefaultInviteTTL {
 		t.Errorf("InviteTTL = %s, want the default %s", got, manager.DefaultInviteTTL)
 	}
-	if _, err := manager.NewManager(directory.NewMemoryStore(), manager.Config{InviteTTL: -time.Hour}); err == nil {
+	if _, err := manager.NewManager(directory.NewMemoryStore(), newFilesFor(t, directory.NewMemoryStore()), manager.NoIdentityProvider{}, manager.Config{InviteTTL: -time.Hour}); err == nil {
 		t.Error("negative InviteTTL accepted")
 	}
-	if _, err := manager.NewManager(nil, manager.Config{}); err == nil {
+	if _, err := manager.NewManager(nil, newFilesFor(t, directory.NewMemoryStore()), manager.NoIdentityProvider{}, manager.Config{}); err == nil {
 		t.Error("NewManager without a store succeeded")
+	}
+	if _, err := manager.NewManager(directory.NewMemoryStore(), nil, manager.NoIdentityProvider{}, manager.Config{}); err == nil {
+		t.Error("NewManager without storage succeeded")
+	}
+	if _, err := manager.NewManager(directory.NewMemoryStore(), newFilesFor(t, directory.NewMemoryStore()), nil, manager.Config{}); err == nil {
+		t.Error("NewManager without an identity provider succeeded")
 	}
 }
 

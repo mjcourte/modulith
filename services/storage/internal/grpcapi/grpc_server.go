@@ -221,7 +221,11 @@ func (s *Server) ListTrash(ctx context.Context, req *pb.ListTrashRequest) (*pb.L
 	if err != nil {
 		return nil, toStatus(err)
 	}
-	return &pb.ListTrashResponse{Folders: foldersToProto(t.Folders), Assets: assetPageToProto(t.Assets)}, nil
+	uses := make(map[string]int32, len(t.Uses))
+	for id, n := range t.Uses {
+		uses[id] = int32(n)
+	}
+	return &pb.ListTrashResponse{Folders: foldersToProto(t.Folders), Assets: assetPageToProto(t.Assets), Uses: uses}, nil
 }
 
 // ---- Owner lifecycle
@@ -231,7 +235,7 @@ func (s *Server) DeleteOwned(ctx context.Context, req *pb.DeleteOwnedRequest) (*
 	if err != nil {
 		return nil, toStatus(err)
 	}
-	return &pb.DeleteOwnedResponse{LedgerObjects: int32(d.LedgerObjects), Trash: deletionToProto(d.Trash)}, nil
+	return &pb.DeleteOwnedResponse{LedgerObjects: int32(d.LedgerObjects), Trash: deletionToProto(d.Trash), Uses: int32(d.Uses)}, nil
 }
 
 func (s *Server) RemoveUser(ctx context.Context, req *pb.RemoveUserRequest) (*pb.RemoveUserResponse, error) {
@@ -254,4 +258,44 @@ func (s *Server) RemoveUser(ctx context.Context, req *pb.RemoveUserRequest) (*pb
 		resp.TransferredTo = ownerToProto(r.TransferredTo)
 	}
 	return resp, nil
+}
+
+// ---- Asset refs, uses and copies
+
+func (s *Server) ResolveRef(ctx context.Context, req *pb.ResolveRefRequest) (*pb.ResolveRefResponse, error) {
+	r, err := s.svc.ResolveRef(ctx, req.GetActorId(), req.GetProjectId(), refFromProto(req.GetRef()))
+	if err != nil {
+		return nil, toStatus(err)
+	}
+	return &pb.ResolveRefResponse{Asset: assetToProto(r.Asset), Version: versionToProto(r.Version), Download: downloadToProto(r.Download)}, nil
+}
+
+func (s *Server) ForkAsset(ctx context.Context, req *pb.ForkAssetRequest) (*pb.ForkAssetResponse, error) {
+	a, err := s.svc.ForkAsset(ctx, req.GetActorId(), req.GetProjectId(), refFromProto(req.GetRef()), ownerFromProto(req.GetTarget()), req.GetViaProjectId())
+	if err != nil {
+		return nil, toStatus(err)
+	}
+	return &pb.ForkAssetResponse{Asset: assetToProto(a)}, nil
+}
+
+func (s *Server) RecordAssetUse(ctx context.Context, req *pb.RecordAssetUseRequest) (*pb.RecordAssetUseResponse, error) {
+	if err := s.svc.RecordAssetUse(ctx, req.GetActorId(), req.GetProjectId(), refFromProto(req.GetRef())); err != nil {
+		return nil, toStatus(err)
+	}
+	return &pb.RecordAssetUseResponse{}, nil
+}
+
+func (s *Server) ForgetAssetUse(ctx context.Context, req *pb.ForgetAssetUseRequest) (*pb.ForgetAssetUseResponse, error) {
+	if err := s.svc.ForgetAssetUse(ctx, req.GetActorId(), req.GetProjectId(), refFromProto(req.GetRef())); err != nil {
+		return nil, toStatus(err)
+	}
+	return &pb.ForgetAssetUseResponse{}, nil
+}
+
+func (s *Server) CopyProjectFiles(ctx context.Context, req *pb.CopyProjectFilesRequest) (*pb.CopyProjectFilesResponse, error) {
+	r, err := s.svc.CopyProjectFiles(ctx, req.GetActorId(), req.GetFromProjectId(), req.GetToProjectId())
+	if err != nil {
+		return nil, toStatus(err)
+	}
+	return &pb.CopyProjectFilesResponse{Folders: int32(r.Folders), Assets: int32(r.Assets), Uses: int32(r.Uses)}, nil
 }

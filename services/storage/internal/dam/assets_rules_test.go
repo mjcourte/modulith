@@ -4,6 +4,7 @@ package dam
 // helpers are unexported. Store behaviour is covered by the shared store suite.
 
 import (
+	"encoding/json"
 	"errors"
 	"slices"
 	"strings"
@@ -164,5 +165,114 @@ func TestPageTokenRoundTrip(t *testing.T) {
 		if _, err := (AssetQuery{PageToken: bad}).afterID(); !errors.Is(err, ErrInvalidQuery) {
 			t.Errorf("afterID(%q) = %v, want ErrInvalidQuery", bad, err)
 		}
+	}
+}
+
+func TestAssetRefText(t *testing.T) {
+	valid := map[string]AssetRef{
+		"a1@1":         {AssetID: "a1", Version: 1},
+		"a1@42":        {AssetID: "a1", Version: 42},
+		"odd@name@3":   {AssetID: "odd@name", Version: 3}, // splits at the last @
+		"0198-uuid@10": {AssetID: "0198-uuid", Version: 10},
+	}
+	for text, want := range valid {
+		var got AssetRef
+		if err := got.UnmarshalText([]byte(text)); err != nil {
+			t.Errorf("UnmarshalText(%q): %v", text, err)
+			continue
+		}
+		if got != want {
+			t.Errorf("UnmarshalText(%q) = %+v, want %+v", text, got, want)
+		}
+		out, err := got.MarshalText()
+		if err != nil || string(out) != text || got.String() != text {
+			t.Errorf("%+v: MarshalText = %q, %v; String = %q; want %q", got, out, err, got.String(), text)
+		}
+	}
+
+	invalid := []string{"", "a1", "a1@", "@3", "a1@0", "a1@-1", "a1@03", "a1@+3", "a1@ 3", "a1@3x", "a1@1.5"}
+	for _, text := range invalid {
+		before := AssetRef{AssetID: "keep", Version: 7}
+		r := before
+		if err := r.UnmarshalText([]byte(text)); err == nil {
+			t.Errorf("UnmarshalText(%q) = %+v, want an error", text, r)
+		} else if r != before {
+			t.Errorf("UnmarshalText(%q) changed the ref to %+v on error", text, r)
+		}
+	}
+
+	for _, r := range []AssetRef{{}, {AssetID: "a1"}, {Version: 1}, {AssetID: "a1", Version: -2}} {
+		if _, err := r.MarshalText(); err == nil {
+			t.Errorf("MarshalText(%+v): want an error", r)
+		}
+	}
+}
+
+func TestAssetRefJSON(t *testing.T) {
+	type doc struct {
+		Ref  AssetRef         `json:"ref"`
+		Uses map[AssetRef]int `json:"uses"`
+	}
+	in := doc{
+		Ref:  AssetRef{AssetID: "a1", Version: 2},
+		Uses: map[AssetRef]int{{AssetID: "b2", Version: 5}: 3},
+	}
+	b, err := json.Marshal(in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	const want = `{"ref":"a1@2","uses":{"b2@5":3}}`
+	if string(b) != want {
+		t.Fatalf("Marshal = %s, want %s", b, want)
+	}
+	var out doc
+	if err := json.Unmarshal(b, &out); err != nil {
+		t.Fatal(err)
+	}
+	if out.Ref != in.Ref || len(out.Uses) != 1 || out.Uses[AssetRef{AssetID: "b2", Version: 5}] != 3 {
+		t.Errorf("round trip = %+v, want %+v", out, in)
+	}
+	if err := json.Unmarshal([]byte(`{"ref":"a1@0"}`), &out); err == nil {
+		t.Error(`Unmarshal of "a1@0": want an error`)
+	}
+}
+
+// Copy IDs are the contract with documentmanager (it computes a clone's
+// refs): deterministic, distinct per input, valid UUIDv7s dated like the
+// project they're made for.
+func TestCopyAssetID(t *testing.T) {
+	project := uuid.Must(uuid.NewV7()).String()
+	target := ledger.Owner{Kind: ledger.OwnerProject, ID: project}
+	src := AssetRef{AssetID: NewID(), Version: 2}
+	id := CopyAssetID(project, target, src)
+
+	if again := CopyAssetID(project, target, src); again != id {
+		t.Errorf("CopyAssetID isn't deterministic: %s then %s", id, again)
+	}
+	u, err := uuid.Parse(id)
+	if err != nil || u.Version() != 7 || u.Variant() != uuid.RFC4122 {
+		t.Fatalf("CopyAssetID = %q (%v): want a UUIDv7", id, err)
+	}
+	p := uuid.MustParse(project)
+	if u.Time() != p.Time() {
+		t.Errorf("copy dated %v, want the project's %v", u.Time(), p.Time())
+	}
+
+	others := map[string]string{
+		"another version":    CopyAssetID(project, target, AssetRef{AssetID: src.AssetID, Version: 3}),
+		"another asset":      CopyAssetID(project, target, AssetRef{AssetID: NewID(), Version: 2}),
+		"another target":     CopyAssetID(project, ledger.Owner{Kind: ledger.OwnerOrg, ID: "acme"}, src),
+		"another project":    CopyAssetID(uuid.Must(uuid.NewV7()).String(), target, src),
+		"folder, same parts": CopyFolderID(project, target, src.AssetID),
+		"its ledger object":  CopyObjectID(project, id),
+	}
+	for name, other := range others {
+		if other == id {
+			t.Errorf("%s gives the same ID %s", name, id)
+		}
+	}
+	// Project IDs that aren't UUIDv7s (tests, tooling) still give valid IDs.
+	if u, err := uuid.Parse(CopyAssetID("p1", target, src)); err != nil || u.Version() != 7 {
+		t.Errorf("CopyAssetID for project p1 = %v, %v; want a UUIDv7", u, err)
 	}
 }

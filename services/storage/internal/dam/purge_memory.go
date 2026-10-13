@@ -47,6 +47,7 @@ func (m *MemoryStore) PurgeAsset(ctx context.Context, id string) error {
 	}
 	delete(m.assets, id)
 	delete(m.versions, id)
+	m.forgetAssetUses(id)
 	return nil
 }
 

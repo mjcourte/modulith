@@ -252,3 +252,100 @@ func TestGRPCOwnerLifecycle(t *testing.T) {
 		t.Errorf("RemoveUser(no user) = %v, want ErrInvalidQuery", err)
 	}
 }
+
+// Refs, uses, forks and clone copies: each call over gRPC returns what the
+// Manager returns, and their refusals arrive as the same errors.
+func TestGRPCAssetRefs(t *testing.T) {
+	tm := newTestManager(t)
+	c := newGRPCClient(t, tm.Manager)
+	ctx := t.Context()
+	guest := ledger.Owner{Kind: ledger.OwnerUser, ID: "guest"}
+	tm.authz.SetProjectOwner("p1", acme) // member edits it, guest reads it
+	tm.authz.AllowProject("member", "p1", manager.AccessWrite)
+	tm.authz.AllowProject("guest", "p1", manager.AccessRead)
+	tm.authz.SetProjectOwner("p3", guest) // guest's own
+	tm.authz.AllowProject("guest", "p3", manager.AccessWrite)
+	logo, _ := uploadAsset(t, tm, "member", newAssetRequest())
+	ref := dam.AssetRef{AssetID: logo.ID, Version: 1}
+
+	if err := c.RecordAssetUse(ctx, "member", "p1", ref); err != nil {
+		t.Fatalf("RecordAssetUse over gRPC: %v", err)
+	}
+	// Another owner's file: refused, and the client can tell it should fork.
+	tm.authz.AllowOwner("guest", acme, manager.AccessRead)
+	err := c.RecordAssetUse(ctx, "guest", "p3", ref)
+	if !errors.Is(err, manager.ErrForkRequired) || !errors.Is(err, manager.ErrForbidden) {
+		t.Errorf("RecordAssetUse of acme's file in guest's project = %v, want ErrForkRequired and ErrForbidden", err)
+	}
+	tm.authz.AllowOwner("guest", acme, manager.AccessNone)
+
+	got, gotErr := c.ResolveRef(ctx, "guest", "p1", ref)
+	want, wantErr := tm.ResolveRef(ctx, "guest", "p1", ref)
+	// Each call presigns its own URL; the rest must match.
+	got.Download.URL, want.Download.URL = "", ""
+	got.Download.ExpiresAt, want.Download.ExpiresAt = time.Time{}, time.Time{}
+	same(t, "ResolveRef", got, gotErr, want, wantErr)
+	// A version other than 1 keeps its number on the wire.
+	next := manager.UploadRequest{AssetID: logo.ID, ContentType: "image/png", SizeBytes: 2048}
+	ticket, err := tm.BeginUpload(ctx, "member", next)
+	if err != nil {
+		t.Fatalf("BeginUpload: %v", err)
+	}
+	if err := tm.blobs.PutSigned(ticket.URL, "image/png", fileOf("image/png", 2048)); err != nil {
+		t.Fatalf("upload: %v", err)
+	}
+	if _, err := tm.CompleteUpload(ctx, "member", ticket.UploadID); err != nil {
+		t.Fatalf("CompleteUpload: %v", err)
+	}
+	ref2 := dam.AssetRef{AssetID: logo.ID, Version: 2}
+	if err := c.RecordAssetUse(ctx, "member", "p1", ref2); err != nil {
+		t.Fatalf("RecordAssetUse(v2): %v", err)
+	}
+	if r2, err := c.ResolveRef(ctx, "guest", "p1", ref2); err != nil || r2.Version.Number != 2 {
+		t.Errorf("ResolveRef(v2) over gRPC = version %d, %v; want 2", r2.Version.Number, err)
+	}
+	if _, err := c.ResolveRef(ctx, "stranger", "p1", ref); !errors.Is(err, manager.ErrForbidden) {
+		t.Errorf("ResolveRef as a stranger = %v, want ErrForbidden", err)
+	}
+
+	// Fork: the default target (unset on the wire), an owner target, and via.
+	fork, gotErr := c.ForkAsset(ctx, "member", "p1", ref, ledger.Owner{}, "")
+	again, wantErr := tm.ForkAsset(ctx, "member", "p1", ref, ledger.Owner{}, "")
+	same(t, "ForkAsset", fork, gotErr, again, wantErr)
+	if fork.Owner != project {
+		t.Errorf("fork owned by %v, want the project", fork.Owner)
+	}
+	if lib, err := c.ForkAsset(ctx, "member", "p1", dam.AssetRef{AssetID: fork.ID, Version: 1}, acme, ""); err != nil || lib.Owner != acme {
+		t.Errorf("ForkAsset into acme over gRPC = %+v, %v", lib, err)
+	}
+	// guest reads acme's banner only through p1's use of it: via is needed.
+	banner, _ := uploadAsset(t, tm, "member", newAssetRequest())
+	bannerRef := dam.AssetRef{AssetID: banner.ID, Version: 1}
+	if err := c.RecordAssetUse(ctx, "member", "p1", bannerRef); err != nil {
+		t.Fatalf("RecordAssetUse: %v", err)
+	}
+	if _, err := c.ForkAsset(ctx, "guest", "p3", bannerRef, ledger.Owner{}, ""); !errors.Is(err, manager.ErrForbidden) {
+		t.Errorf("guest's fork without via = %v, want ErrForbidden", err)
+	}
+	p3 := ledger.Owner{Kind: ledger.OwnerProject, ID: "p3"}
+	if mine, err := c.ForkAsset(ctx, "guest", "p3", bannerRef, ledger.Owner{}, "p1"); err != nil || mine.Owner != p3 {
+		t.Errorf("guest's fork via p1 over gRPC = %+v, %v", mine, err)
+	}
+
+	if err := c.ForgetAssetUse(ctx, "guest", "p3", dam.AssetRef{AssetID: dam.CopyAssetID("p3", p3, bannerRef), Version: 1}); err != nil {
+		t.Errorf("ForgetAssetUse over gRPC: %v", err)
+	}
+	if uses, _ := tm.store.ListUses(ctx, "p3"); len(uses) != 0 {
+		t.Errorf("p3 still uses %v", uses)
+	}
+
+	// p1 owns the fork; forking it into acme moved p1's use to that library
+	// copy, so p1 uses that, the banner and logo v2: four copies, three uses.
+	r, err := c.CopyProjectFiles(ctx, "cloner", "p1", "p2")
+	if err != nil || r != (manager.CopyReport{Assets: 4, Uses: 3}) {
+		t.Errorf("CopyProjectFiles over gRPC = %+v, %v; want 4 assets, 3 uses", r, err)
+	}
+	if _, err := c.CopyProjectFiles(ctx, "cloner", "p1", "p1"); !errors.Is(err, dam.ErrInvalidQuery) {
+		t.Errorf("CopyProjectFiles into itself = %v, want ErrInvalidQuery", err)
+	}
+}

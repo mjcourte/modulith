@@ -4,10 +4,12 @@ package manager_test
 // directory directly, below the Manager's permission checks.
 
 import (
+	"context"
 	"testing"
 	"time"
 
 	"gyoza/services/iam/internal/directory"
+	"gyoza/services/iam/internal/manager"
 	"gyoza/services/storage"
 )
 
@@ -66,4 +68,47 @@ func mustShare(t *testing.T, s directory.Store, projectID, userID string, access
 		t.Fatalf("ShareProject(%s): %v", userID, err)
 	}
 	return sh
+}
+
+// inspector may read every file: the tests' window into storage once the
+// owners the files belonged to are gone.
+const inspector = "inspector"
+
+type inspectingAuthz struct{ storage.Authorizer }
+
+func (a inspectingAuthz) CanRead(ctx context.Context, actorID string, owner storage.Owner, projectID string) error {
+	if actorID == inspector {
+		return nil
+	}
+	return a.Authorizer.CanRead(ctx, actorID, owner, projectID)
+}
+
+// newFilesFor returns storage on memory fakes, authorized by iam's rules
+// over s (plus the inspector), as the binaries wire it.
+func newFilesFor(t *testing.T, s directory.Store) *storage.Memory {
+	t.Helper()
+	files, err := storage.NewMemory(inspectingAuthz{manager.NewStorageAuthorizer(s)}, storage.Config{Bucket: "gyoza-test"})
+	if err != nil {
+		t.Fatalf("storage.NewMemory: %v", err)
+	}
+	return files
+}
+
+// mustUpload stores a small text file for owner as actor and returns its asset ID.
+func mustUpload(t *testing.T, files *storage.Memory, actor string, owner storage.Owner) string {
+	t.Helper()
+	ctx := t.Context()
+	data := []byte("hello")
+	ticket, err := files.BeginUpload(ctx, actor, storage.UploadRequest{Owner: owner, Name: "notes", ContentType: "text/plain", SizeBytes: int64(len(data))})
+	if err != nil {
+		t.Fatalf("BeginUpload as %s: %v", actor, err)
+	}
+	if err := files.Upload(ticket.URL, "text/plain", data); err != nil {
+		t.Fatalf("Upload: %v", err)
+	}
+	a, err := files.CompleteUpload(ctx, actor, ticket.UploadID)
+	if err != nil {
+		t.Fatalf("CompleteUpload: %v", err)
+	}
+	return a.ID
 }

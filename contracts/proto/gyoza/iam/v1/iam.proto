@@ -1,0 +1,452 @@
+syntax = "proto3";
+
+// IAM: users, orgs, invites, projects and sharing. Mirrors the Service
+// interface in services/iam.
+//
+// actor_id is the signed-in user a call is made for. The gateway sets it from
+// the authenticated session; this service trusts it, so it must only be
+// reachable from inside the platform. SignIn (the gateway's sign-in hook) and
+// the template calls (tooling) take no actor.
+//
+// Errors carry a google.rpc.ErrorInfo detail (domain "iam.gyoza") whose
+// reason names the exact error, e.g. ORG_NOT_FOUND or LAST_ADMIN, since
+// several errors share a status code.
+package gyoza.iam.v1;
+
+import "google/protobuf/timestamp.proto";
+import "gyoza/storage/v1/storage.proto";
+
+service IAMService {
+  // Users.
+  rpc SignIn(SignInRequest) returns (SignInResponse);
+  rpc GetMe(GetMeRequest) returns (GetMeResponse);
+  // GDPR: the account, with what it owns moved to the user's org or deleted.
+  rpc DeleteAccount(DeleteAccountRequest) returns (DeleteAccountResponse);
+
+  // Orgs and members.
+  rpc CreateOrg(CreateOrgRequest) returns (CreateOrgResponse);
+  rpc GetOrg(GetOrgRequest) returns (GetOrgResponse);
+  rpc RenameOrg(RenameOrgRequest) returns (RenameOrgResponse);
+  rpc ListMembers(ListMembersRequest) returns (ListMembersResponse);
+  rpc SetRole(SetRoleRequest) returns (SetRoleResponse);
+  rpc RemoveMember(RemoveMemberRequest) returns (RemoveMemberResponse);
+  // The last member leaving deletes the org.
+  rpc LeaveOrg(LeaveOrgRequest) returns (LeaveOrgResponse);
+  rpc DeleteOrg(DeleteOrgRequest) returns (DeleteOrgResponse);
+
+  // Invites.
+  rpc InviteMember(InviteMemberRequest) returns (InviteMemberResponse);
+  rpc ListOrgInvites(ListOrgInvitesRequest) returns (ListOrgInvitesResponse);
+  rpc RevokeInvite(RevokeInviteRequest) returns (RevokeInviteResponse);
+  rpc ListMyInvites(ListMyInvitesRequest) returns (ListMyInvitesResponse);
+  rpc AcceptInvite(AcceptInviteRequest) returns (AcceptInviteResponse);
+  rpc DeclineInvite(DeclineInviteRequest) returns (DeclineInviteResponse);
+
+  // Projects and sharing.
+  rpc CreateProject(CreateProjectRequest) returns (CreateProjectResponse);
+  // A new project with a copy of another's files (templates included). If the
+  // copy fails part-way the call fails; the hidden, half-made clone is
+  // finished or deleted by iam's cleanup loop.
+  rpc CloneProject(CloneProjectRequest) returns (CloneProjectResponse);
+  rpc GetProject(GetProjectRequest) returns (GetProjectResponse);
+  rpc ListMyProjects(ListMyProjectsRequest) returns (ListMyProjectsResponse);
+  rpc ListTemplates(ListTemplatesRequest) returns (ListTemplatesResponse);
+  rpc RenameProject(RenameProjectRequest) returns (RenameProjectResponse);
+  rpc MoveProjectToOrg(MoveProjectToOrgRequest) returns (MoveProjectToOrgResponse);
+  rpc SetOrgLocked(SetOrgLockedRequest) returns (SetOrgLockedResponse);
+  rpc ShareProject(ShareProjectRequest) returns (ShareProjectResponse);
+  rpc ListShares(ListSharesRequest) returns (ListSharesResponse);
+  rpc Unshare(UnshareRequest) returns (UnshareResponse);
+  rpc DeleteProject(DeleteProjectRequest) returns (DeleteProjectResponse);
+
+  // Gyoza templates: service to service only (tooling); never exposed to browsers.
+  rpc CreateTemplate(CreateTemplateRequest) returns (CreateTemplateResponse);
+  rpc DeleteTemplate(DeleteTemplateRequest) returns (DeleteTemplateResponse);
+}
+
+// Storage's permission questions, answered from iam's data. Called by
+// storage only. A refusal is PERMISSION_DENIED with reason FORBIDDEN.
+service AuthzService {
+  rpc CanRead(CanReadRequest) returns (CanReadResponse);
+  rpc CanWrite(CanWriteRequest) returns (CanWriteResponse);
+  // Who owns a project: storage lets a project use only its own, or its
+  // owner's, files in place.
+  rpc ProjectOwner(ProjectOwnerRequest) returns (ProjectOwnerResponse);
+}
+
+// ---- Shared messages
+
+enum Role {
+  ROLE_UNSPECIFIED = 0;
+  ROLE_ADMIN = 1;
+  ROLE_MEMBER = 2;
+}
+
+enum Access {
+  ACCESS_UNSPECIFIED = 0; // no access
+  ACCESS_VIEWER = 1;
+  ACCESS_EDITOR = 2;
+}
+
+enum ProjectState {
+  PROJECT_STATE_UNSPECIFIED = 0;
+  PROJECT_STATE_READY = 1;
+  PROJECT_STATE_CLONING = 2;
+}
+
+message User {
+  string id = 1;
+  string email = 2;
+  bool email_verified = 3;
+  string name = 4;
+  string provider_avatar_url = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
+  // Unset unless the account is being deleted.
+  google.protobuf.Timestamp deleting_at = 8;
+  string deleting_to_org = 9;
+}
+
+message Identity {
+  string user_id = 1;
+  string email = 2;
+  bool email_verified = 3;
+  string name = 4;
+  string provider_avatar_url = 5;
+}
+
+message Org {
+  string id = 1;
+  string name = 2;
+  google.protobuf.Timestamp created_at = 3;
+  google.protobuf.Timestamp updated_at = 4;
+  google.protobuf.Timestamp deleting_at = 5;
+}
+
+message Member {
+  string org_id = 1;
+  string user_id = 2;
+  Role role = 3;
+  google.protobuf.Timestamp joined_at = 4;
+}
+
+message Invite {
+  string id = 1;
+  string org_id = 2;
+  string email = 3;
+  Role role = 4;
+  string invited_by = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp expires_at = 7;
+}
+
+message Project {
+  string id = 1;
+  // A user, an org, or gyoza (templates).
+  gyoza.storage.v1.Owner owner = 2;
+  string name = 3;
+  ProjectState state = 4;
+  string cloned_from = 5;
+  bool org_locked = 6;
+  string created_by = 7;
+  google.protobuf.Timestamp created_at = 8;
+  google.protobuf.Timestamp updated_at = 9;
+  google.protobuf.Timestamp deleting_at = 10;
+}
+
+message Share {
+  string project_id = 1;
+  string user_id = 2;
+  Access access = 3;
+  string shared_by = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+}
+
+// ---- Users
+
+message SignInRequest {
+  Identity identity = 1;
+}
+message SignInResponse {
+  User user = 1;
+  bool created = 2;
+  repeated Invite invites = 3;
+}
+
+message GetMeRequest {
+  string actor_id = 1;
+}
+message GetMeResponse {
+  User user = 1;
+  // Both unset if the user is in no org.
+  Member membership = 2;
+  Org org = 3;
+}
+
+message DeleteAccountRequest {
+  string actor_id = 1;
+}
+message DeleteAccountResponse {}
+
+// ---- Orgs and members
+
+message CreateOrgRequest {
+  string actor_id = 1;
+  string name = 2;
+}
+message CreateOrgResponse {
+  Org org = 1;
+  Member member = 2;
+}
+
+message GetOrgRequest {
+  string actor_id = 1;
+  string org_id = 2;
+}
+message GetOrgResponse {
+  Org org = 1;
+}
+
+message RenameOrgRequest {
+  string actor_id = 1;
+  string org_id = 2;
+  string name = 3;
+}
+message RenameOrgResponse {
+  Org org = 1;
+}
+
+message ListMembersRequest {
+  string actor_id = 1;
+  string org_id = 2;
+}
+message ListMembersResponse {
+  repeated Member members = 1;
+}
+
+message SetRoleRequest {
+  string actor_id = 1;
+  string org_id = 2;
+  string user_id = 3;
+  Role role = 4;
+}
+message SetRoleResponse {
+  Member member = 1;
+}
+
+message RemoveMemberRequest {
+  string actor_id = 1;
+  string org_id = 2;
+  string user_id = 3;
+}
+message RemoveMemberResponse {
+  int32 remaining = 1;
+}
+
+message LeaveOrgRequest {
+  string actor_id = 1;
+}
+message LeaveOrgResponse {
+  int32 remaining = 1;
+}
+
+message DeleteOrgRequest {
+  string actor_id = 1;
+  string org_id = 2;
+}
+message DeleteOrgResponse {}
+
+// ---- Invites
+
+message InviteMemberRequest {
+  string actor_id = 1;
+  string org_id = 2;
+  string email = 3;
+  Role role = 4;
+}
+message InviteMemberResponse {
+  Invite invite = 1;
+}
+
+message ListOrgInvitesRequest {
+  string actor_id = 1;
+  string org_id = 2;
+}
+message ListOrgInvitesResponse {
+  repeated Invite invites = 1;
+}
+
+message RevokeInviteRequest {
+  string actor_id = 1;
+  string invite_id = 2;
+}
+message RevokeInviteResponse {}
+
+message ListMyInvitesRequest {
+  string actor_id = 1;
+}
+message ListMyInvitesResponse {
+  repeated Invite invites = 1;
+}
+
+message AcceptInviteRequest {
+  string actor_id = 1;
+  string invite_id = 2;
+}
+message AcceptInviteResponse {
+  Member member = 1;
+}
+
+message DeclineInviteRequest {
+  string actor_id = 1;
+  string invite_id = 2;
+}
+message DeclineInviteResponse {}
+
+// ---- Projects and sharing
+
+message CreateProjectRequest {
+  string actor_id = 1;
+  gyoza.storage.v1.Owner owner = 2;
+  string name = 3;
+  bool org_locked = 4;
+}
+message CreateProjectResponse {
+  Project project = 1;
+}
+
+message CloneProjectRequest {
+  string actor_id = 1;
+  string source_project_id = 2;
+  // The clone's owner: the actor, or their org.
+  gyoza.storage.v1.Owner target = 3;
+}
+message CloneProjectResponse {
+  Project project = 1;
+}
+
+message GetProjectRequest {
+  string actor_id = 1;
+  string project_id = 2;
+}
+message GetProjectResponse {
+  Project project = 1;
+  // The actor's access, so the UI knows what to offer.
+  Access access = 2;
+}
+
+message ListMyProjectsRequest {
+  string actor_id = 1;
+  int32 page_size = 2;
+  string page_token = 3;
+}
+message ListMyProjectsResponse {
+  repeated Project projects = 1;
+  string next_page_token = 2;
+}
+
+message ListTemplatesRequest {
+  string actor_id = 1;
+  int32 page_size = 2;
+  string page_token = 3;
+}
+message ListTemplatesResponse {
+  repeated Project projects = 1;
+  string next_page_token = 2;
+}
+
+message RenameProjectRequest {
+  string actor_id = 1;
+  string project_id = 2;
+  string name = 3;
+}
+message RenameProjectResponse {
+  Project project = 1;
+}
+
+message MoveProjectToOrgRequest {
+  string actor_id = 1;
+  string project_id = 2;
+}
+message MoveProjectToOrgResponse {
+  Project project = 1;
+}
+
+message SetOrgLockedRequest {
+  string actor_id = 1;
+  string project_id = 2;
+  bool locked = 3;
+}
+message SetOrgLockedResponse {
+  Project project = 1;
+}
+
+message ShareProjectRequest {
+  string actor_id = 1;
+  string project_id = 2;
+  string email = 3;
+  Access access = 4;
+}
+message ShareProjectResponse {
+  Share share = 1;
+}
+
+message ListSharesRequest {
+  string actor_id = 1;
+  string project_id = 2;
+}
+message ListSharesResponse {
+  repeated Share shares = 1;
+}
+
+message UnshareRequest {
+  string actor_id = 1;
+  string project_id = 2;
+  string user_id = 3;
+}
+message UnshareResponse {}
+
+message DeleteProjectRequest {
+  string actor_id = 1;
+  string project_id = 2;
+}
+message DeleteProjectResponse {}
+
+// ---- Templates
+
+message CreateTemplateRequest {
+  string name = 1;
+}
+message CreateTemplateResponse {
+  Project project = 1;
+}
+
+message DeleteTemplateRequest {
+  string project_id = 1;
+}
+message DeleteTemplateResponse {}
+
+// ---- Authz
+
+message CanReadRequest {
+  string actor_id = 1;
+  gyoza.storage.v1.Owner owner = 2;
+  // The project the files are associated with, if any: reading it grants read.
+  string project_id = 3;
+}
+message CanReadResponse {}
+
+message CanWriteRequest {
+  string actor_id = 1;
+  gyoza.storage.v1.Owner owner = 2;
+  string project_id = 3;
+}
+message CanWriteResponse {}
+
+message ProjectOwnerRequest {
+  string project_id = 1;
+}
+message ProjectOwnerResponse {
+  gyoza.storage.v1.Owner owner = 1;
+}

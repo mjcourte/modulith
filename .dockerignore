@@ -1,0 +1,9 @@
+# Keep secrets and bulk out of the build context.
+.env
+.git
+.claude
+.agents
+apps
+engine
+**/node_modules
+**/target
