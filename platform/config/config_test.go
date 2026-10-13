@@ -123,3 +123,29 @@ func TestBool(t *testing.T) {
 		})
 	}
 }
+
+func TestPositiveInt(t *testing.T) {
+	tests := []struct {
+		value   string
+		want    int64
+		wantErr bool
+	}{
+		{"", 100, false}, // unset: default
+		{"33554432", 32 << 20, false},
+		{"many", 100, true},
+		{"0", 100, true},
+		{"-5", 100, true},
+		{"1.5", 100, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.value, func(t *testing.T) {
+			env := mapEnv(map[string]string{"COUNT": tt.value})
+			if got := env.PositiveInt("COUNT", 100); got != tt.want {
+				t.Errorf("PositiveInt = %v, want %v", got, tt.want)
+			}
+			if gotErr := env.Err() != nil; gotErr != tt.wantErr {
+				t.Errorf("Err() = %v, wantErr %v", env.Err(), tt.wantErr)
+			}
+		})
+	}
+}

@@ -188,7 +188,7 @@ and what's actively shared with them, each once, never clones in progress.
   (`ListCloningProjects`, partial index from migration 00002): it finishes them, or
   deletes them if their source is gone or they've failed for 24 hours. A clone abandoned
   during an outage is marked for deletion and finished as a project deletion
-- not yet: documentmanager copying the document and rewriting its refs (it slots in
+- not yet: documents copying the document and rewriting its refs (it slots in
   between the copy and `ready`)
 - tests: `manager_clone_test.go` (cloning, every refusal, resumed and abandoned clones);
   mutation-checked 11/12. The survivor is the "source being deleted" check, which

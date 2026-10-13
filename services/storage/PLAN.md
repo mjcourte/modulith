@@ -2,7 +2,7 @@
 
 Phase 1 (DAM, cascades, Postgres store, S3, cleanup, gRPC), phase 2 (asset refs,
 uses, forking, copying) and media metadata steps 1-3 are done; their record is the
-README. Related: [iam/PLAN.md](../iam/PLAN.md), [documentmanager/PLAN.md](../documentmanager/PLAN.md)
+README. Related: [iam/PLAN.md](../iam/PLAN.md), [documents/PLAN.md](../documents/PLAN.md)
 (keeps uses, rewrites a clone's refs), [mediaprocessor/PLAN.md](../mediaprocessor/PLAN.md),
 [apps/web/PLAN.md](../../apps/web/PLAN.md).
 
@@ -42,16 +42,24 @@ sign-in. When users can upload their own avatar (or org logos), store them ourse
 - the user row stores the object ID, not a URL; avatars need longer-lived or public
   cacheable URLs, since short-lived presigned URLs defeat browser image caching
 
-## Later: document snapshots through storage (decided 2026-10-11, not scheduled)
+## Document snapshots (done 2026-10-12, documents phase 3 step 2; record in the README)
 
-Storage is one service with one API (`StorageService`); the ledger has no API of its
-own. documentmanager doesn't write to S3 itself: it calls storage over gRPC for its
-snapshot S3 operations, like every other service. To design when documentmanager
-needs them:
+Service to service (no gateway routes), presigned like uploads:
+`BeginSnapshot(projectID, seq, editedBy, editedAt, contentType, size)` returns a PUT
+ticket and records a pending row; `CompleteSnapshot(projectID, objectID)` checks the
+object in S3, then in one transaction refuses a stale sequence (`ErrStale`), writes the
+ledger row (`Kind=snapshot`, owner = the project, `CreatedBy` = the last editor) and
+assigns the next version. `LatestSnapshot`, `SnapshotURL` (presigned GET). Metadata in a
+new `storage.snapshots` table (migration 00005), package `internal/snapshots`.
 
-- `StorageService` calls for snapshots (write/presign, read, list a project's, delete),
-  service to service only; storage builds the keys (`projects/{id}/snapshot/{id}`) and
-  records each snapshot as a ledger object (`Kind=snapshot`)
-- whether bytes go through storage or through presigned URLs (log-rolled snapshots may
-  be large and frequent)
-
+- retention: `GYOZA_SNAPSHOT_KEEP` (default 100) newest per project; cleanup trashes
+  older ones and the purge removes them. No daily stride.
+- size cap: `GYOZA_SNAPSHOT_MAX_BYTES` (default 32 MiB): large projects caused I/O
+  trouble near 100 MB before, and snapshots hold ECS tables and refs, not media.
+- last edit, `touch`-style: each snapshot records who made the last change it holds
+  and when (`edited_by`, `edited_at`), forwarded by documents' debouncer. Informational:
+  not authorised, since the editor may have lost access since.
+- cleanup also removes expired pending snapshots.
+- `ListSnapshots(projectID, pageToken)`, newest first (version, seq, edited by/at), for
+  administrative reverts: un-sticking a project by going back to an earlier version
+  (documents/PLAN.md "Reverting"). The kept 100 are the revert window.

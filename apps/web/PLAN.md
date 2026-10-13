@@ -61,6 +61,10 @@ Not started. UI details the backend plans rely on (2026-10-11). Related:
 
 Transport and streams: [platform/nats/README.md](../../platform/nats/README.md).
 
+- The engine runs in the browser as WASM (the same engine as the backend).
+- On opening a project, the gateway sends the current snapshot (from documents) and
+  then fans out that project's deltas and pointers over the WebSocket. The two can
+  overlap; applying is idempotent (CRDT ops with a Lamport clock), so that's harmless.
 - The client keeps a live in-memory replica of the open document, applying every delta
   from `document.{projectID}.delta` (through the gateway).
 - Snapshot messages (`document.{projectID}.snapshot`) are pointers, not the snapshot:

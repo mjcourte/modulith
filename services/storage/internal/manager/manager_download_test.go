@@ -156,7 +156,7 @@ func TestDownloadRejects(t *testing.T) {
 }
 
 // putObject stores bytes in the blobs and records them in the ledger as kind,
-// the way another service (e.g. the document manager writing an export) would.
+// the way another service (e.g. the documents service writing an export) would.
 func putObject(t *testing.T, tm testManager, kind ledger.Kind, contentType string, data []byte) ledger.Object {
 	t.Helper()
 	ctx := t.Context()

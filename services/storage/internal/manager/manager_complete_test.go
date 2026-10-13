@@ -13,6 +13,7 @@ import (
 	"gyoza/services/storage/internal/dam"
 	"gyoza/services/storage/internal/ledger"
 	sm "gyoza/services/storage/internal/manager"
+	"gyoza/services/storage/internal/snapshots"
 )
 
 // fileOf returns size bytes that sniff as contentType: a real header padded
@@ -261,7 +262,7 @@ func TestCompleteUploadRecordsOneObject(t *testing.T) {
 	const calls = 10
 	tm := newTestManager(t) // for the fakes and the browser
 	store := &gatedStore{MemoryStore: tm.store, arrived: newBarrier(calls)}
-	m, err := sm.NewManager(tm.ledger, store, tm.blobs, tm.authz, sm.Config{Bucket: testBucket})
+	m, err := sm.NewManager(tm.ledger, store, snapshots.NewMemory(), tm.blobs, tm.authz, sm.Config{Bucket: testBucket})
 	if err != nil {
 		t.Fatalf("NewManager: %v", err)
 	}

@@ -11,7 +11,7 @@ import (
 )
 
 // copyOf is the clone's copy of version 1 of a source file: storage's
-// contract (storage.CopyAssetID), which documentmanager relies on too.
+// contract (storage.CopyAssetID), which documents relies on too.
 func copyOf(clone directory.Project, assetID string) string {
 	return storage.CopyAssetID(clone.ID, projectOwner(clone), storage.AssetRef{AssetID: assetID, Version: 1})
 }

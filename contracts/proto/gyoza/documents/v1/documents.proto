@@ -1,0 +1,104 @@
+syntax = "proto3";
+
+// Documents: live documents on the engine. Reads, edits, and creating a
+// project's document. Mirrors the Service interface in services/documents.
+//
+// actor_id is the signed-in user a call is made for. The gateway sets it from
+// the authenticated session; this service trusts it and authorizes with it
+// (through iam), so it must only be reachable from inside the platform.
+//
+// Snapshots and deltas are opaque engine bytes (Wire): this API never looks
+// inside them.
+//
+// Errors carry a google.rpc.ErrorInfo detail (domain "documents.gyoza")
+// whose reason names the exact error, e.g. FORBIDDEN or EXISTS.
+package gyoza.documents.v1;
+
+service DocumentsService {
+  // The document's state as a snapshot, with the stream sequence it covers;
+  // created first if the project has none.
+  rpc GetDocument(GetDocumentRequest) returns (GetDocumentResponse);
+  // Part of the document as plain JSON.
+  rpc QueryDocument(QueryDocumentRequest) returns (QueryDocumentResponse);
+  // Creates the project's document; ALREADY_EXISTS / EXISTS if it has one.
+  rpc InitDocument(InitDocumentRequest) returns (InitDocumentResponse);
+  // Applies an edit and returns it stamped. An edit applied but not
+  // published, or whose asset uses weren't recorded, still returns its
+  // delta, with the problem in the response (not as an error).
+  rpc UpdateDocument(UpdateDocumentRequest) returns (UpdateDocumentResponse);
+  // Puts the document back to a stored version (ListSnapshots on storage) as
+  // one fresh edit, returned like UpdateDocument's. Administrative. NOT_FOUND
+  // / SNAPSHOT_NOT_FOUND if retention removed that version.
+  rpc RevertDocument(RevertDocumentRequest) returns (RevertDocumentResponse);
+}
+
+// Engine bytes: a snapshot or a delta.
+message Wire {
+  // "native" (flatbuffers) or "json".
+  string format = 1;
+  int32 version = 2;
+  bytes payload = 3;
+}
+
+message Document {
+  Wire snapshot = 1;
+  // Last delta stream sequence the snapshot covers.
+  uint64 seq = 2;
+}
+
+message GetDocumentRequest {
+  string actor_id = 1;
+  string project_id = 2;
+}
+message GetDocumentResponse {
+  Document document = 1;
+}
+
+message QueryDocumentRequest {
+  string actor_id = 1;
+  string project_id = 2;
+  // "native" or "graphql".
+  string format = 3;
+  string source = 4;
+  // JSON object of variables.
+  bytes variables = 5;
+}
+message QueryDocumentResponse {
+  // JSON.
+  bytes data = 1;
+}
+
+message InitDocumentRequest {
+  string actor_id = 1;
+  string project_id = 2;
+}
+message InitDocumentResponse {
+  Document document = 1;
+}
+
+message UpdateDocumentRequest {
+  string actor_id = 1;
+  string project_id = 2;
+  Wire delta = 3;
+}
+message UpdateDocumentResponse {
+  Wire delta = 1;
+  // The edit is applied here but wasn't published to the stream: the
+  // caller may publish delta itself.
+  string not_published = 2;
+  // The edit is applied but storage's asset uses weren't recorded; the next
+  // edit retries.
+  string uses_not_recorded = 3;
+}
+
+message RevertDocumentRequest {
+  string actor_id = 1;
+  string project_id = 2;
+  int32 version = 3;
+}
+// As UpdateDocumentResponse; delta's payload is empty if nothing differed.
+message RevertDocumentResponse {
+  Wire delta = 1;
+  string not_published = 2;
+  string uses_not_recorded = 3;
+}

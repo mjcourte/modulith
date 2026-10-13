@@ -1,6 +1,6 @@
 # Gateway
 
-Dependency: storage, IAM, authz, NATS, documentmanager
+Dependency: storage, IAM, authz, NATS, documents
 
 Merged from the former `rest-middleware` and `nats-ws-middleware`. Previously Node.js; planned in Go.
 

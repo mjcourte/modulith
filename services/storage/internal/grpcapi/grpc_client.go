@@ -249,7 +249,7 @@ func (c *Client) DeleteOwned(ctx context.Context, owner ledger.Owner) (manager.O
 	if err != nil {
 		return manager.OwnerDeletion{}, fromStatus(err)
 	}
-	return manager.OwnerDeletion{LedgerObjects: int(resp.GetLedgerObjects()), Trash: deletionFromProto(resp.GetTrash()), Uses: int(resp.GetUses())}, nil
+	return manager.OwnerDeletion{LedgerObjects: int(resp.GetLedgerObjects()), Trash: deletionFromProto(resp.GetTrash()), Uses: int(resp.GetUses()), Snapshots: int(resp.GetSnapshots())}, nil
 }
 
 func (c *Client) RemoveUser(ctx context.Context, userID, orgID string) (manager.UserRemoval, error) {
@@ -269,8 +269,9 @@ func (c *Client) RemoveUser(ctx context.Context, userID, orgID string) (manager.
 			LedgerObjects: int(resp.GetDeletedLedgerObjects()),
 			Trash:         deletionFromProto(resp.GetDeleted()),
 		},
-		ClearedLedger: int(resp.GetClearedLedger()),
-		ClearedDAM:    int(resp.GetClearedDam()),
+		ClearedLedger:    int(resp.GetClearedLedger()),
+		ClearedDAM:       int(resp.GetClearedDam()),
+		ClearedSnapshots: int(resp.GetClearedSnapshots()),
 	}
 	if resp.GetTransferredTo() != nil {
 		r.TransferredTo = ownerFromProto(resp.GetTransferredTo())
@@ -324,4 +325,54 @@ func (c *Client) CopyProjectFiles(ctx context.Context, actorID, from, to string)
 		return manager.CopyReport{}, fromStatus(err)
 	}
 	return manager.CopyReport{Folders: int(resp.GetFolders()), Assets: int(resp.GetAssets()), Uses: int(resp.GetUses())}, nil
+}
+
+// ---- Document snapshots
+
+func (c *Client) BeginSnapshot(ctx context.Context, req manager.SnapshotRequest) (manager.SnapshotTicket, error) {
+	resp, err := c.c.BeginSnapshot(ctx, &pb.BeginSnapshotRequest{
+		ProjectId: req.ProjectID, Seq: req.Seq,
+		EditedBy: req.EditedBy, EditedAt: timestamp(req.EditedAt),
+		ContentType: req.ContentType, SizeBytes: req.SizeBytes,
+	})
+	if err != nil {
+		return manager.SnapshotTicket{}, fromStatus(err)
+	}
+	return manager.SnapshotTicket{ObjectID: resp.GetObjectId(), URL: resp.GetUrl(), Headers: resp.GetHeaders(), ExpiresAt: timeOf(resp.GetExpiresAt())}, nil
+}
+
+func (c *Client) CompleteSnapshot(ctx context.Context, projectID, objectID string) (manager.SnapshotRef, error) {
+	resp, err := c.c.CompleteSnapshot(ctx, &pb.CompleteSnapshotRequest{ProjectId: projectID, ObjectId: objectID})
+	if err != nil {
+		return manager.SnapshotRef{}, fromStatus(err)
+	}
+	return snapshotFromProto(resp.GetSnapshot()), nil
+}
+
+func (c *Client) LatestSnapshot(ctx context.Context, projectID string) (manager.SnapshotRef, error) {
+	resp, err := c.c.GetLatestSnapshot(ctx, &pb.GetLatestSnapshotRequest{ProjectId: projectID})
+	if err != nil {
+		return manager.SnapshotRef{}, fromStatus(err)
+	}
+	return snapshotFromProto(resp.GetSnapshot()), nil
+}
+
+func (c *Client) ListSnapshots(ctx context.Context, projectID, pageToken string) (manager.SnapshotPage, error) {
+	resp, err := c.c.ListSnapshots(ctx, &pb.ListSnapshotsRequest{ProjectId: projectID, PageToken: pageToken})
+	if err != nil {
+		return manager.SnapshotPage{}, fromStatus(err)
+	}
+	page := manager.SnapshotPage{NextPageToken: resp.GetNextPageToken()}
+	for _, s := range resp.GetSnapshots() {
+		page.Snapshots = append(page.Snapshots, snapshotFromProto(s))
+	}
+	return page, nil
+}
+
+func (c *Client) SnapshotURL(ctx context.Context, projectID, objectID string) (manager.Download, error) {
+	resp, err := c.c.GetSnapshotURL(ctx, &pb.GetSnapshotURLRequest{ProjectId: projectID, ObjectId: objectID})
+	if err != nil {
+		return manager.Download{}, fromStatus(err)
+	}
+	return downloadFromProto(resp.GetDownload()), nil
 }

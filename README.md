@@ -39,7 +39,7 @@ Stop with Ctrl+C (a second Ctrl+C forces exit). To use a locally installed Postg
 ## Apps/Services
 
 - `apps/web` - web app frontend ReactJS
-- `document-manager` - document WAL rolling service (Rust? Go?)
+- `documents` - document WAL rolling service (Rust? Go?)
 - `exporter` - renderer service (Rust? Go?) ^- these must be Go for monolith.
 - `iam` - identity and access management: users, orgs, projects, sharing (Go)
 - `storage` - s3 object service (Go): uploads, the DAM, and the ledger of every S3 object

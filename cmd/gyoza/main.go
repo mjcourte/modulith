@@ -13,8 +13,10 @@ import (
 	"google.golang.org/grpc"
 
 	"gyoza/platform/config"
+	gnats "gyoza/platform/nats"
 	"gyoza/platform/postgres"
 	"gyoza/platform/shutdown"
+	"gyoza/services/documents"
 	"gyoza/services/iam"
 	"gyoza/services/mediaprocessor"
 	"gyoza/services/storage"
@@ -42,6 +44,7 @@ func run() error {
 	grpcAddr := env.String("GYOZA_GRPC_ADDR", "localhost:9090")
 	storageSettings := storage.SettingsFromEnv(env)
 	iamSettings := iam.SettingsFromEnv(env)
+	documentsSettings := documents.SettingsFromEnv(env)
 	if err := env.Err(); err != nil {
 		return err
 	}
@@ -72,11 +75,20 @@ func run() error {
 		pool.Close()
 		return err
 	}
+	// documents reads and writes through the in-process storage, asks the same
+	// iam authorizer, and shares the NATS cluster with every other instance.
+	nc, err := gnats.Connect(ctx, documentsSettings.NATSURL, "gyoza")
+	if err != nil {
+		pool.Close()
+		return err
+	}
+	docs := documents.Open(documentsSettings, manager, authz, nc)
 
 	// Until the gateway exists, the services are reachable over gRPC so
 	// they can be called by hand (go tool buf curl, see contracts/README.md).
 	lis, err := net.Listen("tcp", grpcAddr)
 	if err != nil {
+		nc.Close(context.WithoutCancel(ctx))
 		pool.Close()
 		return err
 	}
@@ -91,6 +103,7 @@ func run() error {
 	server := grpc.NewServer()
 	storage.RegisterGRPC(server, manager)
 	iam.RegisterGRPC(server, iamManager, authz)
+	documents.RegisterGRPC(server, docs)
 	if prober != nil {
 		mediaprocessor.RegisterGRPC(server, prober)
 	}
@@ -111,14 +124,17 @@ func run() error {
 	} else {
 		probeDone = storage.StartMediaProbe(jobsCtx, manager, prober, storageSettings.ProbeInterval)
 	}
-	jobsDone := func() { <-cleanupDone; <-iamCleanupDone; <-probeDone }
-	slog.Info("gyoza started", "grpc", lis.Addr().String(), "bucket", storageSettings.Manager.Bucket)
+	consumerDone := documents.StartConsumer(jobsCtx, docs, nc, documentsSettings.Consumer)
+	jobsDone := func() { <-cleanupDone; <-iamCleanupDone; <-probeDone; <-consumerDone }
+	slog.Info("gyoza started", "grpc", lis.Addr().String(), "bucket", storageSettings.Manager.Bucket, "replica", documentsSettings.Manager.Replica)
 
 	select {
 	case <-ctx.Done():
 	case err := <-serveErr:
 		stopJobs()
 		jobsDone()
+		docs.Close(context.WithoutCancel(ctx))
+		nc.Close(context.WithoutCancel(ctx))
 		pool.Close()
 		return fmt.Errorf("grpc server: %w", err)
 	}
@@ -130,8 +146,10 @@ func run() error {
 	shutdownCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), shutdownTimeout)
 	defer cancel()
 
-	// Stop in reverse order of startup: the server, the background jobs, then
-	// the pool, because both of them still need it until they've stopped.
+	// Stop in reverse order of startup: the server, the background jobs (the
+	// documents consumer among them), then documents saves every open
+	// document (through storage, announcing on NATS), then NATS, then the
+	// pool, which all of them need until they've stopped.
 	if err := shutdown.Within(shutdownCtx, server.GracefulStop); err != nil {
 		server.Stop()
 		slog.Warn("grpc calls cut off at shutdown deadline")
@@ -139,6 +157,14 @@ func run() error {
 	stopJobs()
 	if err := shutdown.Within(shutdownCtx, jobsDone); err != nil {
 		slog.Warn("background jobs cut off at shutdown deadline")
+	}
+	// Unsaved documents aren't lost if this fails: their deltas stay in the
+	// stream until a snapshot covering them is stored.
+	if err := docs.Close(shutdownCtx); err != nil {
+		slog.Error("saving open documents", "err", err)
+	}
+	if err := nc.Close(shutdownCtx); err != nil {
+		slog.Warn("closing NATS", "err", err)
 	}
 	if err := shutdown.Within(shutdownCtx, pool.Close); err != nil {
 		return err

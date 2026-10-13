@@ -19,6 +19,7 @@ import (
 	"gyoza/services/storage/internal/grpcapi"
 	"gyoza/services/storage/internal/ledger"
 	"gyoza/services/storage/internal/manager"
+	"gyoza/services/storage/internal/snapshots"
 )
 
 // Who owns a file; shared with services that own files (iam).
@@ -57,12 +58,21 @@ type (
 	// What the owner lifecycle calls (iam's cascades) report.
 	OwnerDeletion = manager.OwnerDeletion
 	UserRemoval   = manager.UserRemoval
+
+	// Document snapshots (the documents service).
+	SnapshotRequest = manager.SnapshotRequest
+	SnapshotTicket  = manager.SnapshotTicket
+	SnapshotRef     = manager.SnapshotRef
+	SnapshotPage    = manager.SnapshotPage
+	Download        = manager.Download
 )
 
 const (
-	DefaultUploadURLTTL   = manager.DefaultUploadURLTTL
-	DefaultDownloadURLTTL = manager.DefaultDownloadURLTTL
-	DefaultTrashRetention = manager.DefaultTrashRetention
+	DefaultUploadURLTTL     = manager.DefaultUploadURLTTL
+	DefaultDownloadURLTTL   = manager.DefaultDownloadURLTTL
+	DefaultTrashRetention   = manager.DefaultTrashRetention
+	DefaultSnapshotKeep     = manager.DefaultSnapshotKeep
+	DefaultMaxSnapshotBytes = manager.DefaultMaxSnapshotBytes
 )
 
 // ErrForbidden is what an Authorizer's refusals must wrap.
@@ -71,6 +81,20 @@ var ErrForbidden = manager.ErrForbidden
 // ErrForkRequired: a project can only use its own (or its owner's) assets in
 // place; anything else must be forked first.
 var ErrForkRequired = manager.ErrForkRequired
+
+// S3Config is how storage reaches S3 (Settings.S3), for tests elsewhere that
+// open a real storage against RustFS.
+type S3Config = blob.S3Config
+
+// Snapshot errors.
+var (
+	ErrSnapshotStale    = manager.ErrSnapshotStale
+	ErrSnapshotNotFound = manager.ErrSnapshotNotFound
+	ErrSnapshotTooLarge = manager.ErrSnapshotTooLarge
+	ErrSnapshotExpired  = manager.ErrSnapshotExpired
+	ErrInvalidSnapshot  = manager.ErrInvalidSnapshot
+	ErrNotUploaded      = manager.ErrNotUploaded
+)
 
 // Migrate brings the storage schema up to date.
 func Migrate(ctx context.Context, pool *pgxpool.Pool) error { return db.Migrate(ctx, pool) }
@@ -85,7 +109,7 @@ type Memory struct {
 // NewMemory builds a Memory that asks authz for permission.
 func NewMemory(authz Authorizer, cfg Config) (*Memory, error) {
 	blobs := blob.NewMemory()
-	m, err := manager.NewManager(ledger.NewMemory(), dam.NewMemoryStore(), blobs, authz, cfg)
+	m, err := manager.NewManager(ledger.NewMemory(), dam.NewMemoryStore(), snapshots.NewMemory(), blobs, authz, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -95,6 +119,13 @@ func NewMemory(authz Authorizer, cfg Config) (*Memory, error) {
 // Upload plays the browser: it PUTs data to an upload URL from BeginUpload.
 func (m *Memory) Upload(url, contentType string, data []byte) error {
 	return m.blobs.PutSigned(url, contentType, data)
+}
+
+// Download plays the browser: it GETs a download URL (DownloadURL,
+// SnapshotURL, ...).
+func (m *Memory) Download(url string) ([]byte, error) {
+	data, _, err := m.blobs.GetSigned(url)
+	return data, err
 }
 
 // RegisterGRPC serves s as StorageService on r.

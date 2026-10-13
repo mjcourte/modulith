@@ -2,8 +2,10 @@ package nats_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
+	"slices"
 	"testing"
 	"time"
 
@@ -77,41 +79,87 @@ func TestEnsureStreamsIdempotent(t *testing.T) {
 	}
 }
 
-func TestSnapshotsKeepLatestPerProject(t *testing.T) {
+func TestCompact(t *testing.T) {
 	ctx, c := connect(t)
-	p := uniqueID("snap")
-	subj, _ := nats.DocumentSnapshot(p)
-	publish(t, ctx, c.JS, subj, "v1")
-	publish(t, ctx, c.JS, subj, "v2")
-
-	got := remaining(t, ctx, c.JS, nats.DocumentSnapshots.Name, subj)
-	if len(got) != 1 || got[0] != "v2" {
-		t.Fatalf("snapshots = %q, want [v2]", got)
-	}
-}
-
-func TestPurgeDeltas(t *testing.T) {
-	ctx, c := connect(t)
-	p, other := uniqueID("purge"), uniqueID("other")
-	subj, _ := nats.DocumentDelta(p)
-	otherSubj, _ := nats.DocumentDelta(other)
+	p, other := uniqueID("compact"), uniqueID("other")
+	deltas, _ := nats.DocumentDelta(p)
+	snaps, _ := nats.DocumentSnapshot(p)
+	otherDeltas, _ := nats.DocumentDelta(other)
 
 	// o1 sits inside the purged sequence range, so a purge that ignores the
 	// subject would take it too.
-	publish(t, ctx, c.JS, otherSubj, "o1")
-	publish(t, ctx, c.JS, subj, "d1")
-	covered := publish(t, ctx, c.JS, subj, "d2")
-	publish(t, ctx, c.JS, subj, "d3")
+	publish(t, ctx, c.JS, otherDeltas, "o1")
+	publish(t, ctx, c.JS, snaps, "s1")
+	publish(t, ctx, c.JS, deltas, "d1")
+	covered := publish(t, ctx, c.JS, deltas, "d2")
+	publish(t, ctx, c.JS, deltas, "d3")
+	publish(t, ctx, c.JS, snaps, "s2")
 
-	for range 2 { // a repeated purge must change nothing
-		if err := nats.PurgeDeltas(ctx, c.JS, p, covered); err != nil {
+	for range 2 { // repeating must change nothing
+		if err := nats.Compact(ctx, c.JS, p, covered); err != nil {
 			t.Fatal(err)
 		}
 	}
-	if got := remaining(t, ctx, c.JS, nats.DocumentDeltas.Name, subj); len(got) != 1 || got[0] != "d3" {
+	if got := remaining(t, ctx, c.JS, nats.Documents.Name, deltas); len(got) != 1 || got[0] != "d3" {
 		t.Errorf("project deltas = %q, want [d3]", got)
 	}
-	if got := remaining(t, ctx, c.JS, nats.DocumentDeltas.Name, otherSubj); len(got) != 1 || got[0] != "o1" {
+	if got := remaining(t, ctx, c.JS, nats.Documents.Name, snaps); len(got) != 1 || got[0] != "s2" {
+		t.Errorf("project snapshots = %q, want [s2]", got)
+	}
+	if got := remaining(t, ctx, c.JS, nats.Documents.Name, otherDeltas); len(got) != 1 || got[0] != "o1" {
 		t.Errorf("other project's deltas = %q, want [o1]", got)
+	}
+}
+
+func TestLatestSnapshot(t *testing.T) {
+	ctx, c := connect(t)
+	p := uniqueID("latest")
+	if _, err := nats.LatestSnapshot(ctx, c.JS, p); !errors.Is(err, nats.ErrNoSnapshot) {
+		t.Fatalf("no pointer yet: got %v, want ErrNoSnapshot", err)
+	}
+	snaps, _ := nats.DocumentSnapshot(p)
+	publish(t, ctx, c.JS, snaps, "s1")
+	want := publish(t, ctx, c.JS, snaps, "s2")
+
+	msg, err := nats.LatestSnapshot(ctx, c.JS, p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(msg.Data) != "s2" || msg.Sequence != want {
+		t.Errorf("latest = %q at %d, want s2 at %d", msg.Data, msg.Sequence, want)
+	}
+}
+
+func TestDeltasAfter(t *testing.T) {
+	ctx, c := connect(t)
+	p, other := uniqueID("after"), uniqueID("other")
+	deltas, _ := nats.DocumentDelta(p)
+	otherDeltas, _ := nats.DocumentDelta(other)
+	snaps, _ := nats.DocumentSnapshot(p)
+
+	publish(t, ctx, c.JS, deltas, "d1")
+	from := publish(t, ctx, c.JS, deltas, "d2")
+	publish(t, ctx, c.JS, otherDeltas, "o1") // another project, interleaved
+	publish(t, ctx, c.JS, snaps, "s1")       // same project, not a delta
+	publish(t, ctx, c.JS, deltas, "d3")
+	publish(t, ctx, c.JS, deltas, "d4")
+
+	var got []string
+	err := nats.DeltasAfter(ctx, c.JS, p, from, func(m *jetstream.RawStreamMsg) error {
+		got = append(got, string(m.Data))
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := []string{"d3", "d4"}; !slices.Equal(got, want) {
+		t.Errorf("deltas after %d = %q, want %q", from, got, want)
+	}
+
+	stop := errors.New("stop")
+	calls := 0
+	err = nats.DeltasAfter(ctx, c.JS, p, 0, func(*jetstream.RawStreamMsg) error { calls++; return stop })
+	if !errors.Is(err, stop) || calls != 1 {
+		t.Errorf("fn error: got %v after %d calls, want stop after 1", err, calls)
 	}
 }

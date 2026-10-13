@@ -8,6 +8,7 @@ import (
 	"gyoza/services/storage/internal/blob"
 	"gyoza/services/storage/internal/dam"
 	"gyoza/services/storage/internal/ledger"
+	"gyoza/services/storage/internal/snapshots"
 )
 
 // Errors returned by Manager methods, besides those from the Store,
@@ -23,6 +24,11 @@ const (
 	DefaultDownloadURLTTL = 5 * time.Minute
 	DefaultMaxUploadBytes = 1 << 30 // 1 GiB
 	DefaultTrashRetention = 7 * 24 * time.Hour
+	// DefaultSnapshotKeep is how many snapshots per project retention keeps.
+	DefaultSnapshotKeep = 100
+	// DefaultMaxSnapshotBytes caps a document snapshot (ECS tables and refs,
+	// never media): 32 MiB. Projects near 100 MB caused I/O trouble before.
+	DefaultMaxSnapshotBytes = 32 << 20
 	// MaxSinglePutBytes is S3's limit for one PUT (5 GiB). Bigger files need
 	// multipart uploads, which aren't supported yet.
 	MaxSinglePutBytes = 5 << 30
@@ -41,6 +47,11 @@ type Config struct {
 	// cleanup job deletes them for good; default 7 days. Also how long
 	// completed upload sessions and other deleted ledger objects are kept.
 	TrashRetention time.Duration
+	// SnapshotKeep is how many snapshots per project are kept (the newest);
+	// cleanup removes older ones. Default 100. They're the revert window.
+	SnapshotKeep int
+	// MaxSnapshotBytes is the largest snapshot accepted; default 32 MiB.
+	MaxSnapshotBytes int64
 }
 
 // withDefaults fills in zero values and checks the result.
@@ -69,6 +80,18 @@ func (c Config) withDefaults() (Config, error) {
 			return c, fmt.Errorf("storage config: %s %s must be between 0 and %s", name, ttl, MaxPresignTTL)
 		}
 	}
+	if c.SnapshotKeep == 0 {
+		c.SnapshotKeep = DefaultSnapshotKeep
+	}
+	if c.MaxSnapshotBytes == 0 {
+		c.MaxSnapshotBytes = DefaultMaxSnapshotBytes
+	}
+	if c.SnapshotKeep < 1 {
+		return c, fmt.Errorf("storage config: SnapshotKeep %d must be at least 1", c.SnapshotKeep)
+	}
+	if c.MaxSnapshotBytes < 1 || c.MaxSnapshotBytes > MaxSinglePutBytes {
+		return c, fmt.Errorf("storage config: MaxSnapshotBytes %d must be between 1 and %d", c.MaxSnapshotBytes, int64(MaxSinglePutBytes))
+	}
 	if c.MaxUploadBytes < 0 || c.MaxUploadBytes > MaxSinglePutBytes {
 		return c, fmt.Errorf("storage config: MaxUploadBytes %d must be between 1 and %d", c.MaxUploadBytes, int64(MaxSinglePutBytes))
 	}
@@ -86,6 +109,7 @@ func (c Config) withDefaults() (Config, error) {
 type Manager struct {
 	ledger ledger.Service
 	store  dam.Store
+	snaps  snapshots.Store
 	blobs  blob.Store
 	authz  Authorizer
 	cfg    Config
@@ -93,15 +117,15 @@ type Manager struct {
 }
 
 // NewManager wires a Manager. All dependencies are required.
-func NewManager(l ledger.Service, store dam.Store, blobs blob.Store, authz Authorizer, cfg Config) (*Manager, error) {
-	if l == nil || store == nil || blobs == nil || authz == nil {
-		return nil, errors.New("storage: NewManager needs a ledger, store, blobs and authorizer")
+func NewManager(l ledger.Service, store dam.Store, snaps snapshots.Store, blobs blob.Store, authz Authorizer, cfg Config) (*Manager, error) {
+	if l == nil || store == nil || snaps == nil || blobs == nil || authz == nil {
+		return nil, errors.New("storage: NewManager needs a ledger, stores, blobs and authorizer")
 	}
 	cfg, err := cfg.withDefaults()
 	if err != nil {
 		return nil, err
 	}
-	return &Manager{ledger: l, store: store, blobs: blobs, authz: authz, cfg: cfg, now: time.Now}, nil
+	return &Manager{ledger: l, store: store, snaps: snaps, blobs: blobs, authz: authz, cfg: cfg, now: time.Now}, nil
 }
 
 // Config returns the effective configuration, with defaults filled in.

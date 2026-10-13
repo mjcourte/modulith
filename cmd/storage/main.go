@@ -74,7 +74,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	// The manager calls the ledger in-process; other services (documentmanager's
+	// The manager calls the ledger in-process; other services (the documents service's
 	// snapshots, iam's cascades) call it over gRPC.
 	manager, err := storage.Open(ctx, pool, settings, iam.NewAuthzClient(iamConn))
 	if err != nil {

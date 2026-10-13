@@ -12,9 +12,10 @@ var ErrInvalidToken = errors.New("nats: invalid subject token")
 // Subject patterns, for stream configs and subscriptions. Publish with the
 // builders below, which fill in the wildcards.
 const (
-	// Document transport, persisted in JetStream (see streams.go).
-	// Deltas are applied to every replica: documentmanager and each frontend.
-	// Snapshots are pointers to a snapshot stored in S3; documentmanager is
+	// Document transport: both patterns are in the one DOCUMENTS stream
+	// (streams.go).
+	// Deltas are applied to every replica: documents and each frontend.
+	// Snapshots are pointers to a snapshot stored in S3; documents is
 	// the only publisher.
 	PatternDocumentDelta    = "document.*.delta"    // document.{projectID}.delta
 	PatternDocumentSnapshot = "document.*.snapshot" // document.{projectID}.snapshot

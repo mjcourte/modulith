@@ -1,7 +1,7 @@
 package manager
 
 // Asset uses: which asset versions each project's document uses. These are
-// service-to-service operations for documentmanager, which calls them for the
+// service-to-service operations for documents, which calls them for the
 // user editing the document; they must never be exposed to browsers through
 // the gateway. Both are idempotent.
 

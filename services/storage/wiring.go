@@ -16,6 +16,7 @@ import (
 	"gyoza/services/storage/internal/dam"
 	"gyoza/services/storage/internal/ledger"
 	"gyoza/services/storage/internal/manager"
+	"gyoza/services/storage/internal/snapshots"
 )
 
 // Settings is everything storage reads from the environment.
@@ -40,10 +41,12 @@ func SettingsFromEnv(env *config.Env) Settings {
 		},
 		CreateBucket: env.Bool("GYOZA_S3_CREATE_BUCKET", false),
 		Manager: Config{
-			Bucket:         env.Required("GYOZA_S3_BUCKET"),
-			UploadURLTTL:   env.Duration("GYOZA_UPLOAD_URL_TTL", DefaultUploadURLTTL),
-			DownloadURLTTL: env.Duration("GYOZA_DOWNLOAD_URL_TTL", DefaultDownloadURLTTL),
-			TrashRetention: env.Duration("GYOZA_TRASH_RETENTION", DefaultTrashRetention),
+			Bucket:           env.Required("GYOZA_S3_BUCKET"),
+			UploadURLTTL:     env.Duration("GYOZA_UPLOAD_URL_TTL", DefaultUploadURLTTL),
+			DownloadURLTTL:   env.Duration("GYOZA_DOWNLOAD_URL_TTL", DefaultDownloadURLTTL),
+			TrashRetention:   env.Duration("GYOZA_TRASH_RETENTION", DefaultTrashRetention),
+			SnapshotKeep:     int(env.PositiveInt("GYOZA_SNAPSHOT_KEEP", DefaultSnapshotKeep)),
+			MaxSnapshotBytes: env.PositiveInt("GYOZA_SNAPSHOT_MAX_BYTES", DefaultMaxSnapshotBytes),
 		},
 		CleanupInterval: env.Duration("GYOZA_CLEANUP_INTERVAL", 10*time.Minute),
 		ProbeInterval:   env.Duration("GYOZA_PROBE_INTERVAL", 10*time.Second),
@@ -65,7 +68,7 @@ func Open(ctx context.Context, pool *pgxpool.Pool, s Settings, authz Authorizer)
 			return nil, err
 		}
 	}
-	m, err := manager.NewManager(ledger.NewPostgres(pool), dam.NewPostgres(pool), blobs, authz, s.Manager)
+	m, err := manager.NewManager(ledger.NewPostgres(pool), dam.NewPostgres(pool), snapshots.NewPostgres(pool), blobs, authz, s.Manager)
 	if err != nil {
 		return nil, fmt.Errorf("storage: %w", err)
 	}

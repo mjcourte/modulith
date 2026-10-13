@@ -3,7 +3,7 @@ package dam
 import "context"
 
 // UseStore records which asset versions each project uses, kept by
-// documentmanager as refs are added to and removed from documents. Reading
+// documents as refs are added to and removed from documents. Reading
 // through a project and copying a project's files both start here.
 // Project IDs are iam's; the Store doesn't check they exist.
 type UseStore interface {

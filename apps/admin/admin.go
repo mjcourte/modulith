@@ -20,6 +20,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"gyoza/services/documents"
 	"gyoza/services/iam"
 	"gyoza/services/storage"
 )
@@ -36,17 +37,19 @@ type server struct {
 	q       *queries
 	iam     iam.Service
 	storage storage.Service
+	docs    documents.Service
 	pages   map[string]*template.Template
 	http    *http.Client // PUTs uploads to presigned URLs
 }
 
-// New returns the admin UI. iamSvc and storageSvc are normally gRPC clients
-// to a running gyoza; pool reads both schemas.
-func New(pool *pgxpool.Pool, iamSvc iam.Service, storageSvc storage.Service) (http.Handler, error) {
+// New returns the admin UI. iamSvc, storageSvc and docsSvc are normally gRPC
+// clients to a running gyoza; pool reads both schemas.
+func New(pool *pgxpool.Pool, iamSvc iam.Service, storageSvc storage.Service, docsSvc documents.Service) (http.Handler, error) {
 	s := &server{
 		q:       &queries{pool: pool},
 		iam:     iamSvc,
 		storage: storageSvc,
+		docs:    docsSvc,
 		http:    &http.Client{Timeout: 10 * time.Minute},
 	}
 	if err := s.parseTemplates(); err != nil {
@@ -88,6 +91,7 @@ func (s *server) routes() http.Handler {
 	mux.HandleFunc("POST /projects/{id}/share", s.shareProject)
 	mux.HandleFunc("POST /projects/{id}/shares/{user}/remove", s.unshareProject)
 	mux.HandleFunc("POST /projects/{id}/clone", s.cloneProject)
+	mux.HandleFunc("POST /projects/{id}/revert", s.revertDocument)
 	mux.HandleFunc("POST /projects/{id}/delete", s.deleteProject)
 
 	mux.HandleFunc("GET /assets", s.listAssets)

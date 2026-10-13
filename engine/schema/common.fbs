@@ -1,0 +1,26 @@
+// Shared types of the document wire format. The engine's CRDT is a map of
+// last-writer-wins registers: each write is stamped (lamport, replica), and
+// the higher stamp wins, ties broken by replica ID. Applying is idempotent,
+// commutative and associative, so redelivered, reordered or replayed writes
+// are harmless.
+namespace fbs;
+
+table IntVal   { v: long; }
+table FloatVal { v: double; }
+table StrVal   { v: string; }
+table BytesVal { v: [ubyte]; }
+// A pinned reference to a storage asset version.
+table AssetRef { asset_id: string; version: int; }
+
+union Value { IntVal, FloatVal, StrVal, BytesVal, AssetRef }
+
+table Stamp { lamport: ulong; replica: string; }
+
+// removed marks a tombstone: the register was deleted at stamp, and value is
+// NONE. Tombstones stay, so an older write can't resurrect the key.
+table Register {
+  key: string (key);
+  value: Value;
+  removed: bool;
+  stamp: Stamp;
+}

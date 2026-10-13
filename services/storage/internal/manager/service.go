@@ -52,7 +52,7 @@ type Service interface {
 	// ResolveRef reads a ref a project's document uses (manager_resolve.go).
 	ResolveRef(ctx context.Context, actorID, projectID string, ref dam.AssetRef) (ResolvedRef, error)
 
-	// Asset uses, service to service only (manager_uses.go): documentmanager
+	// Asset uses, service to service only (manager_uses.go): documents
 	// records each ref a project's document uses, for the user editing it.
 	RecordAssetUse(ctx context.Context, actorID, projectID string, ref dam.AssetRef) error
 	ForgetAssetUse(ctx context.Context, actorID, projectID string, ref dam.AssetRef) error
@@ -61,6 +61,14 @@ type Service interface {
 	// CopyProjectFiles is service to service only (iam's CloneProject).
 	ForkAsset(ctx context.Context, actorID, projectID string, ref dam.AssetRef, target ledger.Owner, via string) (dam.Asset, error)
 	CopyProjectFiles(ctx context.Context, actorID, from, to string) (CopyReport, error)
+
+	// Document snapshots, service to service only (manager_snapshots.go):
+	// the documents service. No actor: saves run on a timer.
+	BeginSnapshot(ctx context.Context, req SnapshotRequest) (SnapshotTicket, error)
+	CompleteSnapshot(ctx context.Context, projectID, objectID string) (SnapshotRef, error)
+	LatestSnapshot(ctx context.Context, projectID string) (SnapshotRef, error)
+	ListSnapshots(ctx context.Context, projectID, pageToken string) (SnapshotPage, error)
+	SnapshotURL(ctx context.Context, projectID, objectID string) (Download, error)
 }
 
 // Compile-time check that *Manager satisfies Service.

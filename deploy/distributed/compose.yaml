@@ -50,6 +50,26 @@ services:
     depends_on:
       postgres: { condition: service_healthy }
 
+  # Live documents: applies edits, distributes them on NATS, and saves
+  # snapshots through storage (the bytes go straight to S3 by presigned URL,
+  # so it needs no S3 credentials and no database of its own).
+  documents:
+    build:
+      context: ../..
+      target: documents
+    environment:
+      GYOZA_STORAGE_ADDR: storage:9090
+      GYOZA_IAM_ADDR: iam:9090
+      GYOZA_NATS_URL: nats://nats-1:4222,nats-2:4222,nats-3:4222
+    ports:
+      - "127.0.0.1:9094:9090" # gRPC, as go run ./cmd/documents serves it
+    depends_on:
+      nats-1: { condition: service_started }
+      nats-2: { condition: service_started }
+      nats-3: { condition: service_started }
+      # Not storage or iam: gRPC connects lazily. Until storage is up, saves
+      # fail and retry; the deltas stay in the stream meanwhile.
+
   # Runs ffprobe on untrusted files, so it gets no secrets: no database, no
   # S3 credentials. It reads files only through the presigned URLs storage
   # sends, and isn't published to the host.

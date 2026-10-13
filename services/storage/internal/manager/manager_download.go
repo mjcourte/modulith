@@ -59,7 +59,7 @@ func (m *Manager) DownloadURL(ctx context.Context, actorID, assetID string, vers
 }
 
 // ExportURL returns a short-lived link to an export (a rendered output
-// recorded in the ledger with Kind=export, e.g. by the document manager).
+// recorded in the ledger with Kind=export, e.g. by the documents service).
 func (m *Manager) ExportURL(ctx context.Context, actorID, objectID string) (Download, error) {
 	obj, err := m.ledger.Get(ctx, objectID)
 	if errors.Is(err, ledger.ErrNotFound) {

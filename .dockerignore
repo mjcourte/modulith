@@ -4,6 +4,8 @@
 .claude
 .agents
 apps
+# ...except the admin UI, which cmd/admin imports (go build ./cmd/... builds it).
+!apps/admin
 engine
 **/node_modules
 **/target

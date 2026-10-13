@@ -466,3 +466,25 @@ func (q *queries) uploads(ctx context.Context) ([]UploadRow, error) {
 		       result_asset_id::text AS result_asset_id, result_version
 		FROM storage.uploads ORDER BY created_at DESC LIMIT $1`, listLimit)
 }
+
+// SnapshotRow is one of a project's stored document snapshots.
+type SnapshotRow struct {
+	ObjectID    string
+	Version     int32
+	Seq         int64
+	EditedBy    *string
+	EditedAt    *time.Time
+	ContentType string
+	SizeBytes   int64
+	CompletedAt *time.Time
+}
+
+// snapshots lists a project's completed snapshots, newest first: the
+// versions it can be reverted to (storage keeps the newest GYOZA_SNAPSHOT_KEEP).
+func (q *queries) snapshots(ctx context.Context, projectID string) ([]SnapshotRow, error) {
+	return collect[SnapshotRow](ctx, q, `
+		SELECT object_id, version, seq, edited_by, edited_at, content_type, size_bytes, completed_at
+		FROM storage.snapshots
+		WHERE project_id = $1 AND version IS NOT NULL
+		ORDER BY version DESC LIMIT $2`, projectID, listLimit)
+}

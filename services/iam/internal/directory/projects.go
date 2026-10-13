@@ -35,7 +35,7 @@ const (
 )
 
 // Project is a unit of work with exactly one document (the document itself
-// is documentmanager's). Its files are owned by the project in the ledger
+// is the documents service's). Its files are owned by the project in the ledger
 // (owner kind project, ID = the project's ID).
 type Project struct {
 	ID         string        // UUIDv7

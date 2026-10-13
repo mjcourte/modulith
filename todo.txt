@@ -1,4 +1,24 @@
-- look into our engine mock a little more before building out docmgr
-- when can we do gateway? before or after supertokens?
-- exporter defintely needs engine mock api
+- documents
+    - need to grill on clocks and peers and LWW failure modes pretty hard
+    - graphQL, should the schema live in engine?
+    
+- supertokens
+- gateway
+
+- breakpoint
+    - security audit - permissions leaks, forgeability etc
+    - tracing / otel / signoz
+
+- real engine?
+- frontend
+
+- breakpoint
+    - common assets: font lib?
+    - ugh that means a font service domain
+    - fucking scrape google fonts?
+    - and font upload -> already have Asset CategoryFont
+
+- exporter
+- mcp
+    - im not sure how much can be done with mock engine API, i guess we can make a minimal graphQL schema
 
