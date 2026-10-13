@@ -32,11 +32,13 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	DocumentsService_GetDocument_FullMethodName    = "/gyoza.documents.v1.DocumentsService/GetDocument"
-	DocumentsService_QueryDocument_FullMethodName  = "/gyoza.documents.v1.DocumentsService/QueryDocument"
-	DocumentsService_InitDocument_FullMethodName   = "/gyoza.documents.v1.DocumentsService/InitDocument"
-	DocumentsService_UpdateDocument_FullMethodName = "/gyoza.documents.v1.DocumentsService/UpdateDocument"
-	DocumentsService_RevertDocument_FullMethodName = "/gyoza.documents.v1.DocumentsService/RevertDocument"
+	DocumentsService_GetDocument_FullMethodName     = "/gyoza.documents.v1.DocumentsService/GetDocument"
+	DocumentsService_QueryDocument_FullMethodName   = "/gyoza.documents.v1.DocumentsService/QueryDocument"
+	DocumentsService_InitDocument_FullMethodName    = "/gyoza.documents.v1.DocumentsService/InitDocument"
+	DocumentsService_UpdateDocument_FullMethodName  = "/gyoza.documents.v1.DocumentsService/UpdateDocument"
+	DocumentsService_RevertDocument_FullMethodName  = "/gyoza.documents.v1.DocumentsService/RevertDocument"
+	DocumentsService_CloneDocument_FullMethodName   = "/gyoza.documents.v1.DocumentsService/CloneDocument"
+	DocumentsService_ReplaceAssetRef_FullMethodName = "/gyoza.documents.v1.DocumentsService/ReplaceAssetRef"
 )
 
 // DocumentsServiceClient is the client API for DocumentsService service.
@@ -58,6 +60,15 @@ type DocumentsServiceClient interface {
 	// one fresh edit, returned like UpdateDocument's. Administrative. NOT_FOUND
 	// / SNAPSHOT_NOT_FOUND if retention removed that version.
 	RevertDocument(ctx context.Context, in *RevertDocumentRequest, opts ...grpc.CallOption) (*RevertDocumentResponse, error)
+	// Copies a project's document into its clone, pointing every asset ref at
+	// the clone's copy. Called by iam's clone job only: actor_id must read
+	// the source; the clone (still being cloned) is trusted. Does nothing if
+	// the clone already has a document, so it can be retried.
+	CloneDocument(ctx context.Context, in *CloneDocumentRequest, opts ...grpc.CallOption) (*CloneDocumentResponse, error)
+	// Points every use of one asset version at another, as one edit returned
+	// like UpdateDocument's: after storage's ForkAsset. delta's payload is
+	// empty if the document didn't use from.
+	ReplaceAssetRef(ctx context.Context, in *ReplaceAssetRefRequest, opts ...grpc.CallOption) (*ReplaceAssetRefResponse, error)
 }
 
 type documentsServiceClient struct {
@@ -118,6 +129,26 @@ func (c *documentsServiceClient) RevertDocument(ctx context.Context, in *RevertD
 	return out, nil
 }
 
+func (c *documentsServiceClient) CloneDocument(ctx context.Context, in *CloneDocumentRequest, opts ...grpc.CallOption) (*CloneDocumentResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CloneDocumentResponse)
+	err := c.cc.Invoke(ctx, DocumentsService_CloneDocument_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *documentsServiceClient) ReplaceAssetRef(ctx context.Context, in *ReplaceAssetRefRequest, opts ...grpc.CallOption) (*ReplaceAssetRefResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ReplaceAssetRefResponse)
+	err := c.cc.Invoke(ctx, DocumentsService_ReplaceAssetRef_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // DocumentsServiceServer is the server API for DocumentsService service.
 // All implementations must embed UnimplementedDocumentsServiceServer
 // for forward compatibility.
@@ -137,6 +168,15 @@ type DocumentsServiceServer interface {
 	// one fresh edit, returned like UpdateDocument's. Administrative. NOT_FOUND
 	// / SNAPSHOT_NOT_FOUND if retention removed that version.
 	RevertDocument(context.Context, *RevertDocumentRequest) (*RevertDocumentResponse, error)
+	// Copies a project's document into its clone, pointing every asset ref at
+	// the clone's copy. Called by iam's clone job only: actor_id must read
+	// the source; the clone (still being cloned) is trusted. Does nothing if
+	// the clone already has a document, so it can be retried.
+	CloneDocument(context.Context, *CloneDocumentRequest) (*CloneDocumentResponse, error)
+	// Points every use of one asset version at another, as one edit returned
+	// like UpdateDocument's: after storage's ForkAsset. delta's payload is
+	// empty if the document didn't use from.
+	ReplaceAssetRef(context.Context, *ReplaceAssetRefRequest) (*ReplaceAssetRefResponse, error)
 	mustEmbedUnimplementedDocumentsServiceServer()
 }
 
@@ -161,6 +201,12 @@ func (UnimplementedDocumentsServiceServer) UpdateDocument(context.Context, *Upda
 }
 func (UnimplementedDocumentsServiceServer) RevertDocument(context.Context, *RevertDocumentRequest) (*RevertDocumentResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method RevertDocument not implemented")
+}
+func (UnimplementedDocumentsServiceServer) CloneDocument(context.Context, *CloneDocumentRequest) (*CloneDocumentResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CloneDocument not implemented")
+}
+func (UnimplementedDocumentsServiceServer) ReplaceAssetRef(context.Context, *ReplaceAssetRefRequest) (*ReplaceAssetRefResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ReplaceAssetRef not implemented")
 }
 func (UnimplementedDocumentsServiceServer) mustEmbedUnimplementedDocumentsServiceServer() {}
 func (UnimplementedDocumentsServiceServer) testEmbeddedByValue()                          {}
@@ -273,6 +319,42 @@ func _DocumentsService_RevertDocument_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _DocumentsService_CloneDocument_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CloneDocumentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DocumentsServiceServer).CloneDocument(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DocumentsService_CloneDocument_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DocumentsServiceServer).CloneDocument(ctx, req.(*CloneDocumentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DocumentsService_ReplaceAssetRef_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReplaceAssetRefRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DocumentsServiceServer).ReplaceAssetRef(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DocumentsService_ReplaceAssetRef_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DocumentsServiceServer).ReplaceAssetRef(ctx, req.(*ReplaceAssetRefRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // DocumentsService_ServiceDesc is the grpc.ServiceDesc for DocumentsService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -299,6 +381,14 @@ var DocumentsService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RevertDocument",
 			Handler:    _DocumentsService_RevertDocument_Handler,
+		},
+		{
+			MethodName: "CloneDocument",
+			Handler:    _DocumentsService_CloneDocument_Handler,
+		},
+		{
+			MethodName: "ReplaceAssetRef",
+			Handler:    _DocumentsService_ReplaceAssetRef_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

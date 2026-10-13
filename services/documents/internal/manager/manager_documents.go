@@ -128,7 +128,7 @@ func (m *Manager) ApplyDelta(ctx context.Context, d wal.Delta) error {
 	}
 	defer release()
 	err = doc.Update(d.Seq, d.ActorID, func(e engine.Document) error {
-		_, err := e.Edit(ctx, d.Delta)
+		_, err := e.Edit(ctx, streamInput(d))
 		return err
 	})
 	if errors.Is(err, live.ErrNotOpen) || errors.Is(err, engine.ErrClosed) {
@@ -141,6 +141,17 @@ func (m *Manager) ApplyDelta(ctx context.Context, d wal.Delta) error {
 		return nil
 	}
 	return m.syncUses(ctx, d.ActorID, d.ProjectID, doc.Engine())
+}
+
+// streamInput is a delta read from the stream, ready to apply. One a
+// documents replica published (Origin set) is trusted: that replica stamped
+// it or checked its stamp, and its clock may run ahead of this one's
+// (engine/PLAN.md row 2). The gateway publishes without Origin, so browsers'
+// stamps are still bounded here.
+func streamInput(d wal.Delta) engine.DeltaInput {
+	in := d.Delta
+	in.Trusted = d.Origin != ""
+	return in
 }
 
 func asInput(d engine.Delta) engine.DeltaInput {

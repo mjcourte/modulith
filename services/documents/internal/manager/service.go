@@ -23,7 +23,7 @@ var ErrUsesNotRecorded = errors.New("documents: edit applied, asset uses not rec
 var ErrNotPublished = errors.New("documents: edit applied, not published")
 
 // Service is what other components call: the gateway (for a signed-in user,
-// passing their ID as actorID) and, later, iam (cloning). *Manager
+// passing their ID as actorID) and iam (cloning). *Manager
 // implements it in process; callers should depend on Service.
 //
 // Engine errors (engine.ErrUnsupportedFormat for a delta in the wrong wire
@@ -45,6 +45,15 @@ type Service interface {
 	// edit, returned like UpdateDocument's. Administrative (the admin tool):
 	// needs write access, until iam has a staff flag.
 	RevertDocument(ctx context.Context, actorID, projectID string, version int) (engine.Delta, error)
+	// CloneDocument copies from's document into the clone project to
+	//, pointing its asset refs at the clone's copies.
+	// Service to service (iam's clone job): the actor must read from; to is
+	// trusted. Doing nothing if to already has a document, it can be retried.
+	CloneDocument(ctx context.Context, actorID, from, to string) error
+	// ReplaceAssetRef points every use of from at to, as one edit returned
+	// like UpdateDocument's (after storage's ForkAsset). Payload is empty if
+	// the document didn't use from.
+	ReplaceAssetRef(ctx context.Context, actorID, projectID string, from, to engine.AssetRef) (engine.Delta, error)
 }
 
 // Document is a document's state as a snapshot, with the last delta stream

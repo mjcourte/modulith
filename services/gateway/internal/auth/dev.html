@@ -1,0 +1,115 @@
+<!doctype html>
+<!-- Dev-only sign-in page (GYOZA_GATEWAY_DEV_PAGES), until apps/web exists.
+     It does by hand what the SuperTokens frontend SDK does: get Google's
+     authorisation URL, and on the callback post the code to /auth/signinup. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gyoza dev sign-in</title>
+<style>
+  body { font: 15px/1.5 system-ui, sans-serif; max-width: 40rem; margin: 2rem auto; padding: 0 1rem; }
+  button { font: inherit; padding: .4rem .9rem; margin-right: .5rem; }
+  pre { background: #f3f3f3; padding: .75rem; overflow-x: auto; }
+</style>
+</head>
+<body>
+<h1>Gyoza dev sign-in</h1>
+<p>
+  <button id="signin">Sign in with Google</button>
+  <button id="me">Who am I?</button>
+  <button id="signout">Sign out</button>
+</p>
+<pre id="out">…</pre>
+<h2>Call the API</h2>
+<p>
+  <select id="method"><option>GET</option><option>POST</option><option>PATCH</option><option>PUT</option><option>DELETE</option></select>
+  <input id="path" value="/api/projects" size="40" aria-label="path">
+  <button id="send">Send</button>
+</p>
+<textarea id="body" rows="5" cols="70" aria-label="JSON body" placeholder='{"owner": {"kind": "user", "id": "…"}, "name": "Poster"}'></textarea>
+<h2>WebSocket</h2>
+<p>
+  <button id="wsconnect">Connect</button> <button id="wsclose">Disconnect</button>
+  <input id="wsmsg" size="70" aria-label="message" value='{"type": "join", "projectId": "…"}'>
+  <button id="wssend">Send</button>
+</p>
+<pre id="wslog" style="max-height: 20em; overflow: auto"></pre>
+<script>
+// Two tabs joined to one project are two peers: a userstate sent in one
+// shows in both, e.g. {"type": "userstate", "projectId": "…", "kind": "cursorpos", "data": {"x": 1}}.
+let socket = null;
+const wslog = document.getElementById("wslog");
+const log = (line) => { wslog.textContent += line + "\n"; wslog.scrollTop = wslog.scrollHeight; };
+document.getElementById("wsconnect").onclick = () => {
+  if (socket) socket.close();
+  socket = new WebSocket(location.origin.replace(/^http/, "ws") + "/api/ws");
+  socket.onopen = () => log("open");
+  socket.onmessage = (e) => log("← " + (e.data.length > 300 ? e.data.slice(0, 300) + "…" : e.data));
+  socket.onclose = (e) => { log("closed " + e.code + " " + e.reason); socket = null; };
+};
+document.getElementById("wsclose").onclick = () => socket && socket.close();
+document.getElementById("wssend").onclick = () => {
+  if (!socket) return log("not connected");
+  const text = document.getElementById("wsmsg").value;
+  socket.send(text);
+  log("→ " + text);
+};
+</script>
+<script>
+const callback = location.origin + "/dev/callback/google";
+const out = document.getElementById("out");
+const show = (label, v) => { out.textContent = label + "\n" + (typeof v === "string" ? v : JSON.stringify(v, null, 2)); };
+
+async function call(method, path, body, rid) {
+  const headers = { "Content-Type": "application/json" };
+  if (rid) headers.rid = rid;
+  const r = await fetch(path, { method, headers, body: body && JSON.stringify(body), credentials: "same-origin" });
+  const text = await r.text();
+  try { return { status: r.status, body: JSON.parse(text) }; } catch { return { status: r.status, body: text }; }
+}
+
+// GET /me, refreshing the session once if the access token has expired.
+async function me() {
+  let r = await call("GET", "/api/me");
+  if (r.status === 401 && (await call("POST", "/auth/session/refresh", null, "session")).status === 200) {
+    r = await call("GET", "/api/me");
+  }
+  show("GET /api/me → " + r.status, r.body);
+}
+
+document.getElementById("signin").onclick = async () => {
+  const r = await call("GET", "/auth/authorisationurl?thirdPartyId=google&redirectURIOnProviderDashboard=" + encodeURIComponent(callback));
+  if (r.body.status !== "OK") return show("authorisation URL failed", r.body);
+  location.href = r.body.urlWithQueryParams;
+};
+document.getElementById("me").onclick = me;
+document.getElementById("send").onclick = async () => {
+  const method = document.getElementById("method").value, path = document.getElementById("path").value;
+  const text = document.getElementById("body").value.trim();
+  let body = null;
+  if (text) { try { body = JSON.parse(text); } catch (e) { return show("body isn't JSON", String(e)); } }
+  const r = await call(method, path, body);
+  show(method + " " + path + " → " + r.status, r.body);
+};
+document.getElementById("signout").onclick = async () => {
+  const r = await call("POST", "/auth/signout", null, "session");
+  show("POST /auth/signout → " + r.status, r.body);
+};
+
+// Back from Google: exchange the code for a session.
+if (location.pathname === "/dev/callback/google") {
+  (async () => {
+    const params = Object.fromEntries(new URLSearchParams(location.search));
+    const r = await call("POST", "/auth/signinup", {
+      thirdPartyId: "google",
+      redirectURIInfo: { redirectURIOnProviderDashboard: callback, redirectURIQueryParams: params },
+    }, "thirdparty");
+    history.replaceState(null, "", "/dev/signin");
+    if (r.body.status !== "OK") return show("POST /auth/signinup → " + r.status, r.body);
+    await me();
+  })();
+}
+</script>
+</body>
+</html>

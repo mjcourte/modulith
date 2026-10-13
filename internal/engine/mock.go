@@ -91,8 +91,8 @@ func (d *mockDocument) lock() error {
 
 func (d *mockDocument) ID() string { return d.id }
 
-// newer reports whether stamp a wins over b: higher lamport, then higher
-// replica ID. Equal stamps are the same write, so neither wins.
+// newer reports whether stamp a is after b: higher lamport, then higher
+// replica ID.
 func newer(a, b *fbs.StampT) bool {
 	if b == nil {
 		return true
@@ -103,10 +103,10 @@ func newer(a, b *fbs.StampT) bool {
 	return a.Replica > b.Replica
 }
 
-// apply writes r stamped st if st wins over the current register. It's
+// apply writes r stamped st if it wins over the current register. It's
 // what makes applying idempotent and order-independent.
 func (d *mockDocument) apply(r *fbs.RegisterT, st *fbs.StampT) {
-	if cur := d.regs[r.Key]; cur != nil && !newer(st, cur.Stamp) {
+	if cur := d.regs[r.Key]; cur != nil && !wins(r, st, cur) {
 		return
 	}
 	reg := &fbs.RegisterT{Key: r.Key, Removed: r.Removed, Stamp: st}
@@ -115,6 +115,28 @@ func (d *mockDocument) apply(r *fbs.RegisterT, st *fbs.StampT) {
 	}
 	d.regs[r.Key] = reg
 	d.clock = max(d.clock, st.Lamport)
+}
+
+// wins reports whether r stamped st replaces cur: the later stamp, or, for
+// equal stamps, the greater value. Equal stamps normally mean the same write,
+// but two writers sharing a replica ID can stamp different values alike;
+// comparing the values makes every replica pick the same one
+// (engine/PLAN.md row 1).
+func wins(r *fbs.RegisterT, st *fbs.StampT, cur *fbs.RegisterT) bool {
+	if *st != *cur.Stamp {
+		return newer(st, cur.Stamp)
+	}
+	return valueKey(r) > valueKey(cur)
+}
+
+// valueKey orders register contents for tie-breaks: the value's type, then
+// its JSON form. A delete is "", below every value.
+func valueKey(r *fbs.RegisterT) string {
+	if r.Removed {
+		return ""
+	}
+	b, _ := json.Marshal(fromValue(r.Value)) // plain values always marshal
+	return fmt.Sprintf("%d:%s", r.Value.Type, b)
 }
 
 func checkRegister(r *fbs.RegisterT) error {
@@ -148,8 +170,10 @@ func (d *mockDocument) Edit(ctx context.Context, in DeltaInput) (Delta, error) {
 	defer d.mu.Unlock()
 	if delta.Lamport == 0 {
 		delta.Lamport, delta.Replica = d.tick(), d.replica
-	} else if err := d.checkStamp(delta.Lamport); err != nil {
-		return Delta{}, err
+	} else if !in.Trusted {
+		if err := d.checkStamp(delta.Lamport); err != nil {
+			return Delta{}, err
+		}
 	}
 	st := &fbs.StampT{Lamport: delta.Lamport, Replica: delta.Replica}
 	for _, r := range delta.Sets {
@@ -158,6 +182,9 @@ func (d *mockDocument) Edit(ctx context.Context, in DeltaInput) (Delta, error) {
 	return Delta{Format: WireNative, Version: mockVersion, Payload: encodeDelta(delta)}, nil
 }
 
+// Merge doesn't bound stamps (MaxSkew): snapshots come only from trusted
+// servers (storage, another replica), whose clocks may legitimately run
+// ahead of this one's (engine/PLAN.md row 2).
 func (d *mockDocument) Merge(ctx context.Context, s Snapshot) error {
 	snap, err := decodeSnapshot(s)
 	if err != nil {
@@ -175,14 +202,6 @@ func (d *mockDocument) Merge(ctx context.Context, s Snapshot) error {
 		return err
 	}
 	defer d.mu.Unlock()
-	if err := d.checkStamp(snap.Clock); err != nil {
-		return err
-	}
-	for _, r := range snap.Registers {
-		if err := d.checkStamp(r.Stamp.Lamport); err != nil {
-			return err
-		}
-	}
 	for _, r := range snap.Registers {
 		d.apply(r, r.Stamp)
 	}

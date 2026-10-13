@@ -10,7 +10,8 @@ type Document interface {
 	// Query returns a view; the query format is normalised behind the facade.
 	Query(ctx context.Context, query Query) (*View, error)
 
-	// Merge folds a snapshot into the document in place.
+	// Merge folds a snapshot into the document in place. Snapshots are
+	// trusted: their stamps aren't bounded by MaxSkew.
 	Merge(ctx context.Context, snapshot Snapshot) error
 	// Edit applies a delta in place and returns it in wire form, for NATS distribution.
 	Edit(ctx context.Context, delta DeltaInput) (Delta, error)

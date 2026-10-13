@@ -2,6 +2,7 @@ package manager_test
 
 import (
 	"errors"
+	"slices"
 	"testing"
 	"time"
 
@@ -140,6 +141,33 @@ func TestCloneResumedByCleanup(t *testing.T) {
 	}
 	if r, _ := w.m.Cleanup(ctx); r.ClonesFinished != 0 {
 		t.Errorf("a ready clone was finished again: %+v", r)
+	}
+}
+
+// The document is copied after the files (its refs point at their copies),
+// and a documents outage leaves the clone hidden until the cleanup loop
+// finishes it.
+func TestCloneCopiesDocument(t *testing.T) {
+	ctx := t.Context()
+	w := newDeletionWorld(t)
+	ann := signIn(t, w.m, "ann")
+	src := w.project(t, ann.ID, userOwner(ann.ID), "Poster")
+
+	w.docs.down = true
+	clone, err := w.m.CloneProject(ctx, ann.ID, src.ID, userOwner(ann.ID))
+	if !errors.Is(err, errOutage) || clone.State != directory.ProjectCloning {
+		t.Fatalf("CloneProject during a documents outage = %+v, %v; want the half-made clone and the outage", clone, err)
+	}
+	w.docs.down = false
+	manager.SetClock(w.m, func() time.Time { return time.Now().Add(10 * time.Minute) })
+	if r, err := w.m.Cleanup(ctx); err != nil || r.ClonesFinished != 1 {
+		t.Fatalf("Cleanup = %+v, %v; want the clone finished", r, err)
+	}
+	if want := []string{src.ID + "->" + clone.ID}; !slices.Equal(w.docs.clones, want) {
+		t.Errorf("documents copied %v, want %v", w.docs.clones, want)
+	}
+	if v, err := w.m.GetProject(ctx, ann.ID, clone.ID); err != nil || v.Project.State != directory.ProjectReady {
+		t.Errorf("finished clone = %+v, %v", v, err)
 	}
 }
 

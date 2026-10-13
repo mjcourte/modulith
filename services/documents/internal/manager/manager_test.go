@@ -288,3 +288,44 @@ func TestRevertDocument(t *testing.T) {
 		t.Errorf("unknown version: got %v, want snapshots.ErrNotFound", err)
 	}
 }
+
+// Another server replica whose clock runs ahead past MaxSkew is still
+// trusted: its deltas apply and its snapshots load (engine/PLAN.md, row 2).
+// Only browsers' stamps should be bounded.
+func TestFastServerClockIsTrusted(t *testing.T) {
+	w := newWorld(t)
+	ctx := context.Background()
+	ahead := time.Now().Add(5 * time.Minute)
+	fast, err := engine.Mock{}.New(ctx, engine.Settings{ID: "p", Replica: "fast-server", Now: func() time.Time { return ahead }})
+	if err != nil {
+		t.Fatal(err)
+	}
+	in, _ := engine.MockDelta("", 0, engine.MockSet{Key: "title", Value: "from the fast server"})
+	out, err := fast.Edit(ctx, in)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Its delta, read from the stream by this replica's consumer.
+	d := wal.Delta{ProjectID: "p", Origin: "fast-server", Seq: 1,
+		Delta: engine.DeltaInput{Format: out.Format, Version: out.Version, Payload: out.Payload}}
+	if err := w.m.ApplyDelta(ctx, d); err != nil {
+		t.Errorf("a fast server's delta was refused: %v", err)
+	}
+
+	// Its snapshot, stored as the latest of another project.
+	snap, err := fast.Snapshot(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := w.store.Put(ctx, "q", snap, 0, snapshots.Edit{}); err != nil {
+		t.Fatal(err)
+	}
+	doc, err := w.m.GetDocument(ctx, "ann", "q")
+	if err != nil {
+		t.Fatalf("a fast server's snapshot didn't load: %v", err)
+	}
+	if got := registers(t, doc)["title"]; got != "from the fast server" {
+		t.Errorf("title = %v", got)
+	}
+}

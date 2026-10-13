@@ -42,6 +42,11 @@ func dial(t *testing.T, register func(*grpc.Server)) *grpc.ClientConn {
 	return conn
 }
 
+// noDocs stands in for documents: cloning succeeds without a document.
+type noDocs struct{}
+
+func (noDocs) CloneDocument(ctx context.Context, actorID, from, to string) error { return nil }
+
 func newManager(t *testing.T) (*manager.Manager, *directory.MemoryStore) {
 	t.Helper()
 	s := directory.NewMemoryStore()
@@ -49,7 +54,7 @@ func newManager(t *testing.T) (*manager.Manager, *directory.MemoryStore) {
 	if err != nil {
 		t.Fatalf("storage.NewMemory: %v", err)
 	}
-	m, err := manager.NewManager(s, files, manager.NoIdentityProvider{}, manager.Config{})
+	m, err := manager.NewManager(s, files, noDocs{}, manager.NoIdentityProvider{}, manager.Config{})
 	if err != nil {
 		t.Fatalf("NewManager: %v", err)
 	}

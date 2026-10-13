@@ -1,23 +1,20 @@
-- documents
-    - need to grill on clocks and peers and LWW failure modes pretty hard
-    - graphQL, should the schema live in engine?
-    
-- supertokens
-- gateway
+- basic frontend with login, projects, settings, orgs, etc. set up the stack
 
 - breakpoint
     - security audit - permissions leaks, forgeability etc
     - tracing / otel / signoz
-
-- real engine?
-- frontend
+    - performance profiling in tracing
 
 - breakpoint
     - common assets: font lib?
     - ugh that means a font service domain
-    - fucking scrape google fonts?
+    - scrape google fonts?
     - and font upload -> already have Asset CategoryFont
 
+- real engine?
+    - Can we use Yrs as a graph CRDT?W
+    - I don't think Bevy ECS is particularly avoidable if to repr 3D gfx.
+- frontend canvas
 - exporter
 - mcp
     - im not sure how much can be done with mock engine API, i guess we can make a minimal graphQL schema

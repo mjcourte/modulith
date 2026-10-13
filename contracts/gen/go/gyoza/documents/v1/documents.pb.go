@@ -709,6 +709,284 @@ func (x *RevertDocumentResponse) GetUsesNotRecorded() string {
 	return ""
 }
 
+type CloneDocumentRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ActorId       string                 `protobuf:"bytes,1,opt,name=actor_id,json=actorId,proto3" json:"actor_id,omitempty"`
+	FromProjectId string                 `protobuf:"bytes,2,opt,name=from_project_id,json=fromProjectId,proto3" json:"from_project_id,omitempty"`
+	ToProjectId   string                 `protobuf:"bytes,3,opt,name=to_project_id,json=toProjectId,proto3" json:"to_project_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CloneDocumentRequest) Reset() {
+	*x = CloneDocumentRequest{}
+	mi := &file_gyoza_documents_v1_documents_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CloneDocumentRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CloneDocumentRequest) ProtoMessage() {}
+
+func (x *CloneDocumentRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_gyoza_documents_v1_documents_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CloneDocumentRequest.ProtoReflect.Descriptor instead.
+func (*CloneDocumentRequest) Descriptor() ([]byte, []int) {
+	return file_gyoza_documents_v1_documents_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *CloneDocumentRequest) GetActorId() string {
+	if x != nil {
+		return x.ActorId
+	}
+	return ""
+}
+
+func (x *CloneDocumentRequest) GetFromProjectId() string {
+	if x != nil {
+		return x.FromProjectId
+	}
+	return ""
+}
+
+func (x *CloneDocumentRequest) GetToProjectId() string {
+	if x != nil {
+		return x.ToProjectId
+	}
+	return ""
+}
+
+type CloneDocumentResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CloneDocumentResponse) Reset() {
+	*x = CloneDocumentResponse{}
+	mi := &file_gyoza_documents_v1_documents_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CloneDocumentResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CloneDocumentResponse) ProtoMessage() {}
+
+func (x *CloneDocumentResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_gyoza_documents_v1_documents_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CloneDocumentResponse.ProtoReflect.Descriptor instead.
+func (*CloneDocumentResponse) Descriptor() ([]byte, []int) {
+	return file_gyoza_documents_v1_documents_proto_rawDescGZIP(), []int{13}
+}
+
+// An asset version a document uses (storage's AssetRef).
+type AssetRef struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AssetId       string                 `protobuf:"bytes,1,opt,name=asset_id,json=assetId,proto3" json:"asset_id,omitempty"`
+	Version       int32                  `protobuf:"varint,2,opt,name=version,proto3" json:"version,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AssetRef) Reset() {
+	*x = AssetRef{}
+	mi := &file_gyoza_documents_v1_documents_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AssetRef) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AssetRef) ProtoMessage() {}
+
+func (x *AssetRef) ProtoReflect() protoreflect.Message {
+	mi := &file_gyoza_documents_v1_documents_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AssetRef.ProtoReflect.Descriptor instead.
+func (*AssetRef) Descriptor() ([]byte, []int) {
+	return file_gyoza_documents_v1_documents_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *AssetRef) GetAssetId() string {
+	if x != nil {
+		return x.AssetId
+	}
+	return ""
+}
+
+func (x *AssetRef) GetVersion() int32 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
+}
+
+type ReplaceAssetRefRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ActorId       string                 `protobuf:"bytes,1,opt,name=actor_id,json=actorId,proto3" json:"actor_id,omitempty"`
+	ProjectId     string                 `protobuf:"bytes,2,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
+	From          *AssetRef              `protobuf:"bytes,3,opt,name=from,proto3" json:"from,omitempty"`
+	To            *AssetRef              `protobuf:"bytes,4,opt,name=to,proto3" json:"to,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ReplaceAssetRefRequest) Reset() {
+	*x = ReplaceAssetRefRequest{}
+	mi := &file_gyoza_documents_v1_documents_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ReplaceAssetRefRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReplaceAssetRefRequest) ProtoMessage() {}
+
+func (x *ReplaceAssetRefRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_gyoza_documents_v1_documents_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReplaceAssetRefRequest.ProtoReflect.Descriptor instead.
+func (*ReplaceAssetRefRequest) Descriptor() ([]byte, []int) {
+	return file_gyoza_documents_v1_documents_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *ReplaceAssetRefRequest) GetActorId() string {
+	if x != nil {
+		return x.ActorId
+	}
+	return ""
+}
+
+func (x *ReplaceAssetRefRequest) GetProjectId() string {
+	if x != nil {
+		return x.ProjectId
+	}
+	return ""
+}
+
+func (x *ReplaceAssetRefRequest) GetFrom() *AssetRef {
+	if x != nil {
+		return x.From
+	}
+	return nil
+}
+
+func (x *ReplaceAssetRefRequest) GetTo() *AssetRef {
+	if x != nil {
+		return x.To
+	}
+	return nil
+}
+
+// As UpdateDocumentResponse.
+type ReplaceAssetRefResponse struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Delta           *Wire                  `protobuf:"bytes,1,opt,name=delta,proto3" json:"delta,omitempty"`
+	NotPublished    string                 `protobuf:"bytes,2,opt,name=not_published,json=notPublished,proto3" json:"not_published,omitempty"`
+	UsesNotRecorded string                 `protobuf:"bytes,3,opt,name=uses_not_recorded,json=usesNotRecorded,proto3" json:"uses_not_recorded,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *ReplaceAssetRefResponse) Reset() {
+	*x = ReplaceAssetRefResponse{}
+	mi := &file_gyoza_documents_v1_documents_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ReplaceAssetRefResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReplaceAssetRefResponse) ProtoMessage() {}
+
+func (x *ReplaceAssetRefResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_gyoza_documents_v1_documents_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReplaceAssetRefResponse.ProtoReflect.Descriptor instead.
+func (*ReplaceAssetRefResponse) Descriptor() ([]byte, []int) {
+	return file_gyoza_documents_v1_documents_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *ReplaceAssetRefResponse) GetDelta() *Wire {
+	if x != nil {
+		return x.Delta
+	}
+	return nil
+}
+
+func (x *ReplaceAssetRefResponse) GetNotPublished() string {
+	if x != nil {
+		return x.NotPublished
+	}
+	return ""
+}
+
+func (x *ReplaceAssetRefResponse) GetUsesNotRecorded() string {
+	if x != nil {
+		return x.UsesNotRecorded
+	}
+	return ""
+}
+
 var File_gyoza_documents_v1_documents_proto protoreflect.FileDescriptor
 
 const file_gyoza_documents_v1_documents_proto_rawDesc = "" +
@@ -759,13 +1037,33 @@ const file_gyoza_documents_v1_documents_proto_rawDesc = "" +
 	"\x16RevertDocumentResponse\x12.\n" +
 	"\x05delta\x18\x01 \x01(\v2\x18.gyoza.documents.v1.WireR\x05delta\x12#\n" +
 	"\rnot_published\x18\x02 \x01(\tR\fnotPublished\x12*\n" +
-	"\x11uses_not_recorded\x18\x03 \x01(\tR\x0fusesNotRecorded2\x8d\x04\n" +
+	"\x11uses_not_recorded\x18\x03 \x01(\tR\x0fusesNotRecorded\"}\n" +
+	"\x14CloneDocumentRequest\x12\x19\n" +
+	"\bactor_id\x18\x01 \x01(\tR\aactorId\x12&\n" +
+	"\x0ffrom_project_id\x18\x02 \x01(\tR\rfromProjectId\x12\"\n" +
+	"\rto_project_id\x18\x03 \x01(\tR\vtoProjectId\"\x17\n" +
+	"\x15CloneDocumentResponse\"?\n" +
+	"\bAssetRef\x12\x19\n" +
+	"\basset_id\x18\x01 \x01(\tR\aassetId\x12\x18\n" +
+	"\aversion\x18\x02 \x01(\x05R\aversion\"\xb2\x01\n" +
+	"\x16ReplaceAssetRefRequest\x12\x19\n" +
+	"\bactor_id\x18\x01 \x01(\tR\aactorId\x12\x1d\n" +
+	"\n" +
+	"project_id\x18\x02 \x01(\tR\tprojectId\x120\n" +
+	"\x04from\x18\x03 \x01(\v2\x1c.gyoza.documents.v1.AssetRefR\x04from\x12,\n" +
+	"\x02to\x18\x04 \x01(\v2\x1c.gyoza.documents.v1.AssetRefR\x02to\"\x9a\x01\n" +
+	"\x17ReplaceAssetRefResponse\x12.\n" +
+	"\x05delta\x18\x01 \x01(\v2\x18.gyoza.documents.v1.WireR\x05delta\x12#\n" +
+	"\rnot_published\x18\x02 \x01(\tR\fnotPublished\x12*\n" +
+	"\x11uses_not_recorded\x18\x03 \x01(\tR\x0fusesNotRecorded2\xdf\x05\n" +
 	"\x10DocumentsService\x12^\n" +
 	"\vGetDocument\x12&.gyoza.documents.v1.GetDocumentRequest\x1a'.gyoza.documents.v1.GetDocumentResponse\x12d\n" +
 	"\rQueryDocument\x12(.gyoza.documents.v1.QueryDocumentRequest\x1a).gyoza.documents.v1.QueryDocumentResponse\x12a\n" +
 	"\fInitDocument\x12'.gyoza.documents.v1.InitDocumentRequest\x1a(.gyoza.documents.v1.InitDocumentResponse\x12g\n" +
 	"\x0eUpdateDocument\x12).gyoza.documents.v1.UpdateDocumentRequest\x1a*.gyoza.documents.v1.UpdateDocumentResponse\x12g\n" +
-	"\x0eRevertDocument\x12).gyoza.documents.v1.RevertDocumentRequest\x1a*.gyoza.documents.v1.RevertDocumentResponseB\xc9\x01\n" +
+	"\x0eRevertDocument\x12).gyoza.documents.v1.RevertDocumentRequest\x1a*.gyoza.documents.v1.RevertDocumentResponse\x12d\n" +
+	"\rCloneDocument\x12(.gyoza.documents.v1.CloneDocumentRequest\x1a).gyoza.documents.v1.CloneDocumentResponse\x12j\n" +
+	"\x0fReplaceAssetRef\x12*.gyoza.documents.v1.ReplaceAssetRefRequest\x1a+.gyoza.documents.v1.ReplaceAssetRefResponseB\xc9\x01\n" +
 	"\x16com.gyoza.documents.v1B\x0eDocumentsProtoP\x01Z5gyoza/contracts/gen/go/gyoza/documents/v1;documentsv1\xa2\x02\x03GDX\xaa\x02\x12Gyoza.Documents.V1\xca\x02\x12Gyoza\\Documents\\V1\xe2\x02\x1eGyoza\\Documents\\V1\\GPBMetadata\xea\x02\x14Gyoza::Documents::V1b\x06proto3"
 
 var (
@@ -780,20 +1078,25 @@ func file_gyoza_documents_v1_documents_proto_rawDescGZIP() []byte {
 	return file_gyoza_documents_v1_documents_proto_rawDescData
 }
 
-var file_gyoza_documents_v1_documents_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+var file_gyoza_documents_v1_documents_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
 var file_gyoza_documents_v1_documents_proto_goTypes = []any{
-	(*Wire)(nil),                   // 0: gyoza.documents.v1.Wire
-	(*Document)(nil),               // 1: gyoza.documents.v1.Document
-	(*GetDocumentRequest)(nil),     // 2: gyoza.documents.v1.GetDocumentRequest
-	(*GetDocumentResponse)(nil),    // 3: gyoza.documents.v1.GetDocumentResponse
-	(*QueryDocumentRequest)(nil),   // 4: gyoza.documents.v1.QueryDocumentRequest
-	(*QueryDocumentResponse)(nil),  // 5: gyoza.documents.v1.QueryDocumentResponse
-	(*InitDocumentRequest)(nil),    // 6: gyoza.documents.v1.InitDocumentRequest
-	(*InitDocumentResponse)(nil),   // 7: gyoza.documents.v1.InitDocumentResponse
-	(*UpdateDocumentRequest)(nil),  // 8: gyoza.documents.v1.UpdateDocumentRequest
-	(*UpdateDocumentResponse)(nil), // 9: gyoza.documents.v1.UpdateDocumentResponse
-	(*RevertDocumentRequest)(nil),  // 10: gyoza.documents.v1.RevertDocumentRequest
-	(*RevertDocumentResponse)(nil), // 11: gyoza.documents.v1.RevertDocumentResponse
+	(*Wire)(nil),                    // 0: gyoza.documents.v1.Wire
+	(*Document)(nil),                // 1: gyoza.documents.v1.Document
+	(*GetDocumentRequest)(nil),      // 2: gyoza.documents.v1.GetDocumentRequest
+	(*GetDocumentResponse)(nil),     // 3: gyoza.documents.v1.GetDocumentResponse
+	(*QueryDocumentRequest)(nil),    // 4: gyoza.documents.v1.QueryDocumentRequest
+	(*QueryDocumentResponse)(nil),   // 5: gyoza.documents.v1.QueryDocumentResponse
+	(*InitDocumentRequest)(nil),     // 6: gyoza.documents.v1.InitDocumentRequest
+	(*InitDocumentResponse)(nil),    // 7: gyoza.documents.v1.InitDocumentResponse
+	(*UpdateDocumentRequest)(nil),   // 8: gyoza.documents.v1.UpdateDocumentRequest
+	(*UpdateDocumentResponse)(nil),  // 9: gyoza.documents.v1.UpdateDocumentResponse
+	(*RevertDocumentRequest)(nil),   // 10: gyoza.documents.v1.RevertDocumentRequest
+	(*RevertDocumentResponse)(nil),  // 11: gyoza.documents.v1.RevertDocumentResponse
+	(*CloneDocumentRequest)(nil),    // 12: gyoza.documents.v1.CloneDocumentRequest
+	(*CloneDocumentResponse)(nil),   // 13: gyoza.documents.v1.CloneDocumentResponse
+	(*AssetRef)(nil),                // 14: gyoza.documents.v1.AssetRef
+	(*ReplaceAssetRefRequest)(nil),  // 15: gyoza.documents.v1.ReplaceAssetRefRequest
+	(*ReplaceAssetRefResponse)(nil), // 16: gyoza.documents.v1.ReplaceAssetRefResponse
 }
 var file_gyoza_documents_v1_documents_proto_depIdxs = []int32{
 	0,  // 0: gyoza.documents.v1.Document.snapshot:type_name -> gyoza.documents.v1.Wire
@@ -802,21 +1105,28 @@ var file_gyoza_documents_v1_documents_proto_depIdxs = []int32{
 	0,  // 3: gyoza.documents.v1.UpdateDocumentRequest.delta:type_name -> gyoza.documents.v1.Wire
 	0,  // 4: gyoza.documents.v1.UpdateDocumentResponse.delta:type_name -> gyoza.documents.v1.Wire
 	0,  // 5: gyoza.documents.v1.RevertDocumentResponse.delta:type_name -> gyoza.documents.v1.Wire
-	2,  // 6: gyoza.documents.v1.DocumentsService.GetDocument:input_type -> gyoza.documents.v1.GetDocumentRequest
-	4,  // 7: gyoza.documents.v1.DocumentsService.QueryDocument:input_type -> gyoza.documents.v1.QueryDocumentRequest
-	6,  // 8: gyoza.documents.v1.DocumentsService.InitDocument:input_type -> gyoza.documents.v1.InitDocumentRequest
-	8,  // 9: gyoza.documents.v1.DocumentsService.UpdateDocument:input_type -> gyoza.documents.v1.UpdateDocumentRequest
-	10, // 10: gyoza.documents.v1.DocumentsService.RevertDocument:input_type -> gyoza.documents.v1.RevertDocumentRequest
-	3,  // 11: gyoza.documents.v1.DocumentsService.GetDocument:output_type -> gyoza.documents.v1.GetDocumentResponse
-	5,  // 12: gyoza.documents.v1.DocumentsService.QueryDocument:output_type -> gyoza.documents.v1.QueryDocumentResponse
-	7,  // 13: gyoza.documents.v1.DocumentsService.InitDocument:output_type -> gyoza.documents.v1.InitDocumentResponse
-	9,  // 14: gyoza.documents.v1.DocumentsService.UpdateDocument:output_type -> gyoza.documents.v1.UpdateDocumentResponse
-	11, // 15: gyoza.documents.v1.DocumentsService.RevertDocument:output_type -> gyoza.documents.v1.RevertDocumentResponse
-	11, // [11:16] is the sub-list for method output_type
-	6,  // [6:11] is the sub-list for method input_type
-	6,  // [6:6] is the sub-list for extension type_name
-	6,  // [6:6] is the sub-list for extension extendee
-	0,  // [0:6] is the sub-list for field type_name
+	14, // 6: gyoza.documents.v1.ReplaceAssetRefRequest.from:type_name -> gyoza.documents.v1.AssetRef
+	14, // 7: gyoza.documents.v1.ReplaceAssetRefRequest.to:type_name -> gyoza.documents.v1.AssetRef
+	0,  // 8: gyoza.documents.v1.ReplaceAssetRefResponse.delta:type_name -> gyoza.documents.v1.Wire
+	2,  // 9: gyoza.documents.v1.DocumentsService.GetDocument:input_type -> gyoza.documents.v1.GetDocumentRequest
+	4,  // 10: gyoza.documents.v1.DocumentsService.QueryDocument:input_type -> gyoza.documents.v1.QueryDocumentRequest
+	6,  // 11: gyoza.documents.v1.DocumentsService.InitDocument:input_type -> gyoza.documents.v1.InitDocumentRequest
+	8,  // 12: gyoza.documents.v1.DocumentsService.UpdateDocument:input_type -> gyoza.documents.v1.UpdateDocumentRequest
+	10, // 13: gyoza.documents.v1.DocumentsService.RevertDocument:input_type -> gyoza.documents.v1.RevertDocumentRequest
+	12, // 14: gyoza.documents.v1.DocumentsService.CloneDocument:input_type -> gyoza.documents.v1.CloneDocumentRequest
+	15, // 15: gyoza.documents.v1.DocumentsService.ReplaceAssetRef:input_type -> gyoza.documents.v1.ReplaceAssetRefRequest
+	3,  // 16: gyoza.documents.v1.DocumentsService.GetDocument:output_type -> gyoza.documents.v1.GetDocumentResponse
+	5,  // 17: gyoza.documents.v1.DocumentsService.QueryDocument:output_type -> gyoza.documents.v1.QueryDocumentResponse
+	7,  // 18: gyoza.documents.v1.DocumentsService.InitDocument:output_type -> gyoza.documents.v1.InitDocumentResponse
+	9,  // 19: gyoza.documents.v1.DocumentsService.UpdateDocument:output_type -> gyoza.documents.v1.UpdateDocumentResponse
+	11, // 20: gyoza.documents.v1.DocumentsService.RevertDocument:output_type -> gyoza.documents.v1.RevertDocumentResponse
+	13, // 21: gyoza.documents.v1.DocumentsService.CloneDocument:output_type -> gyoza.documents.v1.CloneDocumentResponse
+	16, // 22: gyoza.documents.v1.DocumentsService.ReplaceAssetRef:output_type -> gyoza.documents.v1.ReplaceAssetRefResponse
+	16, // [16:23] is the sub-list for method output_type
+	9,  // [9:16] is the sub-list for method input_type
+	9,  // [9:9] is the sub-list for extension type_name
+	9,  // [9:9] is the sub-list for extension extendee
+	0,  // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_gyoza_documents_v1_documents_proto_init() }
@@ -830,7 +1140,7 @@ func file_gyoza_documents_v1_documents_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_gyoza_documents_v1_documents_proto_rawDesc), len(file_gyoza_documents_v1_documents_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   12,
+			NumMessages:   17,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

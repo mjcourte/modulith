@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -15,17 +13,6 @@ import (
 
 	"gyoza/internal/engine"
 	gnats "gyoza/platform/nats"
-)
-
-// Headers on delta messages. Format and version describe the payload; the
-// actor is who made the edit (the gateway sets it after checking write
-// access, as it does for actor_id on gRPC); the origin is the documents
-// replica that published it, if any.
-const (
-	headerFormat  = "Gyoza-Format"
-	headerVersion = "Gyoza-Version"
-	headerActor   = "Gyoza-Actor"
-	headerOrigin  = "Gyoza-Origin"
 )
 
 // ErrBadDelta marks a delta that can never be applied (malformed, wrong
@@ -45,16 +32,9 @@ type Delta struct {
 	Delta   engine.DeltaInput
 }
 
-// Pointer announces a stored snapshot to clients (DOCUMENTS stream,
-// document.{projectID}.snapshot). JSON, a few hundred bytes.
-type Pointer struct {
-	Version  int    `json:"version"`
-	Seq      uint64 `json:"seq"` // last delta sequence the snapshot covers
-	ObjectID string `json:"objectId"`
-	// The last change the snapshot holds (a `touch`): who and when.
-	EditedBy string    `json:"editedBy,omitempty"`
-	EditedAt time.Time `json:"editedAt,omitzero"`
-}
+// Pointer announces a stored snapshot to clients. The delta and pointer
+// message formats are in platform/nats, shared with the gateway.
+type Pointer = gnats.Pointer
 
 // Log publishes to and reads from the DOCUMENTS stream.
 type Log struct {
@@ -68,22 +48,13 @@ func New(js jetstream.JetStream) *Log { return &Log{js: js} }
 // return the first one's sequence. Deduplication only saves work: applying a
 // delta twice is harmless.
 func (l *Log) PublishDelta(ctx context.Context, d Delta) (uint64, error) {
-	subj, err := gnats.DocumentDelta(d.ProjectID)
-	if err != nil {
-		return 0, err
-	}
 	if d.ID == "" {
 		d.ID = uuid.Must(uuid.NewV7()).String()
 	}
-	msg := &natsgo.Msg{Subject: subj, Data: d.Delta.Payload, Header: natsgo.Header{}}
-	msg.Header.Set(jetstream.MsgIDHeader, d.ID)
-	msg.Header.Set(headerFormat, string(d.Delta.Format))
-	msg.Header.Set(headerVersion, strconv.Itoa(d.Delta.Version))
-	if d.ActorID != "" {
-		msg.Header.Set(headerActor, d.ActorID)
-	}
-	if d.Origin != "" {
-		msg.Header.Set(headerOrigin, d.Origin)
+	msg, err := gnats.Delta{ProjectID: d.ProjectID, ID: d.ID, ActorID: d.ActorID, Origin: d.Origin,
+		Format: string(d.Delta.Format), Version: d.Delta.Version, Payload: d.Delta.Payload}.Msg()
+	if err != nil {
+		return 0, err
 	}
 	ack, err := l.js.PublishMsg(ctx, msg)
 	if err != nil {
@@ -191,25 +162,16 @@ func (l *Log) Consume(ctx context.Context, cfg ConsumerConfig, fn func(context.C
 }
 
 func decode(subject string, seq uint64, h natsgo.Header, data []byte) (Delta, error) {
-	// document.{projectID}.delta
-	parts := strings.Split(subject, ".")
-	if len(parts) != 3 || parts[0] != "document" || parts[2] != "delta" {
-		return Delta{}, fmt.Errorf("wal: not a delta subject: %q", subject)
-	}
-	version, err := strconv.Atoi(h.Get(headerVersion))
+	m, err := gnats.DecodeDelta(subject, seq, h, data)
 	if err != nil {
-		return Delta{}, fmt.Errorf("wal: delta %d on %s: bad %s header: %w", seq, subject, headerVersion, err)
-	}
-	format := engine.WireFormat(h.Get(headerFormat))
-	if format == "" {
-		return Delta{}, fmt.Errorf("wal: delta %d on %s: no format header", seq, subject)
+		return Delta{}, fmt.Errorf("wal: %w", err)
 	}
 	return Delta{
-		ProjectID: parts[1],
-		ID:        h.Get(jetstream.MsgIDHeader),
-		Seq:       seq,
-		ActorID:   h.Get(headerActor),
-		Origin:    h.Get(headerOrigin),
-		Delta:     engine.DeltaInput{Format: format, Version: version, Payload: data},
+		ProjectID: m.ProjectID,
+		ID:        m.ID,
+		Seq:       m.Seq,
+		ActorID:   m.ActorID,
+		Origin:    m.Origin,
+		Delta:     engine.DeltaInput{Format: engine.WireFormat(m.Format), Version: m.Version, Payload: m.Payload},
 	}, nil
 }

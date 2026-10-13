@@ -96,3 +96,18 @@ func appliedEdit(out engine.Delta, err error) (edit, error) {
 	}
 	return e, nil
 }
+
+func (s *Server) CloneDocument(ctx context.Context, req *pb.CloneDocumentRequest) (*pb.CloneDocumentResponse, error) {
+	if err := s.svc.CloneDocument(ctx, req.GetActorId(), req.GetFromProjectId(), req.GetToProjectId()); err != nil {
+		return nil, toStatus(err)
+	}
+	return &pb.CloneDocumentResponse{}, nil
+}
+
+func (s *Server) ReplaceAssetRef(ctx context.Context, req *pb.ReplaceAssetRefRequest) (*pb.ReplaceAssetRefResponse, error) {
+	e, err := appliedEdit(s.svc.ReplaceAssetRef(ctx, req.GetActorId(), req.GetProjectId(), refFromProto(req.GetFrom()), refFromProto(req.GetTo())))
+	if err != nil {
+		return nil, err
+	}
+	return &pb.ReplaceAssetRefResponse{Delta: e.delta, NotPublished: e.notPublished, UsesNotRecorded: e.usesNotRecorded}, nil
+}

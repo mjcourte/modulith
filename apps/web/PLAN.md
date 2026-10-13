@@ -5,6 +5,73 @@ Not started. UI details the backend plans rely on (2026-10-11). Related:
 [iam/PLAN.md](../../services/iam/PLAN.md),
 [storage/PLAN.md](../../services/storage/PLAN.md).
 
+## Step 1: kickstart (planned 2026-10-13)
+
+Goal: a shell that signs in with Google through the gateway and shows "hello <name>"
+from `GET /api/me`. Nothing else; later sections come one at a time after it.
+
+**Prerequisite:** Node 22 LTS or newer (not installed as of 2026-10-13).
+
+**Stack:** React + TypeScript + Vite, Tailwind v4 (`@tailwindcss/vite`), shadcn/ui
+(components added only as needed), TanStack Query, TanStack Router (file-based, via
+its Vite plugin), `supertokens-auth-react` (ThirdParty with Google, Session). npm as
+the package manager (ships with Node; revisit pnpm workspaces only if more `apps/*`
+need shared packages). Router and npm recommended, to confirm.
+
+**Dev origin and the proxy.** The gateway has no CORS, uses SameSite cookies, requires
+`application/json` on changing requests, and the WebSocket is same-origin only. So the
+browser must see one origin:
+
+- Vite serves on `http://localhost:3000` and proxies `/api` (with `ws: true` for
+  `/api/ws`) and `/auth` to the gateway on `localhost:8080`.
+- `GYOZA_PUBLIC_URL=http://localhost:3000` while developing the web app (it sets the
+  gateway's SuperTokens `WebsiteDomain`/`APIDomain`). Note it in `.env.example`.
+- Port 3000 and `/auth/callback/google` are what the SuperTokens demo Google client is
+  believed to allow (gateway/PLAN.md); verify on first sign-in. If the gateway's dev
+  pages break under the new public URL, keep them reachable via the proxy too.
+- Production: the gateway (or whatever fronts it) serves the built `dist/` on the same
+  origin. Not part of this step.
+
+**Layout:**
+
+```
+apps/web/
+  package.json, package-lock.json, vite.config.ts, tsconfig*.json, index.html
+  components.json                 shadcn config
+  src/
+    main.tsx                      SuperTokens.init, QueryClientProvider, RouterProvider
+    auth.ts                       SuperTokens config (apiBasePath/websiteBasePath /auth)
+    index.css                     Tailwind
+    api/client.ts                 fetch wrapper: same-origin credentials, JSON, parses
+                                  {"error": {"code", "message"}} into an ApiError
+    api/me.ts                     useMe() over GET /api/me
+    routes/__root.tsx             layout
+    routes/index.tsx              home: requires a session, shows the user
+    routes/auth/...               SuperTokens' prebuilt sign-in UI and Google callback
+    components/ui/                shadcn components
+```
+
+**Steps:**
+
+1. Scaffold with `npm create vite@latest` (react-ts) into `apps/web`; strip the demo.
+2. Add Tailwind v4 and `shadcn init` (path alias `@/` in tsconfig and Vite).
+3. Vite config: port 3000 (`strictPort`), the proxy above.
+4. TanStack Router (plugin + generated route tree) and TanStack Query.
+5. SuperTokens: init, the `/auth` routes, a session guard on the home route,
+   sign-out button.
+6. `api/client.ts` + `useMe()`; home shows name/email/avatar from `GetMe`.
+7. `scripts/web.sh` like `scripts/admin.sh` (finds Node, `npm install` if needed,
+   `npm run dev`); `.gitignore` for `node_modules/` and `dist/`.
+8. Smoke test: `scripts/gyoza.sh` with `GYOZA_PUBLIC_URL=http://localhost:3000`, then
+   `scripts/web.sh`; sign in with Google, see the home page, reload (session cookie
+   survives), sign out.
+9. Docs: README records the stack, commands and dev origin; CLAUDE.md gets the Node
+   commands next to the Go ones.
+
+**Deliberately not now:** tests (add Vitest when there is logic worth testing), API type
+generation (hand-written wire types until they hurt), ESLint beyond Vite's default,
+the WebSocket, the WASM engine, the workspace switcher.
+
 ## Sign-in and orgs
 
 - All data calls go to the gateway's REST/JSON API (see gateway/PLAN.md); files go
