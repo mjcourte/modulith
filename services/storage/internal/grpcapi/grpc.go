@@ -47,6 +47,7 @@ var wireErrors = []struct {
 	{manager.ErrContentMismatch, codes.InvalidArgument, "CONTENT_MISMATCH"},
 	{manager.ErrUploadTooLarge, codes.InvalidArgument, "UPLOAD_TOO_LARGE"},
 	{manager.ErrForbidden, codes.PermissionDenied, "FORBIDDEN"},
+	{manager.ErrForkRequired, codes.PermissionDenied, "FORK_REQUIRED"}, // always with FORBIDDEN
 	{dam.ErrNameTaken, codes.AlreadyExists, "NAME_TAKEN"},
 	{dam.ErrFolderNotEmpty, codes.FailedPrecondition, "FOLDER_NOT_EMPTY"},
 	{dam.ErrUploadExpired, codes.FailedPrecondition, "UPLOAD_EXPIRED"},
@@ -357,4 +358,14 @@ func ownerFromProto(o *pb.Owner) ledger.Owner {
 		return ledger.Owner{}
 	}
 	return ledger.Owner{Kind: ownerKindFromProto[o.GetKind()], ID: o.GetId()}
+}
+
+// ---- Asset refs
+
+func refToProto(r dam.AssetRef) *pb.AssetRef {
+	return &pb.AssetRef{AssetId: r.AssetID, Version: int32(r.Version)}
+}
+
+func refFromProto(p *pb.AssetRef) dam.AssetRef {
+	return dam.AssetRef{AssetID: p.GetAssetId(), Version: int(p.GetVersion())}
 }

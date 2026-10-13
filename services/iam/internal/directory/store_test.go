@@ -48,6 +48,7 @@ func runStoreTests(t *testing.T, newStore func(t *testing.T) directory.Store) {
 		{"RenameProject", testRenameProject},
 		{"TransferProject", testTransferProject},
 		{"ProjectStateAndLock", testProjectStateAndLock},
+		{"ListCloningProjects", testListCloningProjects},
 		{"ShareProject", testShareProject},
 		{"ShareLockedProject", testShareLockedProject},
 		{"Unshare", testUnshare},

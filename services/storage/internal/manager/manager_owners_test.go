@@ -22,16 +22,27 @@ func TestDeleteOwnedProject(t *testing.T) {
 	tm := newTestManager(t)
 	ctx := t.Context()
 	tm.authz.AllowProject("member", "p1", sm.AccessWrite)
+	tm.authz.AllowProject("member", "p2", sm.AccessWrite)
+	tm.authz.SetProjectOwner("p1", acme)
+	tm.authz.SetProjectOwner("p2", acme)
 	own := newAssetRequest()
 	own.Owner = project
 	projects, _ := uploadAsset(t, tm, "member", own)
 	assoc := newAssetRequest()
 	assoc.ProjectID = "p1" // acme's, used in p1
 	associated, _ := uploadAsset(t, tm, "member", assoc)
+	// p1 and p2, both acme's, use acme's asset.
+	if err := tm.RecordAssetUse(ctx, "member", "p1", dam.AssetRef{AssetID: associated.ID, Version: 1}); err != nil {
+		t.Fatalf("RecordAssetUse: %v", err)
+	}
+	otherUse := dam.AssetRef{AssetID: associated.ID, Version: 1}
+	if err := tm.RecordAssetUse(ctx, "member", "p2", otherUse); err != nil {
+		t.Fatalf("RecordAssetUse: %v", err)
+	}
 
 	del, err := tm.DeleteOwned(ctx, project)
-	if err != nil || del.LedgerObjects != 1 || del.Trash.Assets != 1 {
-		t.Fatalf("DeleteOwned = %+v, %v; want 1 ledger object and 1 asset", del, err)
+	if err != nil || del.LedgerObjects != 1 || del.Trash.Assets != 1 || del.Uses != 1 {
+		t.Fatalf("DeleteOwned = %+v, %v; want 1 ledger object, 1 asset and 1 use", del, err)
 	}
 	if g, _ := tm.store.GetAsset(ctx, projects.ID); g.DeletedAt == nil {
 		t.Error("the project's asset wasn't trashed")
@@ -42,7 +53,14 @@ func TestDeleteOwnedProject(t *testing.T) {
 	if g, _ := tm.store.GetAsset(ctx, associated.ID); g.DeletedAt != nil {
 		t.Error("acme's asset that the project used was trashed")
 	}
-	if again, err := tm.DeleteOwned(ctx, project); err != nil || again.LedgerObjects != 0 || again.Trash.Assets != 0 {
+	if uses, _ := tm.store.ListUses(ctx, "p1"); len(uses) != 0 {
+		t.Errorf("the deleted project still uses %v", uses)
+	}
+	// Deleting p1 leaves p2's use of the same asset alone.
+	if uses, _ := tm.store.ListUses(ctx, "p2"); len(uses) != 1 || uses[0] != otherUse {
+		t.Errorf("p2's uses = %v, want [%s]", uses, otherUse)
+	}
+	if again, err := tm.DeleteOwned(ctx, project); err != nil || again.LedgerObjects != 0 || again.Trash.Assets != 0 || again.Uses != 0 {
 		t.Errorf("running it again = %+v, %v; want nothing left to do", again, err)
 	}
 }

@@ -27,6 +27,13 @@ type StorageAsset struct {
 	DeletionID     *string
 }
 
+type StorageAssetUse struct {
+	ProjectID string
+	AssetID   string
+	Version   int32
+	CreatedAt time.Time
+}
+
 type StorageAssetVersion struct {
 	AssetID     string
 	Number      int32

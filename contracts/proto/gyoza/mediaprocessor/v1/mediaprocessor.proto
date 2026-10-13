@@ -1,0 +1,61 @@
+syntax = "proto3";
+
+// Media processor: reads media files' metadata with ffprobe. Called by
+// storage only, with a short-lived presigned GET; it never calls back.
+// Mirrors the Prober interface in services/mediaprocessor.
+//
+// The URL grants access to the file, so this service must only be reachable
+// from inside the platform, and never logs it.
+//
+// Errors: a file without audio or video is INVALID_ARGUMENT with a
+// google.rpc.ErrorInfo detail (domain "mediaprocessor.gyoza", reason NO_MEDIA).
+// Other probe failures are UNKNOWN with ffprobe's message (URL removed).
+package gyoza.mediaprocessor.v1;
+
+import "google/protobuf/duration.proto";
+
+service MediaProcessorService {
+  rpc Probe(ProbeRequest) returns (ProbeResponse);
+}
+
+message ProbeRequest {
+  // An http(s) URL ffprobe can read with range requests.
+  string url = 1;
+}
+
+message ProbeResponse {
+  MediaInfo info = 1;
+}
+
+// Zero values mean unknown.
+message MediaInfo {
+  google.protobuf.Duration duration = 1;
+  // Size as viewed, after rotation.
+  int32 display_width = 2;
+  int32 display_height = 3;
+  // Bits per second, whole file.
+  int64 bit_rate = 4;
+  // ffprobe's format_name, e.g. "mov,mp4,m4a,3gp,3g2,mj2".
+  string format = 5;
+  repeated VideoStream video = 6;
+  repeated AudioStream audio = 7;
+}
+
+message VideoStream {
+  // Average frames per second.
+  double frame_rate = 1;
+  // As stored, before rotation.
+  int32 width = 2;
+  int32 height = 3;
+  // Degrees, e.g. -90 for a portrait phone video.
+  int32 rotation = 4;
+  string codec = 5;
+  int64 bit_rate = 6;
+}
+
+message AudioStream {
+  int32 sample_rate = 1;
+  int32 channels = 2;
+  string codec = 3;
+  int64 bit_rate = 4;
+}

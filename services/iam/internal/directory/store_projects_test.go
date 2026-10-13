@@ -4,6 +4,7 @@ import (
 	"errors"
 	"slices"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -458,5 +459,41 @@ func testUnshare(t *testing.T, s directory.Store) {
 		if err := s.Unshare(ctx, args[0], args[1]); err != nil {
 			t.Errorf("Unshare(%v) again = %v, want nil (safe to retry)", args, err)
 		}
+	}
+}
+
+// The cleanup loop's list of stalled clones: only clones still copying, not
+// deleting, created before the cut-off, oldest first.
+func testListCloningProjects(t *testing.T, s directory.Store) {
+	ctx := t.Context()
+	ann := mustUser(t, s, "ann")
+	source := mustProject(t, s, directory.Project{Owner: gyoza, Name: "T"})
+	clone := func() directory.Project {
+		letTimePass()
+		return mustProject(t, s, directory.Project{Owner: userOwner(ann.ID), Name: "T", State: directory.ProjectCloning, ClonedFrom: source.ID})
+	}
+	first, second, done, deleting := clone(), clone(), clone(), clone()
+	if _, err := s.MarkProjectReady(ctx, done.ID); err != nil {
+		t.Fatalf("MarkProjectReady: %v", err)
+	}
+	if _, err := s.MarkProjectDeleting(ctx, deleting.ID); err != nil {
+		t.Fatalf("MarkProjectDeleting: %v", err)
+	}
+	letTimePass()
+	cutoff := time.Now()
+	clone() // too recent: may still be running
+
+	got, err := s.ListCloningProjects(ctx, cutoff, 10)
+	if err != nil {
+		t.Fatalf("ListCloningProjects: %v", err)
+	}
+	if ids := projectIDs(got); !slices.Equal(ids, []string{first.ID, second.ID}) {
+		t.Errorf("ListCloningProjects = %v, want [%s %s] (oldest first; not ready, deleting or recent)", ids, first.ID, second.ID)
+	}
+	if got, _ := s.ListCloningProjects(ctx, cutoff, 1); len(got) != 1 || got[0].ID != first.ID {
+		t.Errorf("limit 1 = %v, want the oldest", projectIDs(got))
+	}
+	if _, err := s.ListCloningProjects(ctx, cutoff, 0); !errors.Is(err, directory.ErrInvalidQuery) {
+		t.Errorf("limit 0 = %v, want ErrInvalidQuery", err)
 	}
 }

@@ -4,9 +4,9 @@
 // - protoc             (unknown)
 // source: gyoza/storage/v1/storage.proto
 
-// Storage: every file Gyoza keeps in S3. Uploads and downloads through presigned S3 URLs, and
-// the DAM (assets, versions, folders, trash). Mirrors the Service interface
-// in services/storage.
+// Storage: every file Gyoza keeps in S3. Uploads and downloads through
+// presigned S3 URLs, the DAM (assets, versions, folders, trash) and cleanup.
+// Mirrors the Service interface in services/storage.
 //
 // actor_id is the signed-in user a call is made for. The gateway sets it from
 // the authenticated session; this service trusts it and authorizes with it,
@@ -54,6 +54,11 @@ const (
 	StorageService_ListTrash_FullMethodName          = "/gyoza.storage.v1.StorageService/ListTrash"
 	StorageService_DeleteOwned_FullMethodName        = "/gyoza.storage.v1.StorageService/DeleteOwned"
 	StorageService_RemoveUser_FullMethodName         = "/gyoza.storage.v1.StorageService/RemoveUser"
+	StorageService_ResolveRef_FullMethodName         = "/gyoza.storage.v1.StorageService/ResolveRef"
+	StorageService_ForkAsset_FullMethodName          = "/gyoza.storage.v1.StorageService/ForkAsset"
+	StorageService_RecordAssetUse_FullMethodName     = "/gyoza.storage.v1.StorageService/RecordAssetUse"
+	StorageService_ForgetAssetUse_FullMethodName     = "/gyoza.storage.v1.StorageService/ForgetAssetUse"
+	StorageService_CopyProjectFiles_FullMethodName   = "/gyoza.storage.v1.StorageService/CopyProjectFiles"
 )
 
 // StorageServiceClient is the client API for StorageService service.
@@ -89,6 +94,19 @@ type StorageServiceClient interface {
 	// Owner lifecycle, called by iam only; never exposed to browsers.
 	DeleteOwned(ctx context.Context, in *DeleteOwnedRequest, opts ...grpc.CallOption) (*DeleteOwnedResponse, error)
 	RemoveUser(ctx context.Context, in *RemoveUserRequest, opts ...grpc.CallOption) (*RemoveUserResponse, error)
+	// Asset refs: what a project's document uses. ResolveRef reads one (the
+	// project grants read on what it uses); ForkAsset copies one the actor may
+	// use but not change. A project uses in place only its own, its owner's and
+	// gyoza's files: anything else is PERMISSION_DENIED / FORK_REQUIRED.
+	ResolveRef(ctx context.Context, in *ResolveRefRequest, opts ...grpc.CallOption) (*ResolveRefResponse, error)
+	ForkAsset(ctx context.Context, in *ForkAssetRequest, opts ...grpc.CallOption) (*ForkAssetResponse, error)
+	// Called by documentmanager for the user editing the document; never
+	// exposed to browsers.
+	RecordAssetUse(ctx context.Context, in *RecordAssetUseRequest, opts ...grpc.CallOption) (*RecordAssetUseResponse, error)
+	ForgetAssetUse(ctx context.Context, in *ForgetAssetUseRequest, opts ...grpc.CallOption) (*ForgetAssetUseResponse, error)
+	// A clone's files, called by iam only (it decides who may clone);
+	// resumable, and repeating a finished copy changes nothing.
+	CopyProjectFiles(ctx context.Context, in *CopyProjectFilesRequest, opts ...grpc.CallOption) (*CopyProjectFilesResponse, error)
 }
 
 type storageServiceClient struct {
@@ -319,6 +337,56 @@ func (c *storageServiceClient) RemoveUser(ctx context.Context, in *RemoveUserReq
 	return out, nil
 }
 
+func (c *storageServiceClient) ResolveRef(ctx context.Context, in *ResolveRefRequest, opts ...grpc.CallOption) (*ResolveRefResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ResolveRefResponse)
+	err := c.cc.Invoke(ctx, StorageService_ResolveRef_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *storageServiceClient) ForkAsset(ctx context.Context, in *ForkAssetRequest, opts ...grpc.CallOption) (*ForkAssetResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ForkAssetResponse)
+	err := c.cc.Invoke(ctx, StorageService_ForkAsset_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *storageServiceClient) RecordAssetUse(ctx context.Context, in *RecordAssetUseRequest, opts ...grpc.CallOption) (*RecordAssetUseResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RecordAssetUseResponse)
+	err := c.cc.Invoke(ctx, StorageService_RecordAssetUse_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *storageServiceClient) ForgetAssetUse(ctx context.Context, in *ForgetAssetUseRequest, opts ...grpc.CallOption) (*ForgetAssetUseResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ForgetAssetUseResponse)
+	err := c.cc.Invoke(ctx, StorageService_ForgetAssetUse_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *storageServiceClient) CopyProjectFiles(ctx context.Context, in *CopyProjectFilesRequest, opts ...grpc.CallOption) (*CopyProjectFilesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CopyProjectFilesResponse)
+	err := c.cc.Invoke(ctx, StorageService_CopyProjectFiles_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // StorageServiceServer is the server API for StorageService service.
 // All implementations must embed UnimplementedStorageServiceServer
 // for forward compatibility.
@@ -352,6 +420,19 @@ type StorageServiceServer interface {
 	// Owner lifecycle, called by iam only; never exposed to browsers.
 	DeleteOwned(context.Context, *DeleteOwnedRequest) (*DeleteOwnedResponse, error)
 	RemoveUser(context.Context, *RemoveUserRequest) (*RemoveUserResponse, error)
+	// Asset refs: what a project's document uses. ResolveRef reads one (the
+	// project grants read on what it uses); ForkAsset copies one the actor may
+	// use but not change. A project uses in place only its own, its owner's and
+	// gyoza's files: anything else is PERMISSION_DENIED / FORK_REQUIRED.
+	ResolveRef(context.Context, *ResolveRefRequest) (*ResolveRefResponse, error)
+	ForkAsset(context.Context, *ForkAssetRequest) (*ForkAssetResponse, error)
+	// Called by documentmanager for the user editing the document; never
+	// exposed to browsers.
+	RecordAssetUse(context.Context, *RecordAssetUseRequest) (*RecordAssetUseResponse, error)
+	ForgetAssetUse(context.Context, *ForgetAssetUseRequest) (*ForgetAssetUseResponse, error)
+	// A clone's files, called by iam only (it decides who may clone);
+	// resumable, and repeating a finished copy changes nothing.
+	CopyProjectFiles(context.Context, *CopyProjectFilesRequest) (*CopyProjectFilesResponse, error)
 	mustEmbedUnimplementedStorageServiceServer()
 }
 
@@ -427,6 +508,21 @@ func (UnimplementedStorageServiceServer) DeleteOwned(context.Context, *DeleteOwn
 }
 func (UnimplementedStorageServiceServer) RemoveUser(context.Context, *RemoveUserRequest) (*RemoveUserResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method RemoveUser not implemented")
+}
+func (UnimplementedStorageServiceServer) ResolveRef(context.Context, *ResolveRefRequest) (*ResolveRefResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ResolveRef not implemented")
+}
+func (UnimplementedStorageServiceServer) ForkAsset(context.Context, *ForkAssetRequest) (*ForkAssetResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ForkAsset not implemented")
+}
+func (UnimplementedStorageServiceServer) RecordAssetUse(context.Context, *RecordAssetUseRequest) (*RecordAssetUseResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RecordAssetUse not implemented")
+}
+func (UnimplementedStorageServiceServer) ForgetAssetUse(context.Context, *ForgetAssetUseRequest) (*ForgetAssetUseResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ForgetAssetUse not implemented")
+}
+func (UnimplementedStorageServiceServer) CopyProjectFiles(context.Context, *CopyProjectFilesRequest) (*CopyProjectFilesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CopyProjectFiles not implemented")
 }
 func (UnimplementedStorageServiceServer) mustEmbedUnimplementedStorageServiceServer() {}
 func (UnimplementedStorageServiceServer) testEmbeddedByValue()                        {}
@@ -845,6 +941,96 @@ func _StorageService_RemoveUser_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _StorageService_ResolveRef_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ResolveRefRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StorageServiceServer).ResolveRef(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StorageService_ResolveRef_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StorageServiceServer).ResolveRef(ctx, req.(*ResolveRefRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _StorageService_ForkAsset_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ForkAssetRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StorageServiceServer).ForkAsset(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StorageService_ForkAsset_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StorageServiceServer).ForkAsset(ctx, req.(*ForkAssetRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _StorageService_RecordAssetUse_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RecordAssetUseRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StorageServiceServer).RecordAssetUse(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StorageService_RecordAssetUse_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StorageServiceServer).RecordAssetUse(ctx, req.(*RecordAssetUseRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _StorageService_ForgetAssetUse_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ForgetAssetUseRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StorageServiceServer).ForgetAssetUse(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StorageService_ForgetAssetUse_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StorageServiceServer).ForgetAssetUse(ctx, req.(*ForgetAssetUseRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _StorageService_CopyProjectFiles_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CopyProjectFilesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StorageServiceServer).CopyProjectFiles(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StorageService_CopyProjectFiles_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StorageServiceServer).CopyProjectFiles(ctx, req.(*CopyProjectFilesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // StorageService_ServiceDesc is the grpc.ServiceDesc for StorageService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -939,6 +1125,26 @@ var StorageService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RemoveUser",
 			Handler:    _StorageService_RemoveUser_Handler,
+		},
+		{
+			MethodName: "ResolveRef",
+			Handler:    _StorageService_ResolveRef_Handler,
+		},
+		{
+			MethodName: "ForkAsset",
+			Handler:    _StorageService_ForkAsset_Handler,
+		},
+		{
+			MethodName: "RecordAssetUse",
+			Handler:    _StorageService_RecordAssetUse_Handler,
+		},
+		{
+			MethodName: "ForgetAssetUse",
+			Handler:    _StorageService_ForgetAssetUse_Handler,
+		},
+		{
+			MethodName: "CopyProjectFiles",
+			Handler:    _StorageService_CopyProjectFiles_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

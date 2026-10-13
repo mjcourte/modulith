@@ -34,6 +34,14 @@ const (
 	OwnerGyoza   = ledger.OwnerGyoza
 )
 
+type AssetRef = dam.AssetRef
+
+// CopyAssetID is the ID of the copy of src that a clone (projectID, owned
+// by target) or a fork gets; the copy's ref is {CopyAssetID(...), 1}.
+func CopyAssetID(projectID string, target Owner, src AssetRef) string {
+	return dam.CopyAssetID(projectID, target, src)
+}
+
 // Manager API.
 type (
 	Service       = manager.Service
@@ -42,6 +50,13 @@ type (
 	Authorizer    = manager.Authorizer
 	AllowAll      = manager.AllowAll
 	UploadRequest = manager.UploadRequest
+
+	ResolvedRef = manager.ResolvedRef
+	CopyReport  = manager.CopyReport
+
+	// What the owner lifecycle calls (iam's cascades) report.
+	OwnerDeletion = manager.OwnerDeletion
+	UserRemoval   = manager.UserRemoval
 )
 
 const (
@@ -52,6 +67,10 @@ const (
 
 // ErrForbidden is what an Authorizer's refusals must wrap.
 var ErrForbidden = manager.ErrForbidden
+
+// ErrForkRequired: a project can only use its own (or its owner's) assets in
+// place; anything else must be forked first.
+var ErrForkRequired = manager.ErrForkRequired
 
 // Migrate brings the storage schema up to date.
 func Migrate(ctx context.Context, pool *pgxpool.Pool) error { return db.Migrate(ctx, pool) }

@@ -73,6 +73,9 @@ func (m *Manager) probeOne(ctx context.Context, p mediaprocessor.Prober, pending
 	if ctx.Err() != nil {
 		return ctx.Err() // shutting down: not the file's fault, so not an attempt
 	}
+	if errors.Is(probeErr, mediaprocessor.ErrUnavailable) {
+		return probeErr // likewise: the file waits until mediaprocessor is back
+	}
 	if probeErr != nil {
 		failed := pending
 		failed.Attempts++

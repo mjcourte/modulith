@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -145,5 +146,25 @@ func TestProbeMediaShutdown(t *testing.T) {
 	info, _ := tm.ledger.GetMediaInfo(t.Context(), objectID)
 	if info.Status != ledger.MediaPending || info.Attempts != 0 {
 		t.Errorf("after shutdown: %+v; want still pending, no attempts used", info)
+	}
+}
+
+// TestProbeMediaUnavailable: a mediaprocessor that can't be reached isn't
+// the file's fault either, so files wait for it instead of failing.
+func TestProbeMediaUnavailable(t *testing.T) {
+	tm := newTestManager(t)
+	objectID, _ := uploadMedia(t, tm, "video/mp4")
+	down := proberFunc(func(context.Context, string) (mediaprocessor.Info, error) {
+		return mediaprocessor.Info{}, fmt.Errorf("%w: connection refused", mediaprocessor.ErrUnavailable)
+	})
+
+	for range sm.MaxProbeAttempts {
+		if _, err := tm.ProbeMedia(t.Context(), down); !errors.Is(err, mediaprocessor.ErrUnavailable) {
+			t.Fatalf("ProbeMedia = %v, want ErrUnavailable", err)
+		}
+	}
+	info, _ := tm.ledger.GetMediaInfo(t.Context(), objectID)
+	if info.Status != ledger.MediaPending || info.Attempts != 0 {
+		t.Errorf("after outage: %+v; want still pending, no attempts used", info)
 	}
 }

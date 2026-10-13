@@ -77,6 +77,13 @@ type Version struct {
 	CreatedAt   time.Time
 }
 
+// AssetRef is a pinned reference to one version of an asset, deterministically
+// referencing the same bytes.
+type AssetRef struct {
+	AssetID string
+	Version int // >= 1; APIs that accept 0 (=current) resolve before storing
+}
+
 // Category is the broad kind of an asset, derived from its MIME type with
 // CategoryOf, so it can be listed and filtered without reading any bytes.
 type Category string
@@ -182,9 +189,12 @@ type Store interface {
 	UploadStore
 	OwnerStore // bulk operations for deleting owners and removing users (owners.go)
 	PurgeStore // permanent removal for the cleanup job (purge.go)
+	UseStore   // which asset versions each project uses (uses.go)
 
 	// CreateAsset stores a new asset with first as version 1, atomically.
-	// It assigns IDs and timestamps and derives Category from first.
+	// It assigns timestamps, derives Category from first, and assigns the ID
+	// unless a.ID is set: then, if that ID is already stored, it returns that
+	// asset unchanged, so a retried copy (CopyAssetID) lands on the same one.
 	// A non-empty FolderID must name a folder with the same owner, or
 	// ErrFolderNotFound.
 	CreateAsset(ctx context.Context, a Asset, first Version) (Asset, error)

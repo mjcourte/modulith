@@ -1,4 +1,4 @@
-package mediaprocessor_test
+package probe_test
 
 import (
 	"net/http"
@@ -7,13 +7,13 @@ import (
 	"testing"
 	"time"
 
-	"gyoza/services/mediaprocessor"
+	"gyoza/services/mediaprocessor/internal/probe"
 )
 
 // newFFprobe returns the real prober, or skips the test without ffprobe on PATH.
-func newFFprobe(t *testing.T) *mediaprocessor.FFprobe {
+func newFFprobe(t *testing.T) *probe.FFprobe {
 	t.Helper()
-	p, err := mediaprocessor.NewFFprobe()
+	p, err := probe.NewFFprobe()
 	if err != nil {
 		t.Skipf("ffprobe not available: %v", err)
 	}

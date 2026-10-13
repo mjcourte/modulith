@@ -86,6 +86,15 @@ func (p *Postgres) CreateFolder(ctx context.Context, f Folder) (Folder, error) {
 		if err := lockOwnerTree(ctx, q, f.Owner); err != nil {
 			return err
 		}
+		if f.ID != "" {
+			// A chosen ID already stored: a retried copy gets the same folder.
+			if r, err := q.GetFolder(ctx, f.ID); err == nil {
+				f = folderFromRow(r)
+				return nil
+			} else if !noRows(err) {
+				return fmt.Errorf("get folder: %w", err)
+			}
+		}
 		if f.ParentID != "" {
 			if _, err := liveOwnedFolderTx(ctx, q, f.ParentID, f.Owner); err != nil {
 				return err
@@ -105,7 +114,10 @@ func (p *Postgres) CreateFolder(ctx context.Context, f Folder) (Folder, error) {
 			return err
 		}
 		t := now()
-		f.ID, f.CreatedAt, f.UpdatedAt, f.DeletedAt, f.DeletionID = NewID(), t, t, nil, ""
+		if f.ID == "" {
+			f.ID = NewID()
+		}
+		f.CreatedAt, f.UpdatedAt, f.DeletedAt, f.DeletionID = t, t, nil, ""
 		err = q.InsertFolder(ctx, db.InsertFolderParams{
 			ID: f.ID, OwnerKind: string(f.Owner.Kind), OwnerID: f.Owner.ID, ParentID: optID(f.ParentID),
 			Name: f.Name, NameKey: folderNameKey(f.Name), CreatedBy: f.CreatedBy, CreatedAt: t, UpdatedAt: t,

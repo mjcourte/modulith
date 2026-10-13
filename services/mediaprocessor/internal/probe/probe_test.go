@@ -1,4 +1,4 @@
-package mediaprocessor
+package probe
 
 import (
 	"encoding/json"

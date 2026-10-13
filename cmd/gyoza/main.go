@@ -15,6 +15,7 @@ import (
 	"gyoza/platform/config"
 	"gyoza/platform/postgres"
 	"gyoza/platform/shutdown"
+	"gyoza/services/iam"
 	"gyoza/services/mediaprocessor"
 	"gyoza/services/storage"
 )
@@ -40,6 +41,7 @@ func run() error {
 	shutdownTimeout := env.Duration("GYOZA_SHUTDOWN_TIMEOUT", 20*time.Second)
 	grpcAddr := env.String("GYOZA_GRPC_ADDR", "localhost:9090")
 	storageSettings := storage.SettingsFromEnv(env)
+	iamSettings := iam.SettingsFromEnv(env)
 	if err := env.Err(); err != nil {
 		return err
 	}
@@ -50,9 +52,24 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	manager, err := storage.Open(ctx, pool, storageSettings)
+	// Built in this order to break the cycle (storage asks iam who may do
+	// what; iam's deletions call storage): iam's store, the authorizer that
+	// reads it, storage, then iam's Manager. See services/iam/PLAN.md.
+	iamStore, err := iam.OpenStore(ctx, pool)
 	if err != nil {
 		pool.Close() // nothing is running yet, so this returns promptly
+		return err
+	}
+	authz := iam.NewStorageAuthorizer(iamStore)
+	manager, err := storage.Open(ctx, pool, storageSettings, authz)
+	if err != nil {
+		pool.Close()
+		return err
+	}
+	// No identity provider until the gateway (and SuperTokens) exists.
+	iamManager, err := iam.NewManager(iamStore, manager, iam.NoIdentityProvider{}, iamSettings.Manager)
+	if err != nil {
+		pool.Close()
 		return err
 	}
 
@@ -63,8 +80,20 @@ func run() error {
 		pool.Close()
 		return err
 	}
+	// The monolith runs ffprobe in-process (it gets an empty environment, see
+	// mediaprocessor.FFprobe). Without it, uploads stay queued until a run
+	// with ffprobe picks them up.
+	prober, err := mediaprocessor.NewFFprobe()
+	if err != nil {
+		slog.Warn("media probing off: ffprobe not found", "err", err) // prober is nil
+	}
+
 	server := grpc.NewServer()
 	storage.RegisterGRPC(server, manager)
+	iam.RegisterGRPC(server, iamManager, authz)
+	if prober != nil {
+		mediaprocessor.RegisterGRPC(server, prober)
+	}
 	serveErr := make(chan error, 1)
 	go func() { serveErr <- server.Serve(lis) }()
 
@@ -73,19 +102,16 @@ func run() error {
 	jobsCtx, stopJobs := context.WithCancel(context.WithoutCancel(ctx))
 	defer stopJobs()
 	cleanupDone := storage.StartCleanup(jobsCtx, manager, storageSettings.CleanupInterval)
-	// The monolith runs ffprobe in-process (it gets an empty environment, see
-	// mediaprocessor.FFprobe). Without it, uploads stay queued until a run
-	// with ffprobe picks them up.
+	iamCleanupDone := iam.StartCleanup(jobsCtx, iamManager, iamSettings.CleanupInterval)
 	var probeDone <-chan struct{}
-	if prober, err := mediaprocessor.NewFFprobe(); err != nil {
-		slog.Warn("media probing off: ffprobe not found", "err", err)
+	if prober == nil {
 		stopped := make(chan struct{})
 		close(stopped) // nothing to wait for at shutdown
 		probeDone = stopped
 	} else {
 		probeDone = storage.StartMediaProbe(jobsCtx, manager, prober, storageSettings.ProbeInterval)
 	}
-	jobsDone := func() { <-cleanupDone; <-probeDone }
+	jobsDone := func() { <-cleanupDone; <-iamCleanupDone; <-probeDone }
 	slog.Info("gyoza started", "grpc", lis.Addr().String(), "bucket", storageSettings.Manager.Bucket)
 
 	select {

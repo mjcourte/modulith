@@ -29,7 +29,11 @@ func (m *Manager) CompleteUpload(ctx context.Context, actorID, uploadID string) 
 	if actorID == "" || actorID != u.CreatedBy {
 		return dam.Asset{}, fmt.Errorf("%w: only the user who began an upload can complete it", ErrForbidden)
 	}
-	if err := m.canWrite(ctx, actorID, u.Owner, u.ProjectID); err != nil {
+	check := m.canCreateIn // the same check BeginUpload made
+	if u.AssetID != "" {
+		check = m.canWrite
+	}
+	if err := check(ctx, actorID, u.Owner, u.ProjectID); err != nil {
 		return dam.Asset{}, err
 	}
 

@@ -1,0 +1,59 @@
+# Every service in its own container, as deployed when distributed, on one
+# machine. From the repo root:
+#
+#   docker compose -f deploy/distributed/compose.yaml up -d --build --wait
+#   docker compose -f deploy/distributed/compose.yaml down        # keeps data
+#
+# The dependencies (Postgres, RustFS, NATS) come from the monolith's file,
+# under this project's name, so their data is separate from the monolith's.
+# They publish the same host ports, so run one of the two at a time.
+
+name: gyoza-distributed
+
+include:
+  - ../monolith/compose.yaml
+
+services:
+  storage:
+    build:
+      context: ../..
+      target: storage
+    environment:
+      GYOZA_DATABASE_URL: postgres://gyoza:gyoza@postgres:5432/gyoza
+      GYOZA_S3_ENDPOINT: http://s3:9000
+      GYOZA_S3_ACCESS_KEY: gyoza
+      GYOZA_S3_SECRET_KEY: gyoza-dev-secret # local development only
+      GYOZA_S3_PATH_STYLE: "true"
+      GYOZA_S3_BUCKET: gyoza-dev
+      GYOZA_S3_CREATE_BUCKET: "true"
+      GYOZA_MEDIAPROCESSOR_ADDR: mediaprocessor:9090
+      GYOZA_IAM_ADDR: iam:9090
+    ports:
+      - "127.0.0.1:9091:9090" # gRPC, as go run ./cmd/storage serves it
+    depends_on:
+      postgres: { condition: service_healthy }
+      s3: { condition: service_healthy }
+      # Not iam or mediaprocessor: gRPC connects lazily. While iam is away
+      # user calls fail; while mediaprocessor is, uploads wait in the queue.
+
+  # Users, orgs, projects; answers storage's permission checks, and calls
+  # storage back to delete files when projects, orgs or accounts go.
+  iam:
+    build:
+      context: ../..
+      target: iam
+    environment:
+      GYOZA_DATABASE_URL: postgres://gyoza:gyoza@postgres:5432/gyoza
+      GYOZA_STORAGE_ADDR: storage:9090
+    ports:
+      - "127.0.0.1:9093:9090" # gRPC, as go run ./cmd/iam serves it
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  # Runs ffprobe on untrusted files, so it gets no secrets: no database, no
+  # S3 credentials. It reads files only through the presigned URLs storage
+  # sends, and isn't published to the host.
+  mediaprocessor:
+    build:
+      context: ../..
+      target: mediaprocessor

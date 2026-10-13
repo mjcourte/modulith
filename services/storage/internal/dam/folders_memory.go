@@ -122,6 +122,9 @@ func (m *MemoryStore) CreateFolder(ctx context.Context, f Folder) (Folder, error
 
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	if existing, ok := m.folders[f.ID]; ok && f.ID != "" {
+		return existing, nil // a chosen ID already stored: a retried copy
+	}
 	if f.ParentID != "" {
 		if _, err := m.ownedFolder(f.ParentID, f.Owner); err != nil {
 			return Folder{}, err
@@ -134,7 +137,9 @@ func (m *MemoryStore) CreateFolder(ctx context.Context, f Folder) (Folder, error
 		return Folder{}, fmt.Errorf("%w: %q", ErrNameTaken, f.Name)
 	}
 	t := now()
-	f.ID = NewID()
+	if f.ID == "" {
+		f.ID = NewID()
+	}
 	f.CreatedAt, f.UpdatedAt = t, t
 	f.DeletedAt, f.DeletionID = nil, ""
 	m.folders[f.ID] = f

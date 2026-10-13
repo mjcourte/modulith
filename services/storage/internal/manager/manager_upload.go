@@ -73,7 +73,13 @@ func (m *Manager) BeginUpload(ctx context.Context, actorID string, req UploadReq
 
 	// Permission before anything else is revealed: a user who may not write
 	// here learns nothing about whether the rest of the request was valid.
-	if err := m.canWrite(ctx, actorID, owner, projectID); err != nil {
+	// A new version keeps its asset's association, made when it was created;
+	// a new asset makes one (canCreateIn).
+	check := m.canCreateIn
+	if req.AssetID != "" {
+		check = m.canWrite
+	}
+	if err := check(ctx, actorID, owner, projectID); err != nil {
 		return UploadTicket{}, err
 	}
 

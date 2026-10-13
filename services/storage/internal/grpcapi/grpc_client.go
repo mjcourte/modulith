@@ -235,7 +235,11 @@ func (c *Client) ListTrash(ctx context.Context, actorID string, owner ledger.Own
 	if err != nil {
 		return manager.Trash{}, fromStatus(err)
 	}
-	return manager.Trash{Folders: foldersFromProto(resp.GetFolders()), Assets: assetPageFromProto(resp.GetAssets())}, nil
+	uses := make(map[string]int, len(resp.GetUses())) // never nil, as from the Manager
+	for id, n := range resp.GetUses() {
+		uses[id] = int(n)
+	}
+	return manager.Trash{Folders: foldersFromProto(resp.GetFolders()), Assets: assetPageFromProto(resp.GetAssets()), Uses: uses}, nil
 }
 
 // ---- Owner lifecycle
@@ -245,7 +249,7 @@ func (c *Client) DeleteOwned(ctx context.Context, owner ledger.Owner) (manager.O
 	if err != nil {
 		return manager.OwnerDeletion{}, fromStatus(err)
 	}
-	return manager.OwnerDeletion{LedgerObjects: int(resp.GetLedgerObjects()), Trash: deletionFromProto(resp.GetTrash())}, nil
+	return manager.OwnerDeletion{LedgerObjects: int(resp.GetLedgerObjects()), Trash: deletionFromProto(resp.GetTrash()), Uses: int(resp.GetUses())}, nil
 }
 
 func (c *Client) RemoveUser(ctx context.Context, userID, orgID string) (manager.UserRemoval, error) {
@@ -272,4 +276,52 @@ func (c *Client) RemoveUser(ctx context.Context, userID, orgID string) (manager.
 		r.TransferredTo = ownerFromProto(resp.GetTransferredTo())
 	}
 	return r, nil
+}
+
+// ---- Asset refs, uses and copies
+
+func (c *Client) ResolveRef(ctx context.Context, actorID, projectID string, ref dam.AssetRef) (manager.ResolvedRef, error) {
+	resp, err := c.c.ResolveRef(ctx, &pb.ResolveRefRequest{ActorId: actorID, ProjectId: projectID, Ref: refToProto(ref)})
+	if err != nil {
+		return manager.ResolvedRef{}, fromStatus(err)
+	}
+	return manager.ResolvedRef{
+		Asset:    assetFromProto(resp.GetAsset()),
+		Version:  versionFromProto(resp.GetVersion()),
+		Download: downloadFromProto(resp.GetDownload()),
+	}, nil
+}
+
+func (c *Client) ForkAsset(ctx context.Context, actorID, projectID string, ref dam.AssetRef, target ledger.Owner, via string) (dam.Asset, error) {
+	req := &pb.ForkAssetRequest{ActorId: actorID, ProjectId: projectID, Ref: refToProto(ref), ViaProjectId: via}
+	if !target.IsZero() {
+		req.Target = ownerToProto(target)
+	}
+	resp, err := c.c.ForkAsset(ctx, req)
+	if err != nil {
+		return dam.Asset{}, fromStatus(err)
+	}
+	return assetFromProto(resp.GetAsset()), nil
+}
+
+func (c *Client) RecordAssetUse(ctx context.Context, actorID, projectID string, ref dam.AssetRef) error {
+	if _, err := c.c.RecordAssetUse(ctx, &pb.RecordAssetUseRequest{ActorId: actorID, ProjectId: projectID, Ref: refToProto(ref)}); err != nil {
+		return fromStatus(err)
+	}
+	return nil
+}
+
+func (c *Client) ForgetAssetUse(ctx context.Context, actorID, projectID string, ref dam.AssetRef) error {
+	if _, err := c.c.ForgetAssetUse(ctx, &pb.ForgetAssetUseRequest{ActorId: actorID, ProjectId: projectID, Ref: refToProto(ref)}); err != nil {
+		return fromStatus(err)
+	}
+	return nil
+}
+
+func (c *Client) CopyProjectFiles(ctx context.Context, actorID, from, to string) (manager.CopyReport, error) {
+	resp, err := c.c.CopyProjectFiles(ctx, &pb.CopyProjectFilesRequest{ActorId: actorID, FromProjectId: from, ToProjectId: to})
+	if err != nil {
+		return manager.CopyReport{}, fromStatus(err)
+	}
+	return manager.CopyReport{Folders: int(resp.GetFolders()), Assets: int(resp.GetAssets()), Uses: int(resp.GetUses())}, nil
 }

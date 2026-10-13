@@ -1,10 +1,10 @@
-# Regenerate after changing migrations/, ledger.sql or manager.sql:
+# Regenerate after changing migrations/ or the query files:
 #   go generate ./services/storage/...
 version: "2"
 sql:
   - engine: postgresql
     schema: migrations
-    queries: [ledger.sql, manager.sql]
+    queries: [ledger.sql, manager.sql, uses.sql]
     gen:
       go:
         package: db

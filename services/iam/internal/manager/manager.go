@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"gyoza/services/iam/internal/directory"
 	"time"
+
+	"gyoza/services/iam/internal/directory"
+	"gyoza/services/storage"
 )
 
 // ErrForbidden means the acting user may not do what they asked. Manager
@@ -31,28 +33,58 @@ func (c Config) withDefaults() (Config, error) {
 	return c, nil
 }
 
+// Storage is what iam needs from storage: for the deletion cascades, trashing
+// what an owner owns and handing a departing user's library to their org (or
+// trashing it); for clones, copying a project's files. storage.Service satisfies it, in-process or over gRPC.
+// Declared here, by the consumer, so iam asks for no more than it uses.
+type Storage interface {
+	DeleteOwned(ctx context.Context, owner storage.Owner) (storage.OwnerDeletion, error)
+	RemoveUser(ctx context.Context, userID, orgID string) (storage.UserRemoval, error)
+	// CopyProjectFiles copies a project's files into a clone (resumable).
+	CopyProjectFiles(ctx context.Context, actorID, from, to string) (storage.CopyReport, error)
+}
+
+// IdentityProvider deletes a user's sign-in account (SuperTokens, through
+// the gateway) at the end of an account deletion, so iam never talks to
+// SuperTokens itself. Deleting a missing account must succeed, so a resumed
+// deletion can repeat it.
+type IdentityProvider interface {
+	DeleteUser(ctx context.Context, userID string) error
+}
+
+// NoIdentityProvider is the IdentityProvider until the gateway (and with it
+// SuperTokens) exists: there are no sign-in accounts to delete yet.
+type NoIdentityProvider struct{}
+
+func (NoIdentityProvider) DeleteUser(context.Context, string) error { return nil }
+
 // Manager is iam's business logic: it decides who may do what, then asks the
 // Store, which keeps the data rules. Every method that acts for a user takes
 // their ID (actorID) as authenticated by the gateway. Safe for concurrent use.
-//
-// Later steps add projects (step 5) and the cascades that need storage
-// and the identity provider (step 6).
 type Manager struct {
-	store directory.Store
-	cfg   Config
-	now   func() time.Time // the clock; tests replace it (export_test.go)
+	store   directory.Store
+	storage Storage
+	idp     IdentityProvider
+	cfg     Config
+	now     func() time.Time // the clock; tests replace it (export_test.go)
 }
 
-// NewManager wires a Manager on store.
-func NewManager(store directory.Store, cfg Config) (*Manager, error) {
-	if store == nil {
+// NewManager wires a Manager on store, calling files and idp in the
+// deletion cascades.
+func NewManager(store directory.Store, files Storage, idp IdentityProvider, cfg Config) (*Manager, error) {
+	switch {
+	case store == nil:
 		return nil, errors.New("iam: NewManager needs a store")
+	case files == nil:
+		return nil, errors.New("iam: NewManager needs storage")
+	case idp == nil:
+		return nil, errors.New("iam: NewManager needs an identity provider")
 	}
 	cfg, err := cfg.withDefaults()
 	if err != nil {
 		return nil, err
 	}
-	return &Manager{store: store, cfg: cfg, now: time.Now}, nil
+	return &Manager{store: store, storage: files, idp: idp, cfg: cfg, now: time.Now}, nil
 }
 
 // Config returns the effective configuration, with defaults filled in.

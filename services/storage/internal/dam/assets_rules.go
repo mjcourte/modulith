@@ -5,9 +5,13 @@ package dam
 // input (the same role as normalize in ../ledger/ledger.go).
 
 import (
+	"crypto/sha256"
+	"encoding"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 
@@ -107,6 +111,9 @@ func (v Version) validate() error {
 // ProjectID for project-owned assets, and ContentType, Category and
 // CurrentVersion from the first version. IDs and timestamps are left to the Store.
 func (a Asset) normalize(first Version) (Asset, error) {
+	if err := checkOptionalID(a.ID, "asset", ErrInvalidAsset); err != nil {
+		return a, err
+	}
 	a, err := a.normalizeFields()
 	if err != nil {
 		return a, err
@@ -263,4 +270,96 @@ func assetPageOf(matches []Asset, pageSize int) AssetPage {
 	matches = matches[:pageSize]
 	last := matches[pageSize-1].ID
 	return AssetPage{Assets: matches, NextPageToken: base64.RawURLEncoding.EncodeToString([]byte(last))}
+}
+
+var (
+	_ encoding.TextMarshaler   = AssetRef{}
+	_ encoding.TextUnmarshaler = (*AssetRef)(nil)
+)
+
+func (r AssetRef) Validate() error {
+	if r.AssetID == "" {
+		return errors.New("AssetRef needs an AssetID")
+	}
+	if r.Version < 1 {
+		return fmt.Errorf("AssetRef.Version must be >=1, got: %d", r.Version)
+	}
+	return nil
+}
+
+// String formats r as "<asset ID>@<version>", the same text MarshalText writes.
+func (r AssetRef) String() string {
+	return r.AssetID + "@" + strconv.Itoa(r.Version)
+}
+
+// MarshalText makes JSON (values and map keys) encode r as "<asset ID>@<version>".
+// Invalid refs are refused, so one is never written out.
+func (r AssetRef) MarshalText() ([]byte, error) {
+	if err := r.Validate(); err != nil {
+		return nil, err
+	}
+	return []byte(r.String()), nil
+}
+
+// UnmarshalText parses "<asset ID>@<version>". Each ref has exactly one text
+// form: versions like "03" or "+3" are refused. On error r is left unchanged.
+func (r *AssetRef) UnmarshalText(b []byte) error {
+	s := string(b)
+	at := strings.LastIndexByte(s, '@')
+	if at < 0 {
+		return fmt.Errorf("AssetRef %q: want <asset ID>@<version>", s)
+	}
+	digits := s[at+1:]
+	v, err := strconv.Atoi(digits)
+	if err != nil || strconv.Itoa(v) != digits {
+		return fmt.Errorf("AssetRef %q: bad version %q", s, digits)
+	}
+	ref := AssetRef{AssetID: s[:at], Version: v}
+	if err := ref.Validate(); err != nil {
+		return fmt.Errorf("AssetRef %q: %w", s, err)
+	}
+	*r = ref
+	return nil
+}
+
+// CopyAssetID is the ID of the copy of src made into target for project
+// projectID (a clone, or the project a fork happens in): asset version 1 of
+// that ID. The same inputs always give the same ID, so a retried copy lands
+// on the same asset, and documentmanager can work out a clone's rewritten
+// refs ({CopyAssetID(clone, cloneOwner, ref), 1}) without a mapping table.
+func CopyAssetID(projectID string, target ledger.Owner, src AssetRef) string {
+	return derivedID(projectID, "asset", string(target.Kind), target.ID, src.AssetID, strconv.Itoa(src.Version))
+}
+
+// CopyFolderID is the ID of the copy of folder srcID made into target.
+func CopyFolderID(projectID string, target ledger.Owner, srcID string) string {
+	return derivedID(projectID, "folder", string(target.Kind), target.ID, srcID)
+}
+
+// CopyObjectID is the ID of the ledger object holding a copy's file.
+func CopyObjectID(projectID, copyAssetID string) string {
+	return derivedID(projectID, "object", copyAssetID)
+}
+
+// derivedID returns a deterministic ID shaped like a UUIDv7, so derived rows
+// sort near the others of their time, as NewID's do: its 48-bit timestamp is
+// timeFrom's, when that's a UUIDv7 (project IDs are), and the rest is a hash
+// of parts (all of them, timeFrom included). Otherwise the timestamp bits
+// come from the hash too: still deterministic, just not time-ordered.
+func derivedID(timeFrom string, parts ...string) string {
+	h := sha256.New()
+	h.Write([]byte("gyoza.storage.derived-id"))
+	for _, p := range append([]string{timeFrom}, parts...) {
+		h.Write([]byte{0}) // separator, so ("ab", "c") and ("a", "bc") differ
+		h.Write([]byte(p))
+	}
+	sum := h.Sum(nil)
+	var id uuid.UUID
+	copy(id[:], sum)
+	if t, err := uuid.Parse(timeFrom); err == nil && t.Version() == 7 {
+		copy(id[:6], t[:6]) // the Unix-millisecond timestamp
+	}
+	id[6] = 0x70 | id[6]&0x0f // version 7
+	id[8] = 0x80 | id[8]&0x3f // RFC 4122 variant
+	return id.String()
 }

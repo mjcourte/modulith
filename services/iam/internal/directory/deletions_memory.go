@@ -271,6 +271,11 @@ func (m *MemoryStore) DeleteUser(ctx context.Context, userID string) error {
 			return fmt.Errorf("%w: user %s still owns projects", ErrInvalidUser, userID)
 		}
 	}
+	for key := range m.shares {
+		if key.userID == userID {
+			delete(m.shares, key) // normally gone already (ForgetUser)
+		}
+	}
 	delete(m.emails, u.Email)
 	delete(m.users, userID)
 	return nil

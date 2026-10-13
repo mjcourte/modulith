@@ -48,6 +48,19 @@ type Service interface {
 	// gateway must never expose these to browsers.
 	DeleteOwned(ctx context.Context, owner ledger.Owner) (OwnerDeletion, error)
 	RemoveUser(ctx context.Context, userID, orgID string) (UserRemoval, error)
+
+	// ResolveRef reads a ref a project's document uses (manager_resolve.go).
+	ResolveRef(ctx context.Context, actorID, projectID string, ref dam.AssetRef) (ResolvedRef, error)
+
+	// Asset uses, service to service only (manager_uses.go): documentmanager
+	// records each ref a project's document uses, for the user editing it.
+	RecordAssetUse(ctx context.Context, actorID, projectID string, ref dam.AssetRef) error
+	ForgetAssetUse(ctx context.Context, actorID, projectID string, ref dam.AssetRef) error
+
+	// Copies (manager_copy.go). ForkAsset is for a user editing a document;
+	// CopyProjectFiles is service to service only (iam's CloneProject).
+	ForkAsset(ctx context.Context, actorID, projectID string, ref dam.AssetRef, target ledger.Owner, via string) (dam.Asset, error)
+	CopyProjectFiles(ctx context.Context, actorID, from, to string) (CopyReport, error)
 }
 
 // Compile-time check that *Manager satisfies Service.

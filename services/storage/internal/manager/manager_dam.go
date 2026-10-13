@@ -32,6 +32,21 @@ func (m *Manager) canWrite(ctx context.Context, actorID string, owner ledger.Own
 	return m.authz.CanWrite(ctx, actorID, owner, scopeOf(owner, projectID))
 }
 
+// canCreateIn checks the actor may create files owned by owner and
+// associated with projectID. Associating is writing to the project too
+// (the files appear in its listings), so it needs write on the project as
+// well as the owner: owning the files alone would let anyone put theirs
+// into any project.
+func (m *Manager) canCreateIn(ctx context.Context, actorID string, owner ledger.Owner, projectID string) error {
+	if err := m.canWrite(ctx, actorID, owner, projectID); err != nil {
+		return err
+	}
+	if projectID == "" || owner == (ledger.Owner{Kind: ledger.OwnerProject, ID: projectID}) {
+		return nil
+	}
+	return m.canWrite(ctx, actorID, ledger.Owner{Kind: ledger.OwnerProject, ID: projectID}, "")
+}
+
 // asset loads an asset and checks the actor may read it (write=false) or
 // change it (write=true).
 func (m *Manager) asset(ctx context.Context, actorID, id string, write bool) (dam.Asset, error) {
@@ -250,6 +265,10 @@ func (m *Manager) FolderPath(ctx context.Context, actorID, id string) ([]dam.Fol
 type Trash struct {
 	Folders []dam.Folder // only on the first page
 	Assets  dam.AssetPage
+	// Uses is how many projects use each trashed asset on the page; absent
+	// means none. Used assets keep working in those projects until the
+	// purge, so the UI can warn before it.
+	Uses map[string]int
 }
 
 // ListTrash returns what owner has in the trash.
@@ -266,5 +285,13 @@ func (m *Manager) ListTrash(ctx context.Context, actorID string, owner ledger.Ow
 	}
 	var err error
 	trash.Assets, err = m.store.ListAssets(ctx, dam.AssetQuery{Owner: owner, OnlyDeleted: true, PageToken: pageToken})
+	if err != nil {
+		return Trash{}, err
+	}
+	ids := make([]string, len(trash.Assets.Assets))
+	for i, a := range trash.Assets.Assets {
+		ids[i] = a.ID
+	}
+	trash.Uses, err = m.store.CountUses(ctx, ids)
 	return trash, err
 }

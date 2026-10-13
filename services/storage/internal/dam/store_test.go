@@ -31,6 +31,7 @@ func runStoreTests(t *testing.T, newStore func(t *testing.T) dam.Store) {
 		{"RevertToOlderVersion", testRevertToOlderVersion},
 		{"RevertToMissingVersion", testRevertToMissingVersion},
 		{"RevertToCurrentIsNoOp", testRevertToCurrentIsNoOp},
+		{"VersionsAreImmutable", testVersionsAreImmutable},
 		{"MissingAssetVersions", testMissingAssetVersions},
 		{"MarkDeleted", testMarkDeleted},
 		{"DeletedAssetsAreReadOnly", testDeletedAssetsAreReadOnly},
@@ -87,6 +88,16 @@ func runStoreTests(t *testing.T, newStore func(t *testing.T) dam.Store) {
 		{"PurgeAsset", testPurgeAsset},
 		{"PurgeFolders", testPurgeFolders},
 		{"DeleteCompletedUploads", testDeleteCompletedUploads},
+
+		// Asset uses: store_uses_test.go
+		{"UsesRecordAndForget", testUsesRecordAndForget},
+		{"UsesRecordRejects", testUsesRecordRejects},
+		{"UsesOfTrashedAsset", testUsesOfTrashedAsset},
+		{"UsesCount", testUsesCount},
+		{"UsesForgetProject", testUsesForgetProject},
+		{"UsesPurgedWithAsset", testUsesPurgedWithAsset},
+		{"UsesSwap", testUsesSwap},
+		{"ChosenIDs", testChosenIDs},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -350,6 +361,67 @@ func testRevertToCurrentIsNoOp(t *testing.T, s dam.Store) {
 	if !got.UpdatedAt.Equal(a.UpdatedAt) {
 		t.Errorf("setting the current version moved UpdatedAt from %v to %v", a.UpdatedAt, got.UpdatedAt)
 	}
+}
+
+// testVersionsAreImmutable locks what makes a pinned AssetRef safe: once
+// stored, a version keeps its bytes (ObjectID), ContentType, SizeBytes and
+// CreatedAt through everything that changes its asset. Only CreatedBy may
+// change, cleared when its user is deleted.
+func testVersionsAreImmutable(t *testing.T, s dam.Store) {
+	ctx := t.Context()
+	a := mustCreateAsset(t, s, dam.Asset{Owner: alice}, "image/png")
+	addVersions(t, s, a)
+	before := mustListVersions(t, s, a.ID)
+	letTimePass() // so a rewritten CreatedAt can't equal the original
+
+	// Everything that changes the asset, short of purging it.
+	if _, err := s.UpdateAsset(ctx, a.ID, dam.AssetUpdate{Name: ptr("renamed"), Tags: &[]string{"x"}}); err != nil {
+		t.Fatalf("UpdateAsset: %v", err)
+	}
+	for _, n := range []int{1, 2, 3} {
+		if _, err := s.SetCurrentVersion(ctx, a.ID, n); err != nil {
+			t.Fatalf("SetCurrentVersion(%d): %v", n, err)
+		}
+	}
+	if _, err := s.AddVersion(ctx, a.ID, version("image/png")); err != nil {
+		t.Fatalf("AddVersion: %v", err)
+	}
+	if _, err := s.TransferOwner(ctx, alice, acme); err != nil {
+		t.Fatalf("TransferOwner: %v", err)
+	}
+	if err := s.MarkAssetDeleted(ctx, a.ID); err != nil {
+		t.Fatalf("MarkAssetDeleted: %v", err)
+	}
+	if _, err := s.RestoreAsset(ctx, a.ID); err != nil {
+		t.Fatalf("RestoreAsset: %v", err)
+	}
+	if _, err := s.ClearCreatedBy(ctx, "alice"); err != nil {
+		t.Fatalf("ClearCreatedBy: %v", err)
+	}
+
+	after := mustListVersions(t, s, a.ID)
+	if len(after) != len(before)+1 {
+		t.Fatalf("got %d versions, want %d", len(after), len(before)+1)
+	}
+	for i, want := range before {
+		want.CreatedBy = "" // the one change allowed
+		for _, got := range []dam.Version{after[i], mustGetVersion(t, s, a.ID, want.Number)} {
+			if got.AssetID != want.AssetID || got.Number != want.Number || got.ObjectID != want.ObjectID ||
+				got.ContentType != want.ContentType || got.SizeBytes != want.SizeBytes ||
+				got.CreatedBy != want.CreatedBy || !got.CreatedAt.Equal(want.CreatedAt) {
+				t.Errorf("version %d changed:\n got  %+v\n want %+v", want.Number, got, want)
+			}
+		}
+	}
+}
+
+func mustGetVersion(t *testing.T, s dam.Store, assetID string, number int) dam.Version {
+	t.Helper()
+	v, err := s.GetVersion(t.Context(), assetID, number)
+	if err != nil {
+		t.Fatalf("GetVersion(%d): %v", number, err)
+	}
+	return v
 }
 
 func testMissingAssetVersions(t *testing.T, s dam.Store) {

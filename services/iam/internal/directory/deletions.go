@@ -59,7 +59,8 @@ type DeletionStore interface {
 	// invites. ErrNotDeleting if it isn't marked; ErrInvalidOrg while it still
 	// owns projects (the cascade isn't done); a missing org is fine.
 	DeleteOrg(ctx context.Context, orgID string) error
-	// DeleteUser removes a user marked deleting, freeing their email.
+	// DeleteUser removes a user marked deleting, with any shares to them,
+	// freeing their email.
 	// ErrNotDeleting if they aren't marked; ErrInvalidUser while they still own
 	// projects or belong to an org (the cascade isn't done); missing is fine.
 	DeleteUser(ctx context.Context, userID string) error

@@ -43,6 +43,7 @@ func RunSuite(t *testing.T, newHarness func(t *testing.T) Harness) {
 		{"AwkwardKeys", testAwkwardKeys},
 		{"ReadPrefix", testReadPrefix},
 		{"DownloadFilename", testDownloadFilename},
+		{"Copy", testCopy},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -299,5 +300,53 @@ func testDownloadFilename(t *testing.T, h Harness) {
 		if err != nil || got != name || !bytes.Equal(data, testData) {
 			t.Errorf("download with filename %q = %q, %q, %v", name, data, got, err)
 		}
+	}
+}
+
+// Copy makes a second, independent object with the same bytes and type.
+func testCopy(t *testing.T, h Harness) {
+	ctx := t.Context()
+	src, dst := uniqueKey(), uniqueKey()+"/a b+c/ñ.png" // awkward: S3's CopySource must be escaped
+	mustUpload(t, h, src, testType, testData)
+
+	if err := h.Store.Copy(ctx, h.Bucket, src, dst); err != nil {
+		t.Fatalf("Copy: %v", err)
+	}
+	if got := mustDownload(t, h, dst); !bytes.Equal(got, testData) {
+		t.Errorf("copy holds %q, want %q", got, testData)
+	}
+	if info, err := h.Store.Stat(ctx, h.Bucket, dst); err != nil || info.Size != int64(len(testData)) || info.ContentType != testType {
+		t.Errorf("Stat(copy) = %+v, %v; want size %d, type %s", info, err, len(testData), testType)
+	}
+
+	// Independent: replacing, then deleting, the source leaves the copy alone.
+	mustUpload(t, h, src, testType, []byte("replaced"))
+	if err := h.Store.Delete(ctx, h.Bucket, src); err != nil {
+		t.Fatalf("Delete: %v", err)
+	}
+	if got := mustDownload(t, h, dst); !bytes.Equal(got, testData) {
+		t.Errorf("after changing the source the copy holds %q, want %q", got, testData)
+	}
+
+	// Copying onto an existing object overwrites it, so retries are harmless.
+	other, newer := uniqueKey(), []byte("a newer file")
+	mustUpload(t, h, other, "image/webp", newer)
+	if err := h.Store.Copy(ctx, h.Bucket, other, dst); err != nil {
+		t.Fatalf("Copy onto an existing key: %v", err)
+	}
+	if got := mustDownload(t, h, dst); !bytes.Equal(got, newer) {
+		t.Errorf("overwritten copy holds %q, want %q", got, newer)
+	}
+	if info, err := h.Store.Stat(ctx, h.Bucket, dst); err != nil || info.ContentType != "image/webp" {
+		t.Errorf("Stat(overwritten copy) = %+v, %v; want type image/webp", info, err)
+	}
+
+	missing := uniqueKey()
+	if err := h.Store.Copy(ctx, h.Bucket, uniqueKey(), missing); !errors.Is(err, blob.ErrNotFound) {
+		t.Errorf("Copy of a missing source = %v, want ErrNotFound", err)
+	}
+	assertNotStored(t, h, missing)
+	if err := h.Store.Copy(ctx, h.Bucket, other, other); err == nil {
+		t.Error("Copy onto itself: want an error")
 	}
 }

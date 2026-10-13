@@ -64,22 +64,28 @@ func (m *Manager) manageable(ctx context.Context, actorID, projectID string) (di
 // (any member may). orgLocked applies to org projects only (the UI offers it,
 // on by default). Gyoza templates are made with CreateTemplate.
 func (m *Manager) CreateProject(ctx context.Context, actorID string, owner storage.Owner, name string, orgLocked bool) (directory.Project, error) {
-	if _, err := m.actor(ctx, actorID); err != nil {
+	if err := m.canCreateFor(ctx, actorID, owner); err != nil {
 		return directory.Project{}, err
+	}
+	return m.store.CreateProject(ctx, directory.Project{Owner: owner, Name: name, OrgLocked: orgLocked, CreatedBy: actorID})
+}
+
+// canCreateFor checks actorID may create projects owned by owner: their own
+// library, or the org they're a member of. Creating and cloning share it.
+func (m *Manager) canCreateFor(ctx context.Context, actorID string, owner storage.Owner) error {
+	if _, err := m.actor(ctx, actorID); err != nil {
+		return err
 	}
 	switch owner.Kind {
 	case storage.OwnerUser:
-		if owner.ID != actorID {
-			return directory.Project{}, fmt.Errorf("%w: you can only create projects for yourself or your org", ErrForbidden)
+		if owner.ID == actorID {
+			return nil
 		}
 	case storage.OwnerOrg:
-		if _, err := m.member(ctx, actorID, owner.ID); err != nil {
-			return directory.Project{}, err
-		}
-	default:
-		return directory.Project{}, fmt.Errorf("%w: you can only create projects for yourself or your org", ErrForbidden)
+		_, err := m.member(ctx, actorID, owner.ID)
+		return err
 	}
-	return m.store.CreateProject(ctx, directory.Project{Owner: owner, Name: name, OrgLocked: orgLocked, CreatedBy: actorID})
+	return fmt.Errorf("%w: you can only create projects for yourself or your org", ErrForbidden)
 }
 
 // CreateTemplate creates a gyoza template: readable by every signed-in user,

@@ -55,17 +55,17 @@ func (m *Manager) SetRole(ctx context.Context, actorID, orgID, userID string, ro
 //
 // Their own files and projects stay theirs, and the org's stay the org's
 // (see PLAN.md). When the last member goes, the org itself is deleted with
-// its files and projects: that cascade comes in step 6.
+// its files and projects.
 func (m *Manager) RemoveMember(ctx context.Context, actorID, orgID, userID string) (int, error) {
 	if _, err := m.admin(ctx, actorID, orgID); err != nil {
 		return 0, err
 	}
-	return m.store.RemoveMember(ctx, orgID, userID)
+	return m.removeMember(ctx, orgID, userID)
 }
 
 // LeaveOrg takes the acting user out of their org and returns how many
 // members remain. The last admin must promote someone first (ErrLastAdmin),
-// unless they're the very last member.
+// unless they're the very last member, whose leaving deletes the org.
 func (m *Manager) LeaveOrg(ctx context.Context, actorID string) (int, error) {
 	if _, err := m.actor(ctx, actorID); err != nil {
 		return 0, err
@@ -74,5 +74,5 @@ func (m *Manager) LeaveOrg(ctx context.Context, actorID string) (int, error) {
 	if err != nil {
 		return 0, err // ErrNotMember: they're in no org
 	}
-	return m.store.RemoveMember(ctx, mem.OrgID, actorID)
+	return m.removeMember(ctx, mem.OrgID, actorID)
 }

@@ -130,6 +130,10 @@ type ProjectStore interface {
 	// Marking a ready project again changes nothing, so a resumed clone job
 	// can repeat it.
 	MarkProjectReady(ctx context.Context, id string) (Project, error)
+	// ListCloningProjects returns up to limit clones still being copied
+	// (ProjectCloning, not deleting) created before the given time, oldest
+	// first: the cleanup loop's work list for finishing or abandoning them.
+	ListCloningProjects(ctx context.Context, before time.Time, limit int) ([]Project, error)
 	// SetOrgLocked locks or unlocks an org project. Setting the current value
 	// again changes nothing.
 	SetOrgLocked(ctx context.Context, id string, locked bool) (Project, error)

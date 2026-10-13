@@ -7,6 +7,8 @@ import (
 	"io"
 	"mime"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -137,6 +139,35 @@ func (s *S3) Delete(ctx context.Context, bucket, key string) error {
 		return fmt.Errorf("blob: delete: %w", err)
 	}
 	return nil
+}
+
+func (s *S3) Copy(ctx context.Context, bucket, srcKey, dstKey string) error {
+	if srcKey == dstKey {
+		return errCopyOntoItself // S3 refuses it too, with a 400 that's awkward to match
+	}
+	_, err := s.client.CopyObject(ctx, &s3.CopyObjectInput{
+		Bucket:     aws.String(bucket),
+		Key:        aws.String(dstKey),
+		CopySource: aws.String(copySource(bucket, srcKey)),
+		// MetadataDirective unset means COPY: the content type comes along.
+	})
+	if isStatus(err, http.StatusNotFound) {
+		return ErrNotFound
+	}
+	if err != nil {
+		return fmt.Errorf("blob: copy: %w", err)
+	}
+	return nil
+}
+
+// copySource is CopyObject's "bucket/key". Unlike Key, which the SDK encodes,
+// it's sent as given, so each segment is escaped here; the slashes stay.
+func copySource(bucket, key string) string {
+	parts := strings.Split(bucket+"/"+key, "/")
+	for i, p := range parts {
+		parts[i] = url.PathEscape(p)
+	}
+	return strings.Join(parts, "/")
 }
 
 // EnsureBucket creates bucket if it doesn't exist yet: for local development

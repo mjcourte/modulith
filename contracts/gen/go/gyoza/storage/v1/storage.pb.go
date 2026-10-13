@@ -4,9 +4,9 @@
 // 	protoc        (unknown)
 // source: gyoza/storage/v1/storage.proto
 
-// Storage: every file Gyoza keeps in S3. Uploads and downloads through presigned S3 URLs, and
-// the DAM (assets, versions, folders, trash). Mirrors the Service interface
-// in services/storage.
+// Storage: every file Gyoza keeps in S3. Uploads and downloads through
+// presigned S3 URLs, the DAM (assets, versions, folders, trash) and cleanup.
+// Mirrors the Service interface in services/storage.
 //
 // actor_id is the signed-in user a call is made for. The gateway sets it from
 // the authenticated session; this service trusts it and authorizes with it,
@@ -342,6 +342,58 @@ func (x *Version) GetCreatedAt() *timestamppb.Timestamp {
 	return nil
 }
 
+type AssetRef struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AssetId       string                 `protobuf:"bytes,1,opt,name=asset_id,json=assetId,proto3" json:"asset_id,omitempty"`
+	Version       int32                  `protobuf:"varint,2,opt,name=version,proto3" json:"version,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AssetRef) Reset() {
+	*x = AssetRef{}
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AssetRef) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AssetRef) ProtoMessage() {}
+
+func (x *AssetRef) ProtoReflect() protoreflect.Message {
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AssetRef.ProtoReflect.Descriptor instead.
+func (*AssetRef) Descriptor() ([]byte, []int) {
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *AssetRef) GetAssetId() string {
+	if x != nil {
+		return x.AssetId
+	}
+	return ""
+}
+
+func (x *AssetRef) GetVersion() int32 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
+}
+
 type AssetPage struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Assets        []*Asset               `protobuf:"bytes,1,rep,name=assets,proto3" json:"assets,omitempty"`
@@ -352,7 +404,7 @@ type AssetPage struct {
 
 func (x *AssetPage) Reset() {
 	*x = AssetPage{}
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[2]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -364,7 +416,7 @@ func (x *AssetPage) String() string {
 func (*AssetPage) ProtoMessage() {}
 
 func (x *AssetPage) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[2]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -377,7 +429,7 @@ func (x *AssetPage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AssetPage.ProtoReflect.Descriptor instead.
 func (*AssetPage) Descriptor() ([]byte, []int) {
-	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{2}
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *AssetPage) GetAssets() []*Asset {
@@ -412,7 +464,7 @@ type Folder struct {
 
 func (x *Folder) Reset() {
 	*x = Folder{}
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[3]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -424,7 +476,7 @@ func (x *Folder) String() string {
 func (*Folder) ProtoMessage() {}
 
 func (x *Folder) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[3]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -437,7 +489,7 @@ func (x *Folder) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Folder.ProtoReflect.Descriptor instead.
 func (*Folder) Descriptor() ([]byte, []int) {
-	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{3}
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *Folder) GetId() string {
@@ -514,7 +566,7 @@ type FolderDeletion struct {
 
 func (x *FolderDeletion) Reset() {
 	*x = FolderDeletion{}
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[4]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -526,7 +578,7 @@ func (x *FolderDeletion) String() string {
 func (*FolderDeletion) ProtoMessage() {}
 
 func (x *FolderDeletion) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[4]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -539,7 +591,7 @@ func (x *FolderDeletion) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FolderDeletion.ProtoReflect.Descriptor instead.
 func (*FolderDeletion) Descriptor() ([]byte, []int) {
-	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{4}
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *FolderDeletion) GetDeletionId() string {
@@ -575,7 +627,7 @@ type Download struct {
 
 func (x *Download) Reset() {
 	*x = Download{}
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[5]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -587,7 +639,7 @@ func (x *Download) String() string {
 func (*Download) ProtoMessage() {}
 
 func (x *Download) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[5]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -600,7 +652,7 @@ func (x *Download) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Download.ProtoReflect.Descriptor instead.
 func (*Download) Descriptor() ([]byte, []int) {
-	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{5}
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *Download) GetUrl() string {
@@ -634,7 +686,7 @@ type Tags struct {
 
 func (x *Tags) Reset() {
 	*x = Tags{}
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[6]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -646,7 +698,7 @@ func (x *Tags) String() string {
 func (*Tags) ProtoMessage() {}
 
 func (x *Tags) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[6]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -659,7 +711,7 @@ func (x *Tags) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Tags.ProtoReflect.Descriptor instead.
 func (*Tags) Descriptor() ([]byte, []int) {
-	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{6}
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *Tags) GetTags() []string {
@@ -691,7 +743,7 @@ type BeginUploadRequest struct {
 
 func (x *BeginUploadRequest) Reset() {
 	*x = BeginUploadRequest{}
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[7]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -703,7 +755,7 @@ func (x *BeginUploadRequest) String() string {
 func (*BeginUploadRequest) ProtoMessage() {}
 
 func (x *BeginUploadRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[7]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -716,7 +768,7 @@ func (x *BeginUploadRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BeginUploadRequest.ProtoReflect.Descriptor instead.
 func (*BeginUploadRequest) Descriptor() ([]byte, []int) {
-	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{7}
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *BeginUploadRequest) GetActorId() string {
@@ -804,7 +856,7 @@ type BeginUploadResponse struct {
 
 func (x *BeginUploadResponse) Reset() {
 	*x = BeginUploadResponse{}
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[8]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -816,7 +868,7 @@ func (x *BeginUploadResponse) String() string {
 func (*BeginUploadResponse) ProtoMessage() {}
 
 func (x *BeginUploadResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[8]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -829,7 +881,7 @@ func (x *BeginUploadResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BeginUploadResponse.ProtoReflect.Descriptor instead.
 func (*BeginUploadResponse) Descriptor() ([]byte, []int) {
-	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{8}
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *BeginUploadResponse) GetUploadId() string {
@@ -877,7 +929,7 @@ type CompleteUploadRequest struct {
 
 func (x *CompleteUploadRequest) Reset() {
 	*x = CompleteUploadRequest{}
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[9]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -889,7 +941,7 @@ func (x *CompleteUploadRequest) String() string {
 func (*CompleteUploadRequest) ProtoMessage() {}
 
 func (x *CompleteUploadRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[9]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -902,7 +954,7 @@ func (x *CompleteUploadRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CompleteUploadRequest.ProtoReflect.Descriptor instead.
 func (*CompleteUploadRequest) Descriptor() ([]byte, []int) {
-	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{9}
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *CompleteUploadRequest) GetActorId() string {
@@ -928,7 +980,7 @@ type CompleteUploadResponse struct {
 
 func (x *CompleteUploadResponse) Reset() {
 	*x = CompleteUploadResponse{}
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[10]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -940,7 +992,7 @@ func (x *CompleteUploadResponse) String() string {
 func (*CompleteUploadResponse) ProtoMessage() {}
 
 func (x *CompleteUploadResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[10]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -953,7 +1005,7 @@ func (x *CompleteUploadResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CompleteUploadResponse.ProtoReflect.Descriptor instead.
 func (*CompleteUploadResponse) Descriptor() ([]byte, []int) {
-	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{10}
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *CompleteUploadResponse) GetAsset() *Asset {
@@ -975,7 +1027,7 @@ type GetDownloadURLRequest struct {
 
 func (x *GetDownloadURLRequest) Reset() {
 	*x = GetDownloadURLRequest{}
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[11]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -987,7 +1039,7 @@ func (x *GetDownloadURLRequest) String() string {
 func (*GetDownloadURLRequest) ProtoMessage() {}
 
 func (x *GetDownloadURLRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[11]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1000,7 +1052,7 @@ func (x *GetDownloadURLRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetDownloadURLRequest.ProtoReflect.Descriptor instead.
 func (*GetDownloadURLRequest) Descriptor() ([]byte, []int) {
-	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{11}
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *GetDownloadURLRequest) GetActorId() string {
@@ -1033,7 +1085,7 @@ type GetDownloadURLResponse struct {
 
 func (x *GetDownloadURLResponse) Reset() {
 	*x = GetDownloadURLResponse{}
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[12]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1045,7 +1097,7 @@ func (x *GetDownloadURLResponse) String() string {
 func (*GetDownloadURLResponse) ProtoMessage() {}
 
 func (x *GetDownloadURLResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[12]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1058,7 +1110,7 @@ func (x *GetDownloadURLResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetDownloadURLResponse.ProtoReflect.Descriptor instead.
 func (*GetDownloadURLResponse) Descriptor() ([]byte, []int) {
-	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{12}
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *GetDownloadURLResponse) GetDownload() *Download {
@@ -1079,7 +1131,7 @@ type GetExportURLRequest struct {
 
 func (x *GetExportURLRequest) Reset() {
 	*x = GetExportURLRequest{}
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[13]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1091,7 +1143,7 @@ func (x *GetExportURLRequest) String() string {
 func (*GetExportURLRequest) ProtoMessage() {}
 
 func (x *GetExportURLRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[13]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1104,7 +1156,7 @@ func (x *GetExportURLRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetExportURLRequest.ProtoReflect.Descriptor instead.
 func (*GetExportURLRequest) Descriptor() ([]byte, []int) {
-	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{13}
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *GetExportURLRequest) GetActorId() string {
@@ -1130,7 +1182,7 @@ type GetExportURLResponse struct {
 
 func (x *GetExportURLResponse) Reset() {
 	*x = GetExportURLResponse{}
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[14]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1142,7 +1194,7 @@ func (x *GetExportURLResponse) String() string {
 func (*GetExportURLResponse) ProtoMessage() {}
 
 func (x *GetExportURLResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[14]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1155,7 +1207,7 @@ func (x *GetExportURLResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetExportURLResponse.ProtoReflect.Descriptor instead.
 func (*GetExportURLResponse) Descriptor() ([]byte, []int) {
-	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{14}
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *GetExportURLResponse) GetDownload() *Download {
@@ -1175,7 +1227,7 @@ type GetAssetRequest struct {
 
 func (x *GetAssetRequest) Reset() {
 	*x = GetAssetRequest{}
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[15]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1187,7 +1239,7 @@ func (x *GetAssetRequest) String() string {
 func (*GetAssetRequest) ProtoMessage() {}
 
 func (x *GetAssetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[15]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1200,7 +1252,7 @@ func (x *GetAssetRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetAssetRequest.ProtoReflect.Descriptor instead.
 func (*GetAssetRequest) Descriptor() ([]byte, []int) {
-	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{15}
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *GetAssetRequest) GetActorId() string {
@@ -1226,7 +1278,7 @@ type GetAssetResponse struct {
 
 func (x *GetAssetResponse) Reset() {
 	*x = GetAssetResponse{}
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[16]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1238,7 +1290,7 @@ func (x *GetAssetResponse) String() string {
 func (*GetAssetResponse) ProtoMessage() {}
 
 func (x *GetAssetResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[16]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1251,7 +1303,7 @@ func (x *GetAssetResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetAssetResponse.ProtoReflect.Descriptor instead.
 func (*GetAssetResponse) Descriptor() ([]byte, []int) {
-	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{16}
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *GetAssetResponse) GetAsset() *Asset {
@@ -1283,7 +1335,7 @@ type ListAssetsRequest struct {
 
 func (x *ListAssetsRequest) Reset() {
 	*x = ListAssetsRequest{}
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[17]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1295,7 +1347,7 @@ func (x *ListAssetsRequest) String() string {
 func (*ListAssetsRequest) ProtoMessage() {}
 
 func (x *ListAssetsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[17]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1308,7 +1360,7 @@ func (x *ListAssetsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListAssetsRequest.ProtoReflect.Descriptor instead.
 func (*ListAssetsRequest) Descriptor() ([]byte, []int) {
-	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{17}
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *ListAssetsRequest) GetActorId() string {
@@ -1390,7 +1442,7 @@ type ListAssetsResponse struct {
 
 func (x *ListAssetsResponse) Reset() {
 	*x = ListAssetsResponse{}
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[18]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1402,7 +1454,7 @@ func (x *ListAssetsResponse) String() string {
 func (*ListAssetsResponse) ProtoMessage() {}
 
 func (x *ListAssetsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[18]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1415,7 +1467,7 @@ func (x *ListAssetsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListAssetsResponse.ProtoReflect.Descriptor instead.
 func (*ListAssetsResponse) Descriptor() ([]byte, []int) {
-	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{18}
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *ListAssetsResponse) GetPage() *AssetPage {
@@ -1441,7 +1493,7 @@ type UpdateAssetRequest struct {
 
 func (x *UpdateAssetRequest) Reset() {
 	*x = UpdateAssetRequest{}
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[19]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1453,7 +1505,7 @@ func (x *UpdateAssetRequest) String() string {
 func (*UpdateAssetRequest) ProtoMessage() {}
 
 func (x *UpdateAssetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[19]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1466,7 +1518,7 @@ func (x *UpdateAssetRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateAssetRequest.ProtoReflect.Descriptor instead.
 func (*UpdateAssetRequest) Descriptor() ([]byte, []int) {
-	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{19}
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *UpdateAssetRequest) GetActorId() string {
@@ -1520,7 +1572,7 @@ type UpdateAssetResponse struct {
 
 func (x *UpdateAssetResponse) Reset() {
 	*x = UpdateAssetResponse{}
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[20]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1532,7 +1584,7 @@ func (x *UpdateAssetResponse) String() string {
 func (*UpdateAssetResponse) ProtoMessage() {}
 
 func (x *UpdateAssetResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[20]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1545,7 +1597,7 @@ func (x *UpdateAssetResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateAssetResponse.ProtoReflect.Descriptor instead.
 func (*UpdateAssetResponse) Descriptor() ([]byte, []int) {
-	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{20}
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *UpdateAssetResponse) GetAsset() *Asset {
@@ -1565,7 +1617,7 @@ type DeleteAssetRequest struct {
 
 func (x *DeleteAssetRequest) Reset() {
 	*x = DeleteAssetRequest{}
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[21]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1577,7 +1629,7 @@ func (x *DeleteAssetRequest) String() string {
 func (*DeleteAssetRequest) ProtoMessage() {}
 
 func (x *DeleteAssetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[21]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1590,7 +1642,7 @@ func (x *DeleteAssetRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteAssetRequest.ProtoReflect.Descriptor instead.
 func (*DeleteAssetRequest) Descriptor() ([]byte, []int) {
-	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{21}
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *DeleteAssetRequest) GetActorId() string {
@@ -1615,7 +1667,7 @@ type DeleteAssetResponse struct {
 
 func (x *DeleteAssetResponse) Reset() {
 	*x = DeleteAssetResponse{}
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[22]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1627,7 +1679,7 @@ func (x *DeleteAssetResponse) String() string {
 func (*DeleteAssetResponse) ProtoMessage() {}
 
 func (x *DeleteAssetResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[22]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1640,7 +1692,7 @@ func (x *DeleteAssetResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteAssetResponse.ProtoReflect.Descriptor instead.
 func (*DeleteAssetResponse) Descriptor() ([]byte, []int) {
-	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{22}
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{23}
 }
 
 type RestoreAssetRequest struct {
@@ -1653,7 +1705,7 @@ type RestoreAssetRequest struct {
 
 func (x *RestoreAssetRequest) Reset() {
 	*x = RestoreAssetRequest{}
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[23]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1665,7 +1717,7 @@ func (x *RestoreAssetRequest) String() string {
 func (*RestoreAssetRequest) ProtoMessage() {}
 
 func (x *RestoreAssetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[23]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1678,7 +1730,7 @@ func (x *RestoreAssetRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RestoreAssetRequest.ProtoReflect.Descriptor instead.
 func (*RestoreAssetRequest) Descriptor() ([]byte, []int) {
-	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{23}
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *RestoreAssetRequest) GetActorId() string {
@@ -1704,7 +1756,7 @@ type RestoreAssetResponse struct {
 
 func (x *RestoreAssetResponse) Reset() {
 	*x = RestoreAssetResponse{}
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[24]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1716,7 +1768,7 @@ func (x *RestoreAssetResponse) String() string {
 func (*RestoreAssetResponse) ProtoMessage() {}
 
 func (x *RestoreAssetResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[24]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1729,7 +1781,7 @@ func (x *RestoreAssetResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RestoreAssetResponse.ProtoReflect.Descriptor instead.
 func (*RestoreAssetResponse) Descriptor() ([]byte, []int) {
-	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{24}
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *RestoreAssetResponse) GetAsset() *Asset {
@@ -1749,7 +1801,7 @@ type ListVersionsRequest struct {
 
 func (x *ListVersionsRequest) Reset() {
 	*x = ListVersionsRequest{}
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[25]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1761,7 +1813,7 @@ func (x *ListVersionsRequest) String() string {
 func (*ListVersionsRequest) ProtoMessage() {}
 
 func (x *ListVersionsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[25]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1774,7 +1826,7 @@ func (x *ListVersionsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListVersionsRequest.ProtoReflect.Descriptor instead.
 func (*ListVersionsRequest) Descriptor() ([]byte, []int) {
-	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{25}
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *ListVersionsRequest) GetActorId() string {
@@ -1801,7 +1853,7 @@ type ListVersionsResponse struct {
 
 func (x *ListVersionsResponse) Reset() {
 	*x = ListVersionsResponse{}
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[26]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1813,7 +1865,7 @@ func (x *ListVersionsResponse) String() string {
 func (*ListVersionsResponse) ProtoMessage() {}
 
 func (x *ListVersionsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[26]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1826,7 +1878,7 @@ func (x *ListVersionsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListVersionsResponse.ProtoReflect.Descriptor instead.
 func (*ListVersionsResponse) Descriptor() ([]byte, []int) {
-	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{26}
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *ListVersionsResponse) GetVersions() []*Version {
@@ -1847,7 +1899,7 @@ type RevertAssetRequest struct {
 
 func (x *RevertAssetRequest) Reset() {
 	*x = RevertAssetRequest{}
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[27]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1859,7 +1911,7 @@ func (x *RevertAssetRequest) String() string {
 func (*RevertAssetRequest) ProtoMessage() {}
 
 func (x *RevertAssetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[27]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1872,7 +1924,7 @@ func (x *RevertAssetRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RevertAssetRequest.ProtoReflect.Descriptor instead.
 func (*RevertAssetRequest) Descriptor() ([]byte, []int) {
-	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{27}
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *RevertAssetRequest) GetActorId() string {
@@ -1905,7 +1957,7 @@ type RevertAssetResponse struct {
 
 func (x *RevertAssetResponse) Reset() {
 	*x = RevertAssetResponse{}
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[28]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1917,7 +1969,7 @@ func (x *RevertAssetResponse) String() string {
 func (*RevertAssetResponse) ProtoMessage() {}
 
 func (x *RevertAssetResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[28]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1930,7 +1982,7 @@ func (x *RevertAssetResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RevertAssetResponse.ProtoReflect.Descriptor instead.
 func (*RevertAssetResponse) Descriptor() ([]byte, []int) {
-	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{28}
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *RevertAssetResponse) GetAsset() *Asset {
@@ -1952,7 +2004,7 @@ type CreateFolderRequest struct {
 
 func (x *CreateFolderRequest) Reset() {
 	*x = CreateFolderRequest{}
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[29]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1964,7 +2016,7 @@ func (x *CreateFolderRequest) String() string {
 func (*CreateFolderRequest) ProtoMessage() {}
 
 func (x *CreateFolderRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[29]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1977,7 +2029,7 @@ func (x *CreateFolderRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateFolderRequest.ProtoReflect.Descriptor instead.
 func (*CreateFolderRequest) Descriptor() ([]byte, []int) {
-	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{29}
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *CreateFolderRequest) GetActorId() string {
@@ -2017,7 +2069,7 @@ type CreateFolderResponse struct {
 
 func (x *CreateFolderResponse) Reset() {
 	*x = CreateFolderResponse{}
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[30]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2029,7 +2081,7 @@ func (x *CreateFolderResponse) String() string {
 func (*CreateFolderResponse) ProtoMessage() {}
 
 func (x *CreateFolderResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[30]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2042,7 +2094,7 @@ func (x *CreateFolderResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateFolderResponse.ProtoReflect.Descriptor instead.
 func (*CreateFolderResponse) Descriptor() ([]byte, []int) {
-	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{30}
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *CreateFolderResponse) GetFolder() *Folder {
@@ -2063,7 +2115,7 @@ type RenameFolderRequest struct {
 
 func (x *RenameFolderRequest) Reset() {
 	*x = RenameFolderRequest{}
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[31]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2075,7 +2127,7 @@ func (x *RenameFolderRequest) String() string {
 func (*RenameFolderRequest) ProtoMessage() {}
 
 func (x *RenameFolderRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[31]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2088,7 +2140,7 @@ func (x *RenameFolderRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RenameFolderRequest.ProtoReflect.Descriptor instead.
 func (*RenameFolderRequest) Descriptor() ([]byte, []int) {
-	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{31}
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *RenameFolderRequest) GetActorId() string {
@@ -2121,7 +2173,7 @@ type RenameFolderResponse struct {
 
 func (x *RenameFolderResponse) Reset() {
 	*x = RenameFolderResponse{}
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[32]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2133,7 +2185,7 @@ func (x *RenameFolderResponse) String() string {
 func (*RenameFolderResponse) ProtoMessage() {}
 
 func (x *RenameFolderResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[32]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2146,7 +2198,7 @@ func (x *RenameFolderResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RenameFolderResponse.ProtoReflect.Descriptor instead.
 func (*RenameFolderResponse) Descriptor() ([]byte, []int) {
-	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{32}
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *RenameFolderResponse) GetFolder() *Folder {
@@ -2168,7 +2220,7 @@ type MoveFolderRequest struct {
 
 func (x *MoveFolderRequest) Reset() {
 	*x = MoveFolderRequest{}
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[33]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2180,7 +2232,7 @@ func (x *MoveFolderRequest) String() string {
 func (*MoveFolderRequest) ProtoMessage() {}
 
 func (x *MoveFolderRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[33]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2193,7 +2245,7 @@ func (x *MoveFolderRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MoveFolderRequest.ProtoReflect.Descriptor instead.
 func (*MoveFolderRequest) Descriptor() ([]byte, []int) {
-	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{33}
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *MoveFolderRequest) GetActorId() string {
@@ -2226,7 +2278,7 @@ type MoveFolderResponse struct {
 
 func (x *MoveFolderResponse) Reset() {
 	*x = MoveFolderResponse{}
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[34]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2238,7 +2290,7 @@ func (x *MoveFolderResponse) String() string {
 func (*MoveFolderResponse) ProtoMessage() {}
 
 func (x *MoveFolderResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[34]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2251,7 +2303,7 @@ func (x *MoveFolderResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MoveFolderResponse.ProtoReflect.Descriptor instead.
 func (*MoveFolderResponse) Descriptor() ([]byte, []int) {
-	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{34}
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *MoveFolderResponse) GetFolder() *Folder {
@@ -2271,7 +2323,7 @@ type DeleteFolderRequest struct {
 
 func (x *DeleteFolderRequest) Reset() {
 	*x = DeleteFolderRequest{}
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[35]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2283,7 +2335,7 @@ func (x *DeleteFolderRequest) String() string {
 func (*DeleteFolderRequest) ProtoMessage() {}
 
 func (x *DeleteFolderRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[35]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2296,7 +2348,7 @@ func (x *DeleteFolderRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteFolderRequest.ProtoReflect.Descriptor instead.
 func (*DeleteFolderRequest) Descriptor() ([]byte, []int) {
-	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{35}
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *DeleteFolderRequest) GetActorId() string {
@@ -2322,7 +2374,7 @@ type DeleteFolderResponse struct {
 
 func (x *DeleteFolderResponse) Reset() {
 	*x = DeleteFolderResponse{}
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[36]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2334,7 +2386,7 @@ func (x *DeleteFolderResponse) String() string {
 func (*DeleteFolderResponse) ProtoMessage() {}
 
 func (x *DeleteFolderResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[36]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2347,7 +2399,7 @@ func (x *DeleteFolderResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteFolderResponse.ProtoReflect.Descriptor instead.
 func (*DeleteFolderResponse) Descriptor() ([]byte, []int) {
-	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{36}
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{37}
 }
 
 func (x *DeleteFolderResponse) GetDeletion() *FolderDeletion {
@@ -2367,7 +2419,7 @@ type DeleteFolderTreeRequest struct {
 
 func (x *DeleteFolderTreeRequest) Reset() {
 	*x = DeleteFolderTreeRequest{}
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[37]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2379,7 +2431,7 @@ func (x *DeleteFolderTreeRequest) String() string {
 func (*DeleteFolderTreeRequest) ProtoMessage() {}
 
 func (x *DeleteFolderTreeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[37]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2392,7 +2444,7 @@ func (x *DeleteFolderTreeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteFolderTreeRequest.ProtoReflect.Descriptor instead.
 func (*DeleteFolderTreeRequest) Descriptor() ([]byte, []int) {
-	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{37}
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{38}
 }
 
 func (x *DeleteFolderTreeRequest) GetActorId() string {
@@ -2418,7 +2470,7 @@ type DeleteFolderTreeResponse struct {
 
 func (x *DeleteFolderTreeResponse) Reset() {
 	*x = DeleteFolderTreeResponse{}
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[38]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2430,7 +2482,7 @@ func (x *DeleteFolderTreeResponse) String() string {
 func (*DeleteFolderTreeResponse) ProtoMessage() {}
 
 func (x *DeleteFolderTreeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[38]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2443,7 +2495,7 @@ func (x *DeleteFolderTreeResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteFolderTreeResponse.ProtoReflect.Descriptor instead.
 func (*DeleteFolderTreeResponse) Descriptor() ([]byte, []int) {
-	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{38}
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{39}
 }
 
 func (x *DeleteFolderTreeResponse) GetDeletion() *FolderDeletion {
@@ -2463,7 +2515,7 @@ type RestoreFolderRequest struct {
 
 func (x *RestoreFolderRequest) Reset() {
 	*x = RestoreFolderRequest{}
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[39]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[40]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2475,7 +2527,7 @@ func (x *RestoreFolderRequest) String() string {
 func (*RestoreFolderRequest) ProtoMessage() {}
 
 func (x *RestoreFolderRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[39]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[40]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2488,7 +2540,7 @@ func (x *RestoreFolderRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RestoreFolderRequest.ProtoReflect.Descriptor instead.
 func (*RestoreFolderRequest) Descriptor() ([]byte, []int) {
-	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{39}
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{40}
 }
 
 func (x *RestoreFolderRequest) GetActorId() string {
@@ -2514,7 +2566,7 @@ type RestoreFolderResponse struct {
 
 func (x *RestoreFolderResponse) Reset() {
 	*x = RestoreFolderResponse{}
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[40]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[41]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2526,7 +2578,7 @@ func (x *RestoreFolderResponse) String() string {
 func (*RestoreFolderResponse) ProtoMessage() {}
 
 func (x *RestoreFolderResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[40]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[41]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2539,7 +2591,7 @@ func (x *RestoreFolderResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RestoreFolderResponse.ProtoReflect.Descriptor instead.
 func (*RestoreFolderResponse) Descriptor() ([]byte, []int) {
-	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{40}
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{41}
 }
 
 func (x *RestoreFolderResponse) GetDeletion() *FolderDeletion {
@@ -2562,7 +2614,7 @@ type ListFolderContentsRequest struct {
 
 func (x *ListFolderContentsRequest) Reset() {
 	*x = ListFolderContentsRequest{}
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[41]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[42]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2574,7 +2626,7 @@ func (x *ListFolderContentsRequest) String() string {
 func (*ListFolderContentsRequest) ProtoMessage() {}
 
 func (x *ListFolderContentsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[41]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[42]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2587,7 +2639,7 @@ func (x *ListFolderContentsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListFolderContentsRequest.ProtoReflect.Descriptor instead.
 func (*ListFolderContentsRequest) Descriptor() ([]byte, []int) {
-	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{41}
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{42}
 }
 
 func (x *ListFolderContentsRequest) GetActorId() string {
@@ -2631,7 +2683,7 @@ type ListFolderContentsResponse struct {
 
 func (x *ListFolderContentsResponse) Reset() {
 	*x = ListFolderContentsResponse{}
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[42]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[43]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2643,7 +2695,7 @@ func (x *ListFolderContentsResponse) String() string {
 func (*ListFolderContentsResponse) ProtoMessage() {}
 
 func (x *ListFolderContentsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[42]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[43]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2656,7 +2708,7 @@ func (x *ListFolderContentsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListFolderContentsResponse.ProtoReflect.Descriptor instead.
 func (*ListFolderContentsResponse) Descriptor() ([]byte, []int) {
-	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{42}
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{43}
 }
 
 func (x *ListFolderContentsResponse) GetPath() []*Folder {
@@ -2690,7 +2742,7 @@ type GetFolderPathRequest struct {
 
 func (x *GetFolderPathRequest) Reset() {
 	*x = GetFolderPathRequest{}
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[43]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[44]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2702,7 +2754,7 @@ func (x *GetFolderPathRequest) String() string {
 func (*GetFolderPathRequest) ProtoMessage() {}
 
 func (x *GetFolderPathRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[43]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[44]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2715,7 +2767,7 @@ func (x *GetFolderPathRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetFolderPathRequest.ProtoReflect.Descriptor instead.
 func (*GetFolderPathRequest) Descriptor() ([]byte, []int) {
-	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{43}
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{44}
 }
 
 func (x *GetFolderPathRequest) GetActorId() string {
@@ -2742,7 +2794,7 @@ type GetFolderPathResponse struct {
 
 func (x *GetFolderPathResponse) Reset() {
 	*x = GetFolderPathResponse{}
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[44]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[45]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2754,7 +2806,7 @@ func (x *GetFolderPathResponse) String() string {
 func (*GetFolderPathResponse) ProtoMessage() {}
 
 func (x *GetFolderPathResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[44]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[45]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2767,7 +2819,7 @@ func (x *GetFolderPathResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetFolderPathResponse.ProtoReflect.Descriptor instead.
 func (*GetFolderPathResponse) Descriptor() ([]byte, []int) {
-	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{44}
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{45}
 }
 
 func (x *GetFolderPathResponse) GetPath() []*Folder {
@@ -2788,7 +2840,7 @@ type ListTrashRequest struct {
 
 func (x *ListTrashRequest) Reset() {
 	*x = ListTrashRequest{}
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[45]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[46]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2800,7 +2852,7 @@ func (x *ListTrashRequest) String() string {
 func (*ListTrashRequest) ProtoMessage() {}
 
 func (x *ListTrashRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[45]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[46]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2813,7 +2865,7 @@ func (x *ListTrashRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListTrashRequest.ProtoReflect.Descriptor instead.
 func (*ListTrashRequest) Descriptor() ([]byte, []int) {
-	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{45}
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{46}
 }
 
 func (x *ListTrashRequest) GetActorId() string {
@@ -2840,15 +2892,17 @@ func (x *ListTrashRequest) GetPageToken() string {
 type ListTrashResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// On the first page only.
-	Folders       []*Folder  `protobuf:"bytes,1,rep,name=folders,proto3" json:"folders,omitempty"`
-	Assets        *AssetPage `protobuf:"bytes,2,opt,name=assets,proto3" json:"assets,omitempty"`
+	Folders []*Folder  `protobuf:"bytes,1,rep,name=folders,proto3" json:"folders,omitempty"`
+	Assets  *AssetPage `protobuf:"bytes,2,opt,name=assets,proto3" json:"assets,omitempty"`
+	// Projects using each trashed asset on this page; absent means none.
+	Uses          map[string]int32 `protobuf:"bytes,3,rep,name=uses,proto3" json:"uses,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ListTrashResponse) Reset() {
 	*x = ListTrashResponse{}
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[46]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[47]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2860,7 +2914,7 @@ func (x *ListTrashResponse) String() string {
 func (*ListTrashResponse) ProtoMessage() {}
 
 func (x *ListTrashResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[46]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[47]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2873,7 +2927,7 @@ func (x *ListTrashResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListTrashResponse.ProtoReflect.Descriptor instead.
 func (*ListTrashResponse) Descriptor() ([]byte, []int) {
-	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{46}
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{47}
 }
 
 func (x *ListTrashResponse) GetFolders() []*Folder {
@@ -2890,6 +2944,13 @@ func (x *ListTrashResponse) GetAssets() *AssetPage {
 	return nil
 }
 
+func (x *ListTrashResponse) GetUses() map[string]int32 {
+	if x != nil {
+		return x.Uses
+	}
+	return nil
+}
+
 type DeleteOwnedRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Owner         *Owner                 `protobuf:"bytes,1,opt,name=owner,proto3" json:"owner,omitempty"`
@@ -2899,7 +2960,7 @@ type DeleteOwnedRequest struct {
 
 func (x *DeleteOwnedRequest) Reset() {
 	*x = DeleteOwnedRequest{}
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[47]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[48]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2911,7 +2972,7 @@ func (x *DeleteOwnedRequest) String() string {
 func (*DeleteOwnedRequest) ProtoMessage() {}
 
 func (x *DeleteOwnedRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[47]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[48]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2924,7 +2985,7 @@ func (x *DeleteOwnedRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteOwnedRequest.ProtoReflect.Descriptor instead.
 func (*DeleteOwnedRequest) Descriptor() ([]byte, []int) {
-	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{47}
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{48}
 }
 
 func (x *DeleteOwnedRequest) GetOwner() *Owner {
@@ -2938,13 +2999,15 @@ type DeleteOwnedResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	LedgerObjects int32                  `protobuf:"varint,1,opt,name=ledger_objects,json=ledgerObjects,proto3" json:"ledger_objects,omitempty"`
 	Trash         *FolderDeletion        `protobuf:"bytes,2,opt,name=trash,proto3" json:"trash,omitempty"`
+	// A deleted project's asset uses forgotten (projects only).
+	Uses          int32 `protobuf:"varint,3,opt,name=uses,proto3" json:"uses,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *DeleteOwnedResponse) Reset() {
 	*x = DeleteOwnedResponse{}
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[48]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[49]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2956,7 +3019,7 @@ func (x *DeleteOwnedResponse) String() string {
 func (*DeleteOwnedResponse) ProtoMessage() {}
 
 func (x *DeleteOwnedResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[48]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[49]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2969,7 +3032,7 @@ func (x *DeleteOwnedResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteOwnedResponse.ProtoReflect.Descriptor instead.
 func (*DeleteOwnedResponse) Descriptor() ([]byte, []int) {
-	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{48}
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{49}
 }
 
 func (x *DeleteOwnedResponse) GetLedgerObjects() int32 {
@@ -2986,6 +3049,13 @@ func (x *DeleteOwnedResponse) GetTrash() *FolderDeletion {
 	return nil
 }
 
+func (x *DeleteOwnedResponse) GetUses() int32 {
+	if x != nil {
+		return x.Uses
+	}
+	return 0
+}
+
 type RemoveUserRequest struct {
 	state  protoimpl.MessageState `protogen:"open.v1"`
 	UserId string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -2997,7 +3067,7 @@ type RemoveUserRequest struct {
 
 func (x *RemoveUserRequest) Reset() {
 	*x = RemoveUserRequest{}
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[49]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[50]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3009,7 +3079,7 @@ func (x *RemoveUserRequest) String() string {
 func (*RemoveUserRequest) ProtoMessage() {}
 
 func (x *RemoveUserRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[49]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[50]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3022,7 +3092,7 @@ func (x *RemoveUserRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveUserRequest.ProtoReflect.Descriptor instead.
 func (*RemoveUserRequest) Descriptor() ([]byte, []int) {
-	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{49}
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{50}
 }
 
 func (x *RemoveUserRequest) GetUserId() string {
@@ -3058,7 +3128,7 @@ type RemoveUserResponse struct {
 
 func (x *RemoveUserResponse) Reset() {
 	*x = RemoveUserResponse{}
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[50]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[51]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3070,7 +3140,7 @@ func (x *RemoveUserResponse) String() string {
 func (*RemoveUserResponse) ProtoMessage() {}
 
 func (x *RemoveUserResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[50]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[51]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3083,7 +3153,7 @@ func (x *RemoveUserResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveUserResponse.ProtoReflect.Descriptor instead.
 func (*RemoveUserResponse) Descriptor() ([]byte, []int) {
-	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{50}
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{51}
 }
 
 func (x *RemoveUserResponse) GetExpiredUploads() int32 {
@@ -3167,7 +3237,7 @@ type Owner struct {
 
 func (x *Owner) Reset() {
 	*x = Owner{}
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[51]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[52]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3179,7 +3249,7 @@ func (x *Owner) String() string {
 func (*Owner) ProtoMessage() {}
 
 func (x *Owner) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[51]
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[52]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3192,7 +3262,7 @@ func (x *Owner) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Owner.ProtoReflect.Descriptor instead.
 func (*Owner) Descriptor() ([]byte, []int) {
-	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{51}
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{52}
 }
 
 func (x *Owner) GetKind() OwnerKind {
@@ -3207,6 +3277,565 @@ func (x *Owner) GetId() string {
 		return x.Id
 	}
 	return ""
+}
+
+type ResolveRefRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ActorId       string                 `protobuf:"bytes,1,opt,name=actor_id,json=actorId,proto3" json:"actor_id,omitempty"`
+	ProjectId     string                 `protobuf:"bytes,2,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
+	Ref           *AssetRef              `protobuf:"bytes,3,opt,name=ref,proto3" json:"ref,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResolveRefRequest) Reset() {
+	*x = ResolveRefRequest{}
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[53]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResolveRefRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResolveRefRequest) ProtoMessage() {}
+
+func (x *ResolveRefRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[53]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResolveRefRequest.ProtoReflect.Descriptor instead.
+func (*ResolveRefRequest) Descriptor() ([]byte, []int) {
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{53}
+}
+
+func (x *ResolveRefRequest) GetActorId() string {
+	if x != nil {
+		return x.ActorId
+	}
+	return ""
+}
+
+func (x *ResolveRefRequest) GetProjectId() string {
+	if x != nil {
+		return x.ProjectId
+	}
+	return ""
+}
+
+func (x *ResolveRefRequest) GetRef() *AssetRef {
+	if x != nil {
+		return x.Ref
+	}
+	return nil
+}
+
+type ResolveRefResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// deleted_at is set if it's in the trash: it still resolves until the purge.
+	Asset         *Asset    `protobuf:"bytes,1,opt,name=asset,proto3" json:"asset,omitempty"`
+	Version       *Version  `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
+	Download      *Download `protobuf:"bytes,3,opt,name=download,proto3" json:"download,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResolveRefResponse) Reset() {
+	*x = ResolveRefResponse{}
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[54]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResolveRefResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResolveRefResponse) ProtoMessage() {}
+
+func (x *ResolveRefResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[54]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResolveRefResponse.ProtoReflect.Descriptor instead.
+func (*ResolveRefResponse) Descriptor() ([]byte, []int) {
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{54}
+}
+
+func (x *ResolveRefResponse) GetAsset() *Asset {
+	if x != nil {
+		return x.Asset
+	}
+	return nil
+}
+
+func (x *ResolveRefResponse) GetVersion() *Version {
+	if x != nil {
+		return x.Version
+	}
+	return nil
+}
+
+func (x *ResolveRefResponse) GetDownload() *Download {
+	if x != nil {
+		return x.Download
+	}
+	return nil
+}
+
+type ForkAssetRequest struct {
+	state   protoimpl.MessageState `protogen:"open.v1"`
+	ActorId string                 `protobuf:"bytes,1,opt,name=actor_id,json=actorId,proto3" json:"actor_id,omitempty"`
+	// The project the fork is made for: its use of ref moves to the copy.
+	ProjectId string    `protobuf:"bytes,2,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
+	Ref       *AssetRef `protobuf:"bytes,3,opt,name=ref,proto3" json:"ref,omitempty"`
+	// The project itself when unset, or the project's owner (their library).
+	Target *Owner `protobuf:"bytes,4,opt,name=target,proto3" json:"target,omitempty"`
+	// Optional: a project the actor reads that uses ref, when they can read it
+	// only through that project (copying out of a shared project).
+	ViaProjectId  string `protobuf:"bytes,5,opt,name=via_project_id,json=viaProjectId,proto3" json:"via_project_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ForkAssetRequest) Reset() {
+	*x = ForkAssetRequest{}
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[55]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ForkAssetRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ForkAssetRequest) ProtoMessage() {}
+
+func (x *ForkAssetRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[55]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ForkAssetRequest.ProtoReflect.Descriptor instead.
+func (*ForkAssetRequest) Descriptor() ([]byte, []int) {
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{55}
+}
+
+func (x *ForkAssetRequest) GetActorId() string {
+	if x != nil {
+		return x.ActorId
+	}
+	return ""
+}
+
+func (x *ForkAssetRequest) GetProjectId() string {
+	if x != nil {
+		return x.ProjectId
+	}
+	return ""
+}
+
+func (x *ForkAssetRequest) GetRef() *AssetRef {
+	if x != nil {
+		return x.Ref
+	}
+	return nil
+}
+
+func (x *ForkAssetRequest) GetTarget() *Owner {
+	if x != nil {
+		return x.Target
+	}
+	return nil
+}
+
+func (x *ForkAssetRequest) GetViaProjectId() string {
+	if x != nil {
+		return x.ViaProjectId
+	}
+	return ""
+}
+
+type ForkAssetResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The copy; its ref is {asset.id, 1}.
+	Asset         *Asset `protobuf:"bytes,1,opt,name=asset,proto3" json:"asset,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ForkAssetResponse) Reset() {
+	*x = ForkAssetResponse{}
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[56]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ForkAssetResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ForkAssetResponse) ProtoMessage() {}
+
+func (x *ForkAssetResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[56]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ForkAssetResponse.ProtoReflect.Descriptor instead.
+func (*ForkAssetResponse) Descriptor() ([]byte, []int) {
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{56}
+}
+
+func (x *ForkAssetResponse) GetAsset() *Asset {
+	if x != nil {
+		return x.Asset
+	}
+	return nil
+}
+
+type RecordAssetUseRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ActorId       string                 `protobuf:"bytes,1,opt,name=actor_id,json=actorId,proto3" json:"actor_id,omitempty"`
+	ProjectId     string                 `protobuf:"bytes,2,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
+	Ref           *AssetRef              `protobuf:"bytes,3,opt,name=ref,proto3" json:"ref,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RecordAssetUseRequest) Reset() {
+	*x = RecordAssetUseRequest{}
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[57]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RecordAssetUseRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RecordAssetUseRequest) ProtoMessage() {}
+
+func (x *RecordAssetUseRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[57]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RecordAssetUseRequest.ProtoReflect.Descriptor instead.
+func (*RecordAssetUseRequest) Descriptor() ([]byte, []int) {
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{57}
+}
+
+func (x *RecordAssetUseRequest) GetActorId() string {
+	if x != nil {
+		return x.ActorId
+	}
+	return ""
+}
+
+func (x *RecordAssetUseRequest) GetProjectId() string {
+	if x != nil {
+		return x.ProjectId
+	}
+	return ""
+}
+
+func (x *RecordAssetUseRequest) GetRef() *AssetRef {
+	if x != nil {
+		return x.Ref
+	}
+	return nil
+}
+
+type RecordAssetUseResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RecordAssetUseResponse) Reset() {
+	*x = RecordAssetUseResponse{}
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[58]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RecordAssetUseResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RecordAssetUseResponse) ProtoMessage() {}
+
+func (x *RecordAssetUseResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[58]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RecordAssetUseResponse.ProtoReflect.Descriptor instead.
+func (*RecordAssetUseResponse) Descriptor() ([]byte, []int) {
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{58}
+}
+
+type ForgetAssetUseRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ActorId       string                 `protobuf:"bytes,1,opt,name=actor_id,json=actorId,proto3" json:"actor_id,omitempty"`
+	ProjectId     string                 `protobuf:"bytes,2,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
+	Ref           *AssetRef              `protobuf:"bytes,3,opt,name=ref,proto3" json:"ref,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ForgetAssetUseRequest) Reset() {
+	*x = ForgetAssetUseRequest{}
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[59]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ForgetAssetUseRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ForgetAssetUseRequest) ProtoMessage() {}
+
+func (x *ForgetAssetUseRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[59]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ForgetAssetUseRequest.ProtoReflect.Descriptor instead.
+func (*ForgetAssetUseRequest) Descriptor() ([]byte, []int) {
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{59}
+}
+
+func (x *ForgetAssetUseRequest) GetActorId() string {
+	if x != nil {
+		return x.ActorId
+	}
+	return ""
+}
+
+func (x *ForgetAssetUseRequest) GetProjectId() string {
+	if x != nil {
+		return x.ProjectId
+	}
+	return ""
+}
+
+func (x *ForgetAssetUseRequest) GetRef() *AssetRef {
+	if x != nil {
+		return x.Ref
+	}
+	return nil
+}
+
+type ForgetAssetUseResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ForgetAssetUseResponse) Reset() {
+	*x = ForgetAssetUseResponse{}
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[60]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ForgetAssetUseResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ForgetAssetUseResponse) ProtoMessage() {}
+
+func (x *ForgetAssetUseResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[60]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ForgetAssetUseResponse.ProtoReflect.Descriptor instead.
+func (*ForgetAssetUseResponse) Descriptor() ([]byte, []int) {
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{60}
+}
+
+type CopyProjectFilesRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Recorded as the copies' creator; iam has already checked the clone.
+	ActorId       string `protobuf:"bytes,1,opt,name=actor_id,json=actorId,proto3" json:"actor_id,omitempty"`
+	FromProjectId string `protobuf:"bytes,2,opt,name=from_project_id,json=fromProjectId,proto3" json:"from_project_id,omitempty"`
+	ToProjectId   string `protobuf:"bytes,3,opt,name=to_project_id,json=toProjectId,proto3" json:"to_project_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CopyProjectFilesRequest) Reset() {
+	*x = CopyProjectFilesRequest{}
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[61]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CopyProjectFilesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CopyProjectFilesRequest) ProtoMessage() {}
+
+func (x *CopyProjectFilesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[61]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CopyProjectFilesRequest.ProtoReflect.Descriptor instead.
+func (*CopyProjectFilesRequest) Descriptor() ([]byte, []int) {
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{61}
+}
+
+func (x *CopyProjectFilesRequest) GetActorId() string {
+	if x != nil {
+		return x.ActorId
+	}
+	return ""
+}
+
+func (x *CopyProjectFilesRequest) GetFromProjectId() string {
+	if x != nil {
+		return x.FromProjectId
+	}
+	return ""
+}
+
+func (x *CopyProjectFilesRequest) GetToProjectId() string {
+	if x != nil {
+		return x.ToProjectId
+	}
+	return ""
+}
+
+type CopyProjectFilesResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Folders       int32                  `protobuf:"varint,1,opt,name=folders,proto3" json:"folders,omitempty"`
+	Assets        int32                  `protobuf:"varint,2,opt,name=assets,proto3" json:"assets,omitempty"`
+	Uses          int32                  `protobuf:"varint,3,opt,name=uses,proto3" json:"uses,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CopyProjectFilesResponse) Reset() {
+	*x = CopyProjectFilesResponse{}
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[62]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CopyProjectFilesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CopyProjectFilesResponse) ProtoMessage() {}
+
+func (x *CopyProjectFilesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_gyoza_storage_v1_storage_proto_msgTypes[62]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CopyProjectFilesResponse.ProtoReflect.Descriptor instead.
+func (*CopyProjectFilesResponse) Descriptor() ([]byte, []int) {
+	return file_gyoza_storage_v1_storage_proto_rawDescGZIP(), []int{62}
+}
+
+func (x *CopyProjectFilesResponse) GetFolders() int32 {
+	if x != nil {
+		return x.Folders
+	}
+	return 0
+}
+
+func (x *CopyProjectFilesResponse) GetAssets() int32 {
+	if x != nil {
+		return x.Assets
+	}
+	return 0
+}
+
+func (x *CopyProjectFilesResponse) GetUses() int32 {
+	if x != nil {
+		return x.Uses
+	}
+	return 0
 }
 
 var File_gyoza_storage_v1_storage_proto protoreflect.FileDescriptor
@@ -3247,7 +3876,10 @@ const file_gyoza_storage_v1_storage_proto_rawDesc = "" +
 	"\n" +
 	"created_by\x18\x06 \x01(\tR\tcreatedBy\x129\n" +
 	"\n" +
-	"created_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"d\n" +
+	"created_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"?\n" +
+	"\bAssetRef\x12\x19\n" +
+	"\basset_id\x18\x01 \x01(\tR\aassetId\x12\x18\n" +
+	"\aversion\x18\x02 \x01(\x05R\aversion\"d\n" +
 	"\tAssetPage\x12/\n" +
 	"\x06assets\x18\x01 \x03(\v2\x17.gyoza.storage.v1.AssetR\x06assets\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xe9\x02\n" +
@@ -3427,15 +4059,20 @@ const file_gyoza_storage_v1_storage_proto_rawDesc = "" +
 	"\bactor_id\x18\x01 \x01(\tR\aactorId\x12-\n" +
 	"\x05owner\x18\x02 \x01(\v2\x17.gyoza.storage.v1.OwnerR\x05owner\x12\x1d\n" +
 	"\n" +
-	"page_token\x18\x03 \x01(\tR\tpageToken\"|\n" +
+	"page_token\x18\x03 \x01(\tR\tpageToken\"\xf8\x01\n" +
 	"\x11ListTrashResponse\x122\n" +
 	"\afolders\x18\x01 \x03(\v2\x18.gyoza.storage.v1.FolderR\afolders\x123\n" +
-	"\x06assets\x18\x02 \x01(\v2\x1b.gyoza.storage.v1.AssetPageR\x06assets\"C\n" +
+	"\x06assets\x18\x02 \x01(\v2\x1b.gyoza.storage.v1.AssetPageR\x06assets\x12A\n" +
+	"\x04uses\x18\x03 \x03(\v2-.gyoza.storage.v1.ListTrashResponse.UsesEntryR\x04uses\x1a7\n" +
+	"\tUsesEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\x05R\x05value:\x028\x01\"C\n" +
 	"\x12DeleteOwnedRequest\x12-\n" +
-	"\x05owner\x18\x01 \x01(\v2\x17.gyoza.storage.v1.OwnerR\x05owner\"t\n" +
+	"\x05owner\x18\x01 \x01(\v2\x17.gyoza.storage.v1.OwnerR\x05owner\"\x88\x01\n" +
 	"\x13DeleteOwnedResponse\x12%\n" +
 	"\x0eledger_objects\x18\x01 \x01(\x05R\rledgerObjects\x126\n" +
-	"\x05trash\x18\x02 \x01(\v2 .gyoza.storage.v1.FolderDeletionR\x05trash\"C\n" +
+	"\x05trash\x18\x02 \x01(\v2 .gyoza.storage.v1.FolderDeletionR\x05trash\x12\x12\n" +
+	"\x04uses\x18\x03 \x01(\x05R\x04uses\"C\n" +
 	"\x11RemoveUserRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x15\n" +
 	"\x06org_id\x18\x02 \x01(\tR\x05orgId\"\xe7\x03\n" +
@@ -3454,13 +4091,51 @@ const file_gyoza_storage_v1_storage_proto_rawDesc = "" +
 	"clearedDam\"H\n" +
 	"\x05Owner\x12/\n" +
 	"\x04kind\x18\x01 \x01(\x0e2\x1b.gyoza.storage.v1.OwnerKindR\x04kind\x12\x0e\n" +
-	"\x02id\x18\x02 \x01(\tR\x02id*~\n" +
+	"\x02id\x18\x02 \x01(\tR\x02id\"{\n" +
+	"\x11ResolveRefRequest\x12\x19\n" +
+	"\bactor_id\x18\x01 \x01(\tR\aactorId\x12\x1d\n" +
+	"\n" +
+	"project_id\x18\x02 \x01(\tR\tprojectId\x12,\n" +
+	"\x03ref\x18\x03 \x01(\v2\x1a.gyoza.storage.v1.AssetRefR\x03ref\"\xb0\x01\n" +
+	"\x12ResolveRefResponse\x12-\n" +
+	"\x05asset\x18\x01 \x01(\v2\x17.gyoza.storage.v1.AssetR\x05asset\x123\n" +
+	"\aversion\x18\x02 \x01(\v2\x19.gyoza.storage.v1.VersionR\aversion\x126\n" +
+	"\bdownload\x18\x03 \x01(\v2\x1a.gyoza.storage.v1.DownloadR\bdownload\"\xd1\x01\n" +
+	"\x10ForkAssetRequest\x12\x19\n" +
+	"\bactor_id\x18\x01 \x01(\tR\aactorId\x12\x1d\n" +
+	"\n" +
+	"project_id\x18\x02 \x01(\tR\tprojectId\x12,\n" +
+	"\x03ref\x18\x03 \x01(\v2\x1a.gyoza.storage.v1.AssetRefR\x03ref\x12/\n" +
+	"\x06target\x18\x04 \x01(\v2\x17.gyoza.storage.v1.OwnerR\x06target\x12$\n" +
+	"\x0evia_project_id\x18\x05 \x01(\tR\fviaProjectId\"B\n" +
+	"\x11ForkAssetResponse\x12-\n" +
+	"\x05asset\x18\x01 \x01(\v2\x17.gyoza.storage.v1.AssetR\x05asset\"\x7f\n" +
+	"\x15RecordAssetUseRequest\x12\x19\n" +
+	"\bactor_id\x18\x01 \x01(\tR\aactorId\x12\x1d\n" +
+	"\n" +
+	"project_id\x18\x02 \x01(\tR\tprojectId\x12,\n" +
+	"\x03ref\x18\x03 \x01(\v2\x1a.gyoza.storage.v1.AssetRefR\x03ref\"\x18\n" +
+	"\x16RecordAssetUseResponse\"\x7f\n" +
+	"\x15ForgetAssetUseRequest\x12\x19\n" +
+	"\bactor_id\x18\x01 \x01(\tR\aactorId\x12\x1d\n" +
+	"\n" +
+	"project_id\x18\x02 \x01(\tR\tprojectId\x12,\n" +
+	"\x03ref\x18\x03 \x01(\v2\x1a.gyoza.storage.v1.AssetRefR\x03ref\"\x18\n" +
+	"\x16ForgetAssetUseResponse\"\x80\x01\n" +
+	"\x17CopyProjectFilesRequest\x12\x19\n" +
+	"\bactor_id\x18\x01 \x01(\tR\aactorId\x12&\n" +
+	"\x0ffrom_project_id\x18\x02 \x01(\tR\rfromProjectId\x12\"\n" +
+	"\rto_project_id\x18\x03 \x01(\tR\vtoProjectId\"`\n" +
+	"\x18CopyProjectFilesResponse\x12\x18\n" +
+	"\afolders\x18\x01 \x01(\x05R\afolders\x12\x16\n" +
+	"\x06assets\x18\x02 \x01(\x05R\x06assets\x12\x12\n" +
+	"\x04uses\x18\x03 \x01(\x05R\x04uses*~\n" +
 	"\tOwnerKind\x12\x1a\n" +
 	"\x16OWNER_KIND_UNSPECIFIED\x10\x00\x12\x16\n" +
 	"\x12OWNER_KIND_PROJECT\x10\x01\x12\x13\n" +
 	"\x0fOWNER_KIND_USER\x10\x02\x12\x12\n" +
 	"\x0eOWNER_KIND_ORG\x10\x03\x12\x14\n" +
-	"\x10OWNER_KIND_GYOZA\x10\x042\xb4\x10\n" +
+	"\x10OWNER_KIND_GYOZA\x10\x042\x98\x14\n" +
 	"\x0eStorageService\x12Z\n" +
 	"\vBeginUpload\x12$.gyoza.storage.v1.BeginUploadRequest\x1a%.gyoza.storage.v1.BeginUploadResponse\x12c\n" +
 	"\x0eCompleteUpload\x12'.gyoza.storage.v1.CompleteUploadRequest\x1a(.gyoza.storage.v1.CompleteUploadResponse\x12c\n" +
@@ -3486,7 +4161,13 @@ const file_gyoza_storage_v1_storage_proto_rawDesc = "" +
 	"\tListTrash\x12\".gyoza.storage.v1.ListTrashRequest\x1a#.gyoza.storage.v1.ListTrashResponse\x12Z\n" +
 	"\vDeleteOwned\x12$.gyoza.storage.v1.DeleteOwnedRequest\x1a%.gyoza.storage.v1.DeleteOwnedResponse\x12W\n" +
 	"\n" +
-	"RemoveUser\x12#.gyoza.storage.v1.RemoveUserRequest\x1a$.gyoza.storage.v1.RemoveUserResponseB\xb9\x01\n" +
+	"RemoveUser\x12#.gyoza.storage.v1.RemoveUserRequest\x1a$.gyoza.storage.v1.RemoveUserResponse\x12W\n" +
+	"\n" +
+	"ResolveRef\x12#.gyoza.storage.v1.ResolveRefRequest\x1a$.gyoza.storage.v1.ResolveRefResponse\x12T\n" +
+	"\tForkAsset\x12\".gyoza.storage.v1.ForkAssetRequest\x1a#.gyoza.storage.v1.ForkAssetResponse\x12c\n" +
+	"\x0eRecordAssetUse\x12'.gyoza.storage.v1.RecordAssetUseRequest\x1a(.gyoza.storage.v1.RecordAssetUseResponse\x12c\n" +
+	"\x0eForgetAssetUse\x12'.gyoza.storage.v1.ForgetAssetUseRequest\x1a(.gyoza.storage.v1.ForgetAssetUseResponse\x12i\n" +
+	"\x10CopyProjectFiles\x12).gyoza.storage.v1.CopyProjectFilesRequest\x1a*.gyoza.storage.v1.CopyProjectFilesResponseB\xb9\x01\n" +
 	"\x14com.gyoza.storage.v1B\fStorageProtoP\x01Z1gyoza/contracts/gen/go/gyoza/storage/v1;storagev1\xa2\x02\x03GSX\xaa\x02\x10Gyoza.Storage.V1\xca\x02\x10Gyoza\\Storage\\V1\xe2\x02\x1cGyoza\\Storage\\V1\\GPBMetadata\xea\x02\x12Gyoza::Storage::V1b\x06proto3"
 
 var (
@@ -3502,159 +4183,191 @@ func file_gyoza_storage_v1_storage_proto_rawDescGZIP() []byte {
 }
 
 var file_gyoza_storage_v1_storage_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_gyoza_storage_v1_storage_proto_msgTypes = make([]protoimpl.MessageInfo, 53)
+var file_gyoza_storage_v1_storage_proto_msgTypes = make([]protoimpl.MessageInfo, 65)
 var file_gyoza_storage_v1_storage_proto_goTypes = []any{
 	(OwnerKind)(0),                     // 0: gyoza.storage.v1.OwnerKind
 	(*Asset)(nil),                      // 1: gyoza.storage.v1.Asset
 	(*Version)(nil),                    // 2: gyoza.storage.v1.Version
-	(*AssetPage)(nil),                  // 3: gyoza.storage.v1.AssetPage
-	(*Folder)(nil),                     // 4: gyoza.storage.v1.Folder
-	(*FolderDeletion)(nil),             // 5: gyoza.storage.v1.FolderDeletion
-	(*Download)(nil),                   // 6: gyoza.storage.v1.Download
-	(*Tags)(nil),                       // 7: gyoza.storage.v1.Tags
-	(*BeginUploadRequest)(nil),         // 8: gyoza.storage.v1.BeginUploadRequest
-	(*BeginUploadResponse)(nil),        // 9: gyoza.storage.v1.BeginUploadResponse
-	(*CompleteUploadRequest)(nil),      // 10: gyoza.storage.v1.CompleteUploadRequest
-	(*CompleteUploadResponse)(nil),     // 11: gyoza.storage.v1.CompleteUploadResponse
-	(*GetDownloadURLRequest)(nil),      // 12: gyoza.storage.v1.GetDownloadURLRequest
-	(*GetDownloadURLResponse)(nil),     // 13: gyoza.storage.v1.GetDownloadURLResponse
-	(*GetExportURLRequest)(nil),        // 14: gyoza.storage.v1.GetExportURLRequest
-	(*GetExportURLResponse)(nil),       // 15: gyoza.storage.v1.GetExportURLResponse
-	(*GetAssetRequest)(nil),            // 16: gyoza.storage.v1.GetAssetRequest
-	(*GetAssetResponse)(nil),           // 17: gyoza.storage.v1.GetAssetResponse
-	(*ListAssetsRequest)(nil),          // 18: gyoza.storage.v1.ListAssetsRequest
-	(*ListAssetsResponse)(nil),         // 19: gyoza.storage.v1.ListAssetsResponse
-	(*UpdateAssetRequest)(nil),         // 20: gyoza.storage.v1.UpdateAssetRequest
-	(*UpdateAssetResponse)(nil),        // 21: gyoza.storage.v1.UpdateAssetResponse
-	(*DeleteAssetRequest)(nil),         // 22: gyoza.storage.v1.DeleteAssetRequest
-	(*DeleteAssetResponse)(nil),        // 23: gyoza.storage.v1.DeleteAssetResponse
-	(*RestoreAssetRequest)(nil),        // 24: gyoza.storage.v1.RestoreAssetRequest
-	(*RestoreAssetResponse)(nil),       // 25: gyoza.storage.v1.RestoreAssetResponse
-	(*ListVersionsRequest)(nil),        // 26: gyoza.storage.v1.ListVersionsRequest
-	(*ListVersionsResponse)(nil),       // 27: gyoza.storage.v1.ListVersionsResponse
-	(*RevertAssetRequest)(nil),         // 28: gyoza.storage.v1.RevertAssetRequest
-	(*RevertAssetResponse)(nil),        // 29: gyoza.storage.v1.RevertAssetResponse
-	(*CreateFolderRequest)(nil),        // 30: gyoza.storage.v1.CreateFolderRequest
-	(*CreateFolderResponse)(nil),       // 31: gyoza.storage.v1.CreateFolderResponse
-	(*RenameFolderRequest)(nil),        // 32: gyoza.storage.v1.RenameFolderRequest
-	(*RenameFolderResponse)(nil),       // 33: gyoza.storage.v1.RenameFolderResponse
-	(*MoveFolderRequest)(nil),          // 34: gyoza.storage.v1.MoveFolderRequest
-	(*MoveFolderResponse)(nil),         // 35: gyoza.storage.v1.MoveFolderResponse
-	(*DeleteFolderRequest)(nil),        // 36: gyoza.storage.v1.DeleteFolderRequest
-	(*DeleteFolderResponse)(nil),       // 37: gyoza.storage.v1.DeleteFolderResponse
-	(*DeleteFolderTreeRequest)(nil),    // 38: gyoza.storage.v1.DeleteFolderTreeRequest
-	(*DeleteFolderTreeResponse)(nil),   // 39: gyoza.storage.v1.DeleteFolderTreeResponse
-	(*RestoreFolderRequest)(nil),       // 40: gyoza.storage.v1.RestoreFolderRequest
-	(*RestoreFolderResponse)(nil),      // 41: gyoza.storage.v1.RestoreFolderResponse
-	(*ListFolderContentsRequest)(nil),  // 42: gyoza.storage.v1.ListFolderContentsRequest
-	(*ListFolderContentsResponse)(nil), // 43: gyoza.storage.v1.ListFolderContentsResponse
-	(*GetFolderPathRequest)(nil),       // 44: gyoza.storage.v1.GetFolderPathRequest
-	(*GetFolderPathResponse)(nil),      // 45: gyoza.storage.v1.GetFolderPathResponse
-	(*ListTrashRequest)(nil),           // 46: gyoza.storage.v1.ListTrashRequest
-	(*ListTrashResponse)(nil),          // 47: gyoza.storage.v1.ListTrashResponse
-	(*DeleteOwnedRequest)(nil),         // 48: gyoza.storage.v1.DeleteOwnedRequest
-	(*DeleteOwnedResponse)(nil),        // 49: gyoza.storage.v1.DeleteOwnedResponse
-	(*RemoveUserRequest)(nil),          // 50: gyoza.storage.v1.RemoveUserRequest
-	(*RemoveUserResponse)(nil),         // 51: gyoza.storage.v1.RemoveUserResponse
-	(*Owner)(nil),                      // 52: gyoza.storage.v1.Owner
-	nil,                                // 53: gyoza.storage.v1.BeginUploadResponse.HeadersEntry
-	(*timestamppb.Timestamp)(nil),      // 54: google.protobuf.Timestamp
+	(*AssetRef)(nil),                   // 3: gyoza.storage.v1.AssetRef
+	(*AssetPage)(nil),                  // 4: gyoza.storage.v1.AssetPage
+	(*Folder)(nil),                     // 5: gyoza.storage.v1.Folder
+	(*FolderDeletion)(nil),             // 6: gyoza.storage.v1.FolderDeletion
+	(*Download)(nil),                   // 7: gyoza.storage.v1.Download
+	(*Tags)(nil),                       // 8: gyoza.storage.v1.Tags
+	(*BeginUploadRequest)(nil),         // 9: gyoza.storage.v1.BeginUploadRequest
+	(*BeginUploadResponse)(nil),        // 10: gyoza.storage.v1.BeginUploadResponse
+	(*CompleteUploadRequest)(nil),      // 11: gyoza.storage.v1.CompleteUploadRequest
+	(*CompleteUploadResponse)(nil),     // 12: gyoza.storage.v1.CompleteUploadResponse
+	(*GetDownloadURLRequest)(nil),      // 13: gyoza.storage.v1.GetDownloadURLRequest
+	(*GetDownloadURLResponse)(nil),     // 14: gyoza.storage.v1.GetDownloadURLResponse
+	(*GetExportURLRequest)(nil),        // 15: gyoza.storage.v1.GetExportURLRequest
+	(*GetExportURLResponse)(nil),       // 16: gyoza.storage.v1.GetExportURLResponse
+	(*GetAssetRequest)(nil),            // 17: gyoza.storage.v1.GetAssetRequest
+	(*GetAssetResponse)(nil),           // 18: gyoza.storage.v1.GetAssetResponse
+	(*ListAssetsRequest)(nil),          // 19: gyoza.storage.v1.ListAssetsRequest
+	(*ListAssetsResponse)(nil),         // 20: gyoza.storage.v1.ListAssetsResponse
+	(*UpdateAssetRequest)(nil),         // 21: gyoza.storage.v1.UpdateAssetRequest
+	(*UpdateAssetResponse)(nil),        // 22: gyoza.storage.v1.UpdateAssetResponse
+	(*DeleteAssetRequest)(nil),         // 23: gyoza.storage.v1.DeleteAssetRequest
+	(*DeleteAssetResponse)(nil),        // 24: gyoza.storage.v1.DeleteAssetResponse
+	(*RestoreAssetRequest)(nil),        // 25: gyoza.storage.v1.RestoreAssetRequest
+	(*RestoreAssetResponse)(nil),       // 26: gyoza.storage.v1.RestoreAssetResponse
+	(*ListVersionsRequest)(nil),        // 27: gyoza.storage.v1.ListVersionsRequest
+	(*ListVersionsResponse)(nil),       // 28: gyoza.storage.v1.ListVersionsResponse
+	(*RevertAssetRequest)(nil),         // 29: gyoza.storage.v1.RevertAssetRequest
+	(*RevertAssetResponse)(nil),        // 30: gyoza.storage.v1.RevertAssetResponse
+	(*CreateFolderRequest)(nil),        // 31: gyoza.storage.v1.CreateFolderRequest
+	(*CreateFolderResponse)(nil),       // 32: gyoza.storage.v1.CreateFolderResponse
+	(*RenameFolderRequest)(nil),        // 33: gyoza.storage.v1.RenameFolderRequest
+	(*RenameFolderResponse)(nil),       // 34: gyoza.storage.v1.RenameFolderResponse
+	(*MoveFolderRequest)(nil),          // 35: gyoza.storage.v1.MoveFolderRequest
+	(*MoveFolderResponse)(nil),         // 36: gyoza.storage.v1.MoveFolderResponse
+	(*DeleteFolderRequest)(nil),        // 37: gyoza.storage.v1.DeleteFolderRequest
+	(*DeleteFolderResponse)(nil),       // 38: gyoza.storage.v1.DeleteFolderResponse
+	(*DeleteFolderTreeRequest)(nil),    // 39: gyoza.storage.v1.DeleteFolderTreeRequest
+	(*DeleteFolderTreeResponse)(nil),   // 40: gyoza.storage.v1.DeleteFolderTreeResponse
+	(*RestoreFolderRequest)(nil),       // 41: gyoza.storage.v1.RestoreFolderRequest
+	(*RestoreFolderResponse)(nil),      // 42: gyoza.storage.v1.RestoreFolderResponse
+	(*ListFolderContentsRequest)(nil),  // 43: gyoza.storage.v1.ListFolderContentsRequest
+	(*ListFolderContentsResponse)(nil), // 44: gyoza.storage.v1.ListFolderContentsResponse
+	(*GetFolderPathRequest)(nil),       // 45: gyoza.storage.v1.GetFolderPathRequest
+	(*GetFolderPathResponse)(nil),      // 46: gyoza.storage.v1.GetFolderPathResponse
+	(*ListTrashRequest)(nil),           // 47: gyoza.storage.v1.ListTrashRequest
+	(*ListTrashResponse)(nil),          // 48: gyoza.storage.v1.ListTrashResponse
+	(*DeleteOwnedRequest)(nil),         // 49: gyoza.storage.v1.DeleteOwnedRequest
+	(*DeleteOwnedResponse)(nil),        // 50: gyoza.storage.v1.DeleteOwnedResponse
+	(*RemoveUserRequest)(nil),          // 51: gyoza.storage.v1.RemoveUserRequest
+	(*RemoveUserResponse)(nil),         // 52: gyoza.storage.v1.RemoveUserResponse
+	(*Owner)(nil),                      // 53: gyoza.storage.v1.Owner
+	(*ResolveRefRequest)(nil),          // 54: gyoza.storage.v1.ResolveRefRequest
+	(*ResolveRefResponse)(nil),         // 55: gyoza.storage.v1.ResolveRefResponse
+	(*ForkAssetRequest)(nil),           // 56: gyoza.storage.v1.ForkAssetRequest
+	(*ForkAssetResponse)(nil),          // 57: gyoza.storage.v1.ForkAssetResponse
+	(*RecordAssetUseRequest)(nil),      // 58: gyoza.storage.v1.RecordAssetUseRequest
+	(*RecordAssetUseResponse)(nil),     // 59: gyoza.storage.v1.RecordAssetUseResponse
+	(*ForgetAssetUseRequest)(nil),      // 60: gyoza.storage.v1.ForgetAssetUseRequest
+	(*ForgetAssetUseResponse)(nil),     // 61: gyoza.storage.v1.ForgetAssetUseResponse
+	(*CopyProjectFilesRequest)(nil),    // 62: gyoza.storage.v1.CopyProjectFilesRequest
+	(*CopyProjectFilesResponse)(nil),   // 63: gyoza.storage.v1.CopyProjectFilesResponse
+	nil,                                // 64: gyoza.storage.v1.BeginUploadResponse.HeadersEntry
+	nil,                                // 65: gyoza.storage.v1.ListTrashResponse.UsesEntry
+	(*timestamppb.Timestamp)(nil),      // 66: google.protobuf.Timestamp
 }
 var file_gyoza_storage_v1_storage_proto_depIdxs = []int32{
-	52, // 0: gyoza.storage.v1.Asset.owner:type_name -> gyoza.storage.v1.Owner
-	54, // 1: gyoza.storage.v1.Asset.created_at:type_name -> google.protobuf.Timestamp
-	54, // 2: gyoza.storage.v1.Asset.updated_at:type_name -> google.protobuf.Timestamp
-	54, // 3: gyoza.storage.v1.Asset.deleted_at:type_name -> google.protobuf.Timestamp
-	54, // 4: gyoza.storage.v1.Version.created_at:type_name -> google.protobuf.Timestamp
+	53, // 0: gyoza.storage.v1.Asset.owner:type_name -> gyoza.storage.v1.Owner
+	66, // 1: gyoza.storage.v1.Asset.created_at:type_name -> google.protobuf.Timestamp
+	66, // 2: gyoza.storage.v1.Asset.updated_at:type_name -> google.protobuf.Timestamp
+	66, // 3: gyoza.storage.v1.Asset.deleted_at:type_name -> google.protobuf.Timestamp
+	66, // 4: gyoza.storage.v1.Version.created_at:type_name -> google.protobuf.Timestamp
 	1,  // 5: gyoza.storage.v1.AssetPage.assets:type_name -> gyoza.storage.v1.Asset
-	52, // 6: gyoza.storage.v1.Folder.owner:type_name -> gyoza.storage.v1.Owner
-	54, // 7: gyoza.storage.v1.Folder.created_at:type_name -> google.protobuf.Timestamp
-	54, // 8: gyoza.storage.v1.Folder.updated_at:type_name -> google.protobuf.Timestamp
-	54, // 9: gyoza.storage.v1.Folder.deleted_at:type_name -> google.protobuf.Timestamp
-	54, // 10: gyoza.storage.v1.Download.expires_at:type_name -> google.protobuf.Timestamp
-	52, // 11: gyoza.storage.v1.BeginUploadRequest.owner:type_name -> gyoza.storage.v1.Owner
-	53, // 12: gyoza.storage.v1.BeginUploadResponse.headers:type_name -> gyoza.storage.v1.BeginUploadResponse.HeadersEntry
-	54, // 13: gyoza.storage.v1.BeginUploadResponse.expires_at:type_name -> google.protobuf.Timestamp
+	53, // 6: gyoza.storage.v1.Folder.owner:type_name -> gyoza.storage.v1.Owner
+	66, // 7: gyoza.storage.v1.Folder.created_at:type_name -> google.protobuf.Timestamp
+	66, // 8: gyoza.storage.v1.Folder.updated_at:type_name -> google.protobuf.Timestamp
+	66, // 9: gyoza.storage.v1.Folder.deleted_at:type_name -> google.protobuf.Timestamp
+	66, // 10: gyoza.storage.v1.Download.expires_at:type_name -> google.protobuf.Timestamp
+	53, // 11: gyoza.storage.v1.BeginUploadRequest.owner:type_name -> gyoza.storage.v1.Owner
+	64, // 12: gyoza.storage.v1.BeginUploadResponse.headers:type_name -> gyoza.storage.v1.BeginUploadResponse.HeadersEntry
+	66, // 13: gyoza.storage.v1.BeginUploadResponse.expires_at:type_name -> google.protobuf.Timestamp
 	1,  // 14: gyoza.storage.v1.CompleteUploadResponse.asset:type_name -> gyoza.storage.v1.Asset
-	6,  // 15: gyoza.storage.v1.GetDownloadURLResponse.download:type_name -> gyoza.storage.v1.Download
-	6,  // 16: gyoza.storage.v1.GetExportURLResponse.download:type_name -> gyoza.storage.v1.Download
+	7,  // 15: gyoza.storage.v1.GetDownloadURLResponse.download:type_name -> gyoza.storage.v1.Download
+	7,  // 16: gyoza.storage.v1.GetExportURLResponse.download:type_name -> gyoza.storage.v1.Download
 	1,  // 17: gyoza.storage.v1.GetAssetResponse.asset:type_name -> gyoza.storage.v1.Asset
-	52, // 18: gyoza.storage.v1.ListAssetsRequest.owner:type_name -> gyoza.storage.v1.Owner
-	3,  // 19: gyoza.storage.v1.ListAssetsResponse.page:type_name -> gyoza.storage.v1.AssetPage
-	7,  // 20: gyoza.storage.v1.UpdateAssetRequest.tags:type_name -> gyoza.storage.v1.Tags
+	53, // 18: gyoza.storage.v1.ListAssetsRequest.owner:type_name -> gyoza.storage.v1.Owner
+	4,  // 19: gyoza.storage.v1.ListAssetsResponse.page:type_name -> gyoza.storage.v1.AssetPage
+	8,  // 20: gyoza.storage.v1.UpdateAssetRequest.tags:type_name -> gyoza.storage.v1.Tags
 	1,  // 21: gyoza.storage.v1.UpdateAssetResponse.asset:type_name -> gyoza.storage.v1.Asset
 	1,  // 22: gyoza.storage.v1.RestoreAssetResponse.asset:type_name -> gyoza.storage.v1.Asset
 	2,  // 23: gyoza.storage.v1.ListVersionsResponse.versions:type_name -> gyoza.storage.v1.Version
 	1,  // 24: gyoza.storage.v1.RevertAssetResponse.asset:type_name -> gyoza.storage.v1.Asset
-	52, // 25: gyoza.storage.v1.CreateFolderRequest.owner:type_name -> gyoza.storage.v1.Owner
-	4,  // 26: gyoza.storage.v1.CreateFolderResponse.folder:type_name -> gyoza.storage.v1.Folder
-	4,  // 27: gyoza.storage.v1.RenameFolderResponse.folder:type_name -> gyoza.storage.v1.Folder
-	4,  // 28: gyoza.storage.v1.MoveFolderResponse.folder:type_name -> gyoza.storage.v1.Folder
-	5,  // 29: gyoza.storage.v1.DeleteFolderResponse.deletion:type_name -> gyoza.storage.v1.FolderDeletion
-	5,  // 30: gyoza.storage.v1.DeleteFolderTreeResponse.deletion:type_name -> gyoza.storage.v1.FolderDeletion
-	5,  // 31: gyoza.storage.v1.RestoreFolderResponse.deletion:type_name -> gyoza.storage.v1.FolderDeletion
-	52, // 32: gyoza.storage.v1.ListFolderContentsRequest.owner:type_name -> gyoza.storage.v1.Owner
-	4,  // 33: gyoza.storage.v1.ListFolderContentsResponse.path:type_name -> gyoza.storage.v1.Folder
-	4,  // 34: gyoza.storage.v1.ListFolderContentsResponse.folders:type_name -> gyoza.storage.v1.Folder
-	3,  // 35: gyoza.storage.v1.ListFolderContentsResponse.assets:type_name -> gyoza.storage.v1.AssetPage
-	4,  // 36: gyoza.storage.v1.GetFolderPathResponse.path:type_name -> gyoza.storage.v1.Folder
-	52, // 37: gyoza.storage.v1.ListTrashRequest.owner:type_name -> gyoza.storage.v1.Owner
-	4,  // 38: gyoza.storage.v1.ListTrashResponse.folders:type_name -> gyoza.storage.v1.Folder
-	3,  // 39: gyoza.storage.v1.ListTrashResponse.assets:type_name -> gyoza.storage.v1.AssetPage
-	52, // 40: gyoza.storage.v1.DeleteOwnedRequest.owner:type_name -> gyoza.storage.v1.Owner
-	5,  // 41: gyoza.storage.v1.DeleteOwnedResponse.trash:type_name -> gyoza.storage.v1.FolderDeletion
-	52, // 42: gyoza.storage.v1.RemoveUserResponse.transferred_to:type_name -> gyoza.storage.v1.Owner
-	5,  // 43: gyoza.storage.v1.RemoveUserResponse.deleted:type_name -> gyoza.storage.v1.FolderDeletion
-	0,  // 44: gyoza.storage.v1.Owner.kind:type_name -> gyoza.storage.v1.OwnerKind
-	8,  // 45: gyoza.storage.v1.StorageService.BeginUpload:input_type -> gyoza.storage.v1.BeginUploadRequest
-	10, // 46: gyoza.storage.v1.StorageService.CompleteUpload:input_type -> gyoza.storage.v1.CompleteUploadRequest
-	12, // 47: gyoza.storage.v1.StorageService.GetDownloadURL:input_type -> gyoza.storage.v1.GetDownloadURLRequest
-	14, // 48: gyoza.storage.v1.StorageService.GetExportURL:input_type -> gyoza.storage.v1.GetExportURLRequest
-	16, // 49: gyoza.storage.v1.StorageService.GetAsset:input_type -> gyoza.storage.v1.GetAssetRequest
-	18, // 50: gyoza.storage.v1.StorageService.ListAssets:input_type -> gyoza.storage.v1.ListAssetsRequest
-	20, // 51: gyoza.storage.v1.StorageService.UpdateAsset:input_type -> gyoza.storage.v1.UpdateAssetRequest
-	22, // 52: gyoza.storage.v1.StorageService.DeleteAsset:input_type -> gyoza.storage.v1.DeleteAssetRequest
-	24, // 53: gyoza.storage.v1.StorageService.RestoreAsset:input_type -> gyoza.storage.v1.RestoreAssetRequest
-	26, // 54: gyoza.storage.v1.StorageService.ListVersions:input_type -> gyoza.storage.v1.ListVersionsRequest
-	28, // 55: gyoza.storage.v1.StorageService.RevertAsset:input_type -> gyoza.storage.v1.RevertAssetRequest
-	30, // 56: gyoza.storage.v1.StorageService.CreateFolder:input_type -> gyoza.storage.v1.CreateFolderRequest
-	32, // 57: gyoza.storage.v1.StorageService.RenameFolder:input_type -> gyoza.storage.v1.RenameFolderRequest
-	34, // 58: gyoza.storage.v1.StorageService.MoveFolder:input_type -> gyoza.storage.v1.MoveFolderRequest
-	36, // 59: gyoza.storage.v1.StorageService.DeleteFolder:input_type -> gyoza.storage.v1.DeleteFolderRequest
-	38, // 60: gyoza.storage.v1.StorageService.DeleteFolderTree:input_type -> gyoza.storage.v1.DeleteFolderTreeRequest
-	40, // 61: gyoza.storage.v1.StorageService.RestoreFolder:input_type -> gyoza.storage.v1.RestoreFolderRequest
-	42, // 62: gyoza.storage.v1.StorageService.ListFolderContents:input_type -> gyoza.storage.v1.ListFolderContentsRequest
-	44, // 63: gyoza.storage.v1.StorageService.GetFolderPath:input_type -> gyoza.storage.v1.GetFolderPathRequest
-	46, // 64: gyoza.storage.v1.StorageService.ListTrash:input_type -> gyoza.storage.v1.ListTrashRequest
-	48, // 65: gyoza.storage.v1.StorageService.DeleteOwned:input_type -> gyoza.storage.v1.DeleteOwnedRequest
-	50, // 66: gyoza.storage.v1.StorageService.RemoveUser:input_type -> gyoza.storage.v1.RemoveUserRequest
-	9,  // 67: gyoza.storage.v1.StorageService.BeginUpload:output_type -> gyoza.storage.v1.BeginUploadResponse
-	11, // 68: gyoza.storage.v1.StorageService.CompleteUpload:output_type -> gyoza.storage.v1.CompleteUploadResponse
-	13, // 69: gyoza.storage.v1.StorageService.GetDownloadURL:output_type -> gyoza.storage.v1.GetDownloadURLResponse
-	15, // 70: gyoza.storage.v1.StorageService.GetExportURL:output_type -> gyoza.storage.v1.GetExportURLResponse
-	17, // 71: gyoza.storage.v1.StorageService.GetAsset:output_type -> gyoza.storage.v1.GetAssetResponse
-	19, // 72: gyoza.storage.v1.StorageService.ListAssets:output_type -> gyoza.storage.v1.ListAssetsResponse
-	21, // 73: gyoza.storage.v1.StorageService.UpdateAsset:output_type -> gyoza.storage.v1.UpdateAssetResponse
-	23, // 74: gyoza.storage.v1.StorageService.DeleteAsset:output_type -> gyoza.storage.v1.DeleteAssetResponse
-	25, // 75: gyoza.storage.v1.StorageService.RestoreAsset:output_type -> gyoza.storage.v1.RestoreAssetResponse
-	27, // 76: gyoza.storage.v1.StorageService.ListVersions:output_type -> gyoza.storage.v1.ListVersionsResponse
-	29, // 77: gyoza.storage.v1.StorageService.RevertAsset:output_type -> gyoza.storage.v1.RevertAssetResponse
-	31, // 78: gyoza.storage.v1.StorageService.CreateFolder:output_type -> gyoza.storage.v1.CreateFolderResponse
-	33, // 79: gyoza.storage.v1.StorageService.RenameFolder:output_type -> gyoza.storage.v1.RenameFolderResponse
-	35, // 80: gyoza.storage.v1.StorageService.MoveFolder:output_type -> gyoza.storage.v1.MoveFolderResponse
-	37, // 81: gyoza.storage.v1.StorageService.DeleteFolder:output_type -> gyoza.storage.v1.DeleteFolderResponse
-	39, // 82: gyoza.storage.v1.StorageService.DeleteFolderTree:output_type -> gyoza.storage.v1.DeleteFolderTreeResponse
-	41, // 83: gyoza.storage.v1.StorageService.RestoreFolder:output_type -> gyoza.storage.v1.RestoreFolderResponse
-	43, // 84: gyoza.storage.v1.StorageService.ListFolderContents:output_type -> gyoza.storage.v1.ListFolderContentsResponse
-	45, // 85: gyoza.storage.v1.StorageService.GetFolderPath:output_type -> gyoza.storage.v1.GetFolderPathResponse
-	47, // 86: gyoza.storage.v1.StorageService.ListTrash:output_type -> gyoza.storage.v1.ListTrashResponse
-	49, // 87: gyoza.storage.v1.StorageService.DeleteOwned:output_type -> gyoza.storage.v1.DeleteOwnedResponse
-	51, // 88: gyoza.storage.v1.StorageService.RemoveUser:output_type -> gyoza.storage.v1.RemoveUserResponse
-	67, // [67:89] is the sub-list for method output_type
-	45, // [45:67] is the sub-list for method input_type
-	45, // [45:45] is the sub-list for extension type_name
-	45, // [45:45] is the sub-list for extension extendee
-	0,  // [0:45] is the sub-list for field type_name
+	53, // 25: gyoza.storage.v1.CreateFolderRequest.owner:type_name -> gyoza.storage.v1.Owner
+	5,  // 26: gyoza.storage.v1.CreateFolderResponse.folder:type_name -> gyoza.storage.v1.Folder
+	5,  // 27: gyoza.storage.v1.RenameFolderResponse.folder:type_name -> gyoza.storage.v1.Folder
+	5,  // 28: gyoza.storage.v1.MoveFolderResponse.folder:type_name -> gyoza.storage.v1.Folder
+	6,  // 29: gyoza.storage.v1.DeleteFolderResponse.deletion:type_name -> gyoza.storage.v1.FolderDeletion
+	6,  // 30: gyoza.storage.v1.DeleteFolderTreeResponse.deletion:type_name -> gyoza.storage.v1.FolderDeletion
+	6,  // 31: gyoza.storage.v1.RestoreFolderResponse.deletion:type_name -> gyoza.storage.v1.FolderDeletion
+	53, // 32: gyoza.storage.v1.ListFolderContentsRequest.owner:type_name -> gyoza.storage.v1.Owner
+	5,  // 33: gyoza.storage.v1.ListFolderContentsResponse.path:type_name -> gyoza.storage.v1.Folder
+	5,  // 34: gyoza.storage.v1.ListFolderContentsResponse.folders:type_name -> gyoza.storage.v1.Folder
+	4,  // 35: gyoza.storage.v1.ListFolderContentsResponse.assets:type_name -> gyoza.storage.v1.AssetPage
+	5,  // 36: gyoza.storage.v1.GetFolderPathResponse.path:type_name -> gyoza.storage.v1.Folder
+	53, // 37: gyoza.storage.v1.ListTrashRequest.owner:type_name -> gyoza.storage.v1.Owner
+	5,  // 38: gyoza.storage.v1.ListTrashResponse.folders:type_name -> gyoza.storage.v1.Folder
+	4,  // 39: gyoza.storage.v1.ListTrashResponse.assets:type_name -> gyoza.storage.v1.AssetPage
+	65, // 40: gyoza.storage.v1.ListTrashResponse.uses:type_name -> gyoza.storage.v1.ListTrashResponse.UsesEntry
+	53, // 41: gyoza.storage.v1.DeleteOwnedRequest.owner:type_name -> gyoza.storage.v1.Owner
+	6,  // 42: gyoza.storage.v1.DeleteOwnedResponse.trash:type_name -> gyoza.storage.v1.FolderDeletion
+	53, // 43: gyoza.storage.v1.RemoveUserResponse.transferred_to:type_name -> gyoza.storage.v1.Owner
+	6,  // 44: gyoza.storage.v1.RemoveUserResponse.deleted:type_name -> gyoza.storage.v1.FolderDeletion
+	0,  // 45: gyoza.storage.v1.Owner.kind:type_name -> gyoza.storage.v1.OwnerKind
+	3,  // 46: gyoza.storage.v1.ResolveRefRequest.ref:type_name -> gyoza.storage.v1.AssetRef
+	1,  // 47: gyoza.storage.v1.ResolveRefResponse.asset:type_name -> gyoza.storage.v1.Asset
+	2,  // 48: gyoza.storage.v1.ResolveRefResponse.version:type_name -> gyoza.storage.v1.Version
+	7,  // 49: gyoza.storage.v1.ResolveRefResponse.download:type_name -> gyoza.storage.v1.Download
+	3,  // 50: gyoza.storage.v1.ForkAssetRequest.ref:type_name -> gyoza.storage.v1.AssetRef
+	53, // 51: gyoza.storage.v1.ForkAssetRequest.target:type_name -> gyoza.storage.v1.Owner
+	1,  // 52: gyoza.storage.v1.ForkAssetResponse.asset:type_name -> gyoza.storage.v1.Asset
+	3,  // 53: gyoza.storage.v1.RecordAssetUseRequest.ref:type_name -> gyoza.storage.v1.AssetRef
+	3,  // 54: gyoza.storage.v1.ForgetAssetUseRequest.ref:type_name -> gyoza.storage.v1.AssetRef
+	9,  // 55: gyoza.storage.v1.StorageService.BeginUpload:input_type -> gyoza.storage.v1.BeginUploadRequest
+	11, // 56: gyoza.storage.v1.StorageService.CompleteUpload:input_type -> gyoza.storage.v1.CompleteUploadRequest
+	13, // 57: gyoza.storage.v1.StorageService.GetDownloadURL:input_type -> gyoza.storage.v1.GetDownloadURLRequest
+	15, // 58: gyoza.storage.v1.StorageService.GetExportURL:input_type -> gyoza.storage.v1.GetExportURLRequest
+	17, // 59: gyoza.storage.v1.StorageService.GetAsset:input_type -> gyoza.storage.v1.GetAssetRequest
+	19, // 60: gyoza.storage.v1.StorageService.ListAssets:input_type -> gyoza.storage.v1.ListAssetsRequest
+	21, // 61: gyoza.storage.v1.StorageService.UpdateAsset:input_type -> gyoza.storage.v1.UpdateAssetRequest
+	23, // 62: gyoza.storage.v1.StorageService.DeleteAsset:input_type -> gyoza.storage.v1.DeleteAssetRequest
+	25, // 63: gyoza.storage.v1.StorageService.RestoreAsset:input_type -> gyoza.storage.v1.RestoreAssetRequest
+	27, // 64: gyoza.storage.v1.StorageService.ListVersions:input_type -> gyoza.storage.v1.ListVersionsRequest
+	29, // 65: gyoza.storage.v1.StorageService.RevertAsset:input_type -> gyoza.storage.v1.RevertAssetRequest
+	31, // 66: gyoza.storage.v1.StorageService.CreateFolder:input_type -> gyoza.storage.v1.CreateFolderRequest
+	33, // 67: gyoza.storage.v1.StorageService.RenameFolder:input_type -> gyoza.storage.v1.RenameFolderRequest
+	35, // 68: gyoza.storage.v1.StorageService.MoveFolder:input_type -> gyoza.storage.v1.MoveFolderRequest
+	37, // 69: gyoza.storage.v1.StorageService.DeleteFolder:input_type -> gyoza.storage.v1.DeleteFolderRequest
+	39, // 70: gyoza.storage.v1.StorageService.DeleteFolderTree:input_type -> gyoza.storage.v1.DeleteFolderTreeRequest
+	41, // 71: gyoza.storage.v1.StorageService.RestoreFolder:input_type -> gyoza.storage.v1.RestoreFolderRequest
+	43, // 72: gyoza.storage.v1.StorageService.ListFolderContents:input_type -> gyoza.storage.v1.ListFolderContentsRequest
+	45, // 73: gyoza.storage.v1.StorageService.GetFolderPath:input_type -> gyoza.storage.v1.GetFolderPathRequest
+	47, // 74: gyoza.storage.v1.StorageService.ListTrash:input_type -> gyoza.storage.v1.ListTrashRequest
+	49, // 75: gyoza.storage.v1.StorageService.DeleteOwned:input_type -> gyoza.storage.v1.DeleteOwnedRequest
+	51, // 76: gyoza.storage.v1.StorageService.RemoveUser:input_type -> gyoza.storage.v1.RemoveUserRequest
+	54, // 77: gyoza.storage.v1.StorageService.ResolveRef:input_type -> gyoza.storage.v1.ResolveRefRequest
+	56, // 78: gyoza.storage.v1.StorageService.ForkAsset:input_type -> gyoza.storage.v1.ForkAssetRequest
+	58, // 79: gyoza.storage.v1.StorageService.RecordAssetUse:input_type -> gyoza.storage.v1.RecordAssetUseRequest
+	60, // 80: gyoza.storage.v1.StorageService.ForgetAssetUse:input_type -> gyoza.storage.v1.ForgetAssetUseRequest
+	62, // 81: gyoza.storage.v1.StorageService.CopyProjectFiles:input_type -> gyoza.storage.v1.CopyProjectFilesRequest
+	10, // 82: gyoza.storage.v1.StorageService.BeginUpload:output_type -> gyoza.storage.v1.BeginUploadResponse
+	12, // 83: gyoza.storage.v1.StorageService.CompleteUpload:output_type -> gyoza.storage.v1.CompleteUploadResponse
+	14, // 84: gyoza.storage.v1.StorageService.GetDownloadURL:output_type -> gyoza.storage.v1.GetDownloadURLResponse
+	16, // 85: gyoza.storage.v1.StorageService.GetExportURL:output_type -> gyoza.storage.v1.GetExportURLResponse
+	18, // 86: gyoza.storage.v1.StorageService.GetAsset:output_type -> gyoza.storage.v1.GetAssetResponse
+	20, // 87: gyoza.storage.v1.StorageService.ListAssets:output_type -> gyoza.storage.v1.ListAssetsResponse
+	22, // 88: gyoza.storage.v1.StorageService.UpdateAsset:output_type -> gyoza.storage.v1.UpdateAssetResponse
+	24, // 89: gyoza.storage.v1.StorageService.DeleteAsset:output_type -> gyoza.storage.v1.DeleteAssetResponse
+	26, // 90: gyoza.storage.v1.StorageService.RestoreAsset:output_type -> gyoza.storage.v1.RestoreAssetResponse
+	28, // 91: gyoza.storage.v1.StorageService.ListVersions:output_type -> gyoza.storage.v1.ListVersionsResponse
+	30, // 92: gyoza.storage.v1.StorageService.RevertAsset:output_type -> gyoza.storage.v1.RevertAssetResponse
+	32, // 93: gyoza.storage.v1.StorageService.CreateFolder:output_type -> gyoza.storage.v1.CreateFolderResponse
+	34, // 94: gyoza.storage.v1.StorageService.RenameFolder:output_type -> gyoza.storage.v1.RenameFolderResponse
+	36, // 95: gyoza.storage.v1.StorageService.MoveFolder:output_type -> gyoza.storage.v1.MoveFolderResponse
+	38, // 96: gyoza.storage.v1.StorageService.DeleteFolder:output_type -> gyoza.storage.v1.DeleteFolderResponse
+	40, // 97: gyoza.storage.v1.StorageService.DeleteFolderTree:output_type -> gyoza.storage.v1.DeleteFolderTreeResponse
+	42, // 98: gyoza.storage.v1.StorageService.RestoreFolder:output_type -> gyoza.storage.v1.RestoreFolderResponse
+	44, // 99: gyoza.storage.v1.StorageService.ListFolderContents:output_type -> gyoza.storage.v1.ListFolderContentsResponse
+	46, // 100: gyoza.storage.v1.StorageService.GetFolderPath:output_type -> gyoza.storage.v1.GetFolderPathResponse
+	48, // 101: gyoza.storage.v1.StorageService.ListTrash:output_type -> gyoza.storage.v1.ListTrashResponse
+	50, // 102: gyoza.storage.v1.StorageService.DeleteOwned:output_type -> gyoza.storage.v1.DeleteOwnedResponse
+	52, // 103: gyoza.storage.v1.StorageService.RemoveUser:output_type -> gyoza.storage.v1.RemoveUserResponse
+	55, // 104: gyoza.storage.v1.StorageService.ResolveRef:output_type -> gyoza.storage.v1.ResolveRefResponse
+	57, // 105: gyoza.storage.v1.StorageService.ForkAsset:output_type -> gyoza.storage.v1.ForkAssetResponse
+	59, // 106: gyoza.storage.v1.StorageService.RecordAssetUse:output_type -> gyoza.storage.v1.RecordAssetUseResponse
+	61, // 107: gyoza.storage.v1.StorageService.ForgetAssetUse:output_type -> gyoza.storage.v1.ForgetAssetUseResponse
+	63, // 108: gyoza.storage.v1.StorageService.CopyProjectFiles:output_type -> gyoza.storage.v1.CopyProjectFilesResponse
+	82, // [82:109] is the sub-list for method output_type
+	55, // [55:82] is the sub-list for method input_type
+	55, // [55:55] is the sub-list for extension type_name
+	55, // [55:55] is the sub-list for extension extendee
+	0,  // [0:55] is the sub-list for field type_name
 }
 
 func init() { file_gyoza_storage_v1_storage_proto_init() }
@@ -3662,15 +4375,15 @@ func file_gyoza_storage_v1_storage_proto_init() {
 	if File_gyoza_storage_v1_storage_proto != nil {
 		return
 	}
-	file_gyoza_storage_v1_storage_proto_msgTypes[17].OneofWrappers = []any{}
-	file_gyoza_storage_v1_storage_proto_msgTypes[19].OneofWrappers = []any{}
+	file_gyoza_storage_v1_storage_proto_msgTypes[18].OneofWrappers = []any{}
+	file_gyoza_storage_v1_storage_proto_msgTypes[20].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_gyoza_storage_v1_storage_proto_rawDesc), len(file_gyoza_storage_v1_storage_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   53,
+			NumMessages:   65,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

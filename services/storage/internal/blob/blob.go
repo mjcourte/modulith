@@ -15,6 +15,9 @@ import (
 // ErrNotFound means nothing is stored at a bucket/key.
 var ErrNotFound = errors.New("blob: not found")
 
+// errCopyOntoItself refuses a Copy whose source and destination are the same.
+var errCopyOntoItself = errors.New("blob: copy onto itself")
+
 // Store is file storage addressed by bucket and key.
 type Store interface {
 	// PresignPut returns a URL the browser can PUT exactly size bytes of
@@ -33,6 +36,12 @@ type Store interface {
 	ReadPrefix(ctx context.Context, bucket, key string, n int) ([]byte, error)
 	// Delete removes the object. Deleting a missing object is not an error (as in S3).
 	Delete(ctx context.Context, bucket, key string) error
+	// Copy copies the object at srcKey to dstKey in the same bucket, server-side:
+	// the bytes never pass through us. The copy keeps the source's content type.
+	// A missing source is ErrNotFound. An existing dstKey is overwritten, so a
+	// retried copy is harmless. srcKey and dstKey must differ. (S3: one
+	// CopyObject, which takes up to 5 GiB, the upload limit.)
+	Copy(ctx context.Context, bucket, srcKey, dstKey string) error
 }
 
 // Info is what Stat reports about a stored object.

@@ -15,8 +15,9 @@ type MemoryStore struct {
 	// versions holds each asset's versions, oldest first. Versions are only
 	// ever appended, so version n is always at index n-1.
 	versions map[string][]Version
-	folders  map[string]Folder // by folder ID; methods in folders_memory.go
-	uploads  map[string]Upload // by upload ID; methods in uploads_memory.go
+	folders  map[string]Folder                // by folder ID; methods in folders_memory.go
+	uploads  map[string]Upload                // by upload ID; methods in uploads_memory.go
+	uses     map[string]map[AssetRef]struct{} // project ID -> refs it uses; uses_memory.go
 }
 
 // NewMemoryStore returns an empty MemoryStore.
@@ -26,6 +27,7 @@ func NewMemoryStore() *MemoryStore {
 		versions: make(map[string][]Version),
 		folders:  make(map[string]Folder),
 		uploads:  make(map[string]Upload),
+		uses:     make(map[string]map[AssetRef]struct{}),
 	}
 }
 
@@ -66,11 +68,16 @@ func (m *MemoryStore) CreateAsset(ctx context.Context, a Asset, first Version) (
 // insertAsset stores a normalised asset with first as version 1. The caller
 // must hold m.mu; CompleteUpload calls it too, inside its own locked section.
 func (m *MemoryStore) insertAsset(a Asset, first Version) (Asset, error) {
+	if existing, ok := m.assets[a.ID]; ok && a.ID != "" {
+		return cloneAsset(existing), nil // a chosen ID already stored: a retried copy
+	}
 	if err := m.checkAssetFolder(a.FolderID, a.Owner); err != nil {
 		return Asset{}, err
 	}
 	t := now()
-	a.ID = NewID()
+	if a.ID == "" {
+		a.ID = NewID()
+	}
 	a.CreatedAt, a.UpdatedAt, a.DeletedAt, a.DeletionID = t, t, nil, ""
 	first.AssetID, first.Number, first.CreatedAt = a.ID, 1, t
 	m.assets[a.ID] = cloneAsset(a)

@@ -4,12 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"gyoza/services/storage/internal/dam"
 	"strings"
 	"testing"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"gyoza/services/storage/internal/dam"
+	"gyoza/services/storage/internal/manager"
 )
 
 // overWire sends err through the server's and the client's error mapping, as
@@ -68,5 +70,14 @@ func TestWireErrorsSpecialCases(t *testing.T) {
 	}
 	if got := overWire(context.DeadlineExceeded); !errors.Is(got, context.DeadlineExceeded) {
 		t.Errorf("deadline arrived as %v", got)
+	}
+}
+
+// "Fork required" travels with "forbidden", as the Manager returns it, so
+// clients that only know ErrForbidden still refuse.
+func TestWireErrorsForkRequired(t *testing.T) {
+	got := overWire(fmt.Errorf("%w: %w: p3 is guest's", manager.ErrForbidden, manager.ErrForkRequired))
+	if !errors.Is(got, manager.ErrForbidden) || !errors.Is(got, manager.ErrForkRequired) {
+		t.Errorf("fork required arrived as %v, want both sentinels", got)
 	}
 }

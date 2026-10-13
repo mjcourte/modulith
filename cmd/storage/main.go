@@ -11,10 +11,13 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"gyoza/platform/config"
 	"gyoza/platform/postgres"
 	"gyoza/platform/shutdown"
+	"gyoza/services/iam"
+	"gyoza/services/mediaprocessor"
 	"gyoza/services/storage"
 )
 
@@ -40,19 +43,40 @@ func run() error {
 	// deployments set ":9090". The default differs from the monolith's so both
 	// can run on one machine.
 	grpcAddr := env.String("GYOZA_GRPC_ADDR", "localhost:9091")
+	// cmd/mediaprocessor's local default. While it's unreachable, video and
+	// audio uploads wait in the queue without using up their attempts.
+	mediaAddr := env.String("GYOZA_MEDIAPROCESSOR_ADDR", "localhost:9092")
+	// cmd/iam's local default. It answers every permission check, so while
+	// it's unreachable user calls fail (never allowed by default).
+	iamAddr := env.String("GYOZA_IAM_ADDR", "localhost:9093")
 	settings := storage.SettingsFromEnv(env)
 	if err := env.Err(); err != nil {
 		return err
 	}
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: logLevel})))
 
+	// Plaintext: services only talk inside the platform's private network.
+	// NewClient doesn't connect yet, so mediaprocessor may start after us.
+	mediaConn, err := grpc.NewClient(mediaAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return fmt.Errorf("mediaprocessor client: %w", err)
+	}
+	// Closed last (defers run after the shutdown below), once the probe job
+	// using it has stopped. Close doesn't wait on the network.
+	defer mediaConn.Close()
+	iamConn, err := grpc.NewClient(iamAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return fmt.Errorf("iam client: %w", err)
+	}
+	defer iamConn.Close()
+
 	pool, err := postgres.Connect(ctx, dbURL, "storage")
 	if err != nil {
 		return err
 	}
 	// The manager calls the ledger in-process; other services (documentmanager's
-	// snapshots) call it over gRPC.
-	manager, err := storage.Open(ctx, pool, settings)
+	// snapshots, iam's cascades) call it over gRPC.
+	manager, err := storage.Open(ctx, pool, settings, iam.NewAuthzClient(iamConn))
 	if err != nil {
 		pool.Close() // nothing is running yet, so this returns promptly
 		return err
@@ -68,22 +92,21 @@ func run() error {
 	serveErr := make(chan error, 1)
 	go func() { serveErr <- server.Serve(lis) }()
 
-	// The cleanup job gets its own context, cancelled at shutdown before the
-	// pool closes, since a run in progress still needs the database.
-	cleanupCtx, stopCleanup := context.WithCancel(context.WithoutCancel(ctx))
-	defer stopCleanup()
-	cleanupDone := storage.StartCleanup(cleanupCtx, manager, settings.CleanupInterval)
-	// No media probe job here yet: it needs mediaprocessor over gRPC
-	// (mediaprocessor/PLAN.md step 3). Video and audio uploads stay queued
-	// until a binary that probes (the monolith) picks them up.
-	slog.Info("storage started", "grpc", lis.Addr().String(), "bucket", settings.Manager.Bucket)
+	// Background jobs share a context, cancelled at shutdown before the pool
+	// closes, since a run in progress still needs the database.
+	jobsCtx, stopJobs := context.WithCancel(context.WithoutCancel(ctx))
+	defer stopJobs()
+	cleanupDone := storage.StartCleanup(jobsCtx, manager, settings.CleanupInterval)
+	probeDone := storage.StartMediaProbe(jobsCtx, manager, mediaprocessor.NewGRPCClient(mediaConn), settings.ProbeInterval)
+	jobsDone := func() { <-cleanupDone; <-probeDone }
+	slog.Info("storage started", "grpc", lis.Addr().String(), "bucket", settings.Manager.Bucket, "mediaprocessor", mediaAddr, "iam", iamAddr)
 
 	// Run until a signal arrives or the server fails on its own.
 	select {
 	case <-ctx.Done():
 	case err := <-serveErr:
-		stopCleanup()
-		<-cleanupDone
+		stopJobs()
+		jobsDone()
 		pool.Close()
 		return fmt.Errorf("grpc server: %w", err)
 	}
@@ -92,15 +115,15 @@ func run() error {
 	shutdownCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), shutdownTimeout)
 	defer cancel()
 
-	// Reverse order of startup: stop taking calls, stop the cleanup job,
-	// then close the pool both of them used.
+	// Reverse order of startup: stop taking calls, stop the background jobs,
+	// then close the pool they used.
 	if err := shutdown.Within(shutdownCtx, server.GracefulStop); err != nil {
 		server.Stop()
 		slog.Warn("grpc calls cut off at shutdown deadline")
 	}
-	stopCleanup()
-	if err := shutdown.Within(shutdownCtx, func() { <-cleanupDone }); err != nil {
-		slog.Warn("cleanup run cut off at shutdown deadline")
+	stopJobs()
+	if err := shutdown.Within(shutdownCtx, jobsDone); err != nil {
+		slog.Warn("background jobs cut off at shutdown deadline")
 	}
 	if err := shutdown.Within(shutdownCtx, pool.Close); err != nil {
 		return err
