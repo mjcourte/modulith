@@ -1,0 +1,15 @@
+{{define "content"}}
+<h1>Projects</h1>
+<div class="box">
+  <form method="post" action="/projects"><strong>New project</strong> (as the acting user)
+    <input name="name" placeholder="name" required>
+    {{template "ownerPicker"}}
+    <label><input type="checkbox" name="org_locked"> org-locked</label>
+    <button>Create</button></form>
+  <form method="post" action="/templates"><strong>New gyoza template</strong> (no actor)
+    <input name="name" placeholder="name" required><button>Create</button></form>
+</div>
+<input type="search" name="q" value="{{.Query.Get "q"}}" placeholder="search id, name"
+       hx-get="/projects" hx-trigger="input changed delay:250ms, search" hx-select="#rows" hx-target="#rows" hx-swap="outerHTML" hx-push-url="true">
+<div id="rows">{{template "projectTable" .Data}}</div>
+{{end}}

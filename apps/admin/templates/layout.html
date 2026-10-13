@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{.Title}} · gyoza admin</title>
+<script src="/static/htmx.min.js"></script>
+<style>
+  :root { --fg:#1d1d1f; --muted:#6e6e73; --line:#d9d9de; --bg:#fff; --soft:#f4f4f6; --accent:#c2410c; --ok:#e7f6ec; --bad:#fdecec; }
+  @media (prefers-color-scheme: dark) { :root { --fg:#e8e8ea; --muted:#9a9aa1; --line:#3a3a40; --bg:#17171a; --soft:#222227; --accent:#fb923c; --ok:#163322; --bad:#3b1a1a; } }
+  * { box-sizing: border-box; }
+  body { margin:0; font:14px/1.45 system-ui, sans-serif; color:var(--fg); background:var(--bg); }
+  header { display:flex; gap:16px; align-items:center; padding:8px 16px; border-bottom:1px solid var(--line); background:var(--soft); flex-wrap:wrap; }
+  header nav { display:flex; gap:12px; flex:1; flex-wrap:wrap; }
+  header .brand { font-weight:700; color:var(--accent); }
+  main { padding:16px; max-width:1400px; }
+  a { color:var(--accent); text-decoration:none; } a:hover { text-decoration:underline; }
+  h1 { font-size:20px; margin:0 0 12px; } h2 { font-size:16px; margin:24px 0 8px; }
+  table { border-collapse:collapse; width:100%; margin-bottom:8px; }
+  th, td { text-align:left; padding:4px 8px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--muted); font-weight:600; font-size:12px; }
+  code, .mono { font:12px ui-monospace, monospace; }
+  .muted { color:var(--muted); }
+  .flash { padding:8px 12px; border-radius:6px; margin-bottom:12px; background:var(--ok); }
+  .flash.err { background:var(--bad); }
+  form.inline { display:inline; }
+  .box { border:1px solid var(--line); border-radius:8px; padding:12px; margin:8px 0; background:var(--soft); }
+  .box form { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:4px 0; }
+  .filters { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:8px 0; }
+  input, select, button { font:inherit; padding:3px 6px; }
+  button.danger { color:#b91c1c; }
+  .trashed { opacity:.55; }
+  .badge { display:inline-block; padding:0 6px; border-radius:9px; font-size:11px; font-weight:600; background:var(--bad); color:#b91c1c; }
+  dl { display:grid; grid-template-columns:max-content 1fr; gap:2px 16px; } dt { color:var(--muted); }
+  pre { background:var(--soft); padding:8px; overflow:auto; max-height:300px; margin:0; }
+</style>
+</head>
+<body>
+<header>
+  <a class="brand" href="/">gyoza admin</a>
+  <nav>
+    <a href="/users">Users</a><a href="/orgs">Orgs</a><a href="/projects">Projects</a>
+    <a href="/assets">Assets</a><a href="/folders">Folders</a><a href="/objects">Ledger</a><a href="/uploads">Uploads</a>
+  </nav>
+  <form method="post" action="/act" class="inline">
+    acting as
+    <select name="actor" onchange="this.form.submit()">
+      <option value="">(nobody)</option>
+      {{range .Actors}}<option value="{{.ID}}" {{if eq .ID $.Actor}}selected{{end}}>{{.Name}} &lt;{{.Email}}&gt;</option>{{end}}
+    </select>
+  </form>
+</header>
+<main>
+{{if .Flash}}<div class="flash {{if .IsError}}err{{end}}">{{.Flash}}</div>{{end}}
+{{template "content" .}}
+</main>
+</body>
+</html>
+
+{{/* Shared fragments used by several pages. */}}
+
+{{define "ownerPicker"}}
+<select name="owner_kind"><option value="user">user</option><option value="org">org</option><option value="project">project</option><option value="gyoza">gyoza</option></select>
+<input name="owner_id" placeholder="owner id (blank user = actor)" size="38">
+{{end}}
+
+{{define "owner"}}{{if eq .OwnerKind "gyoza"}}gyoza{{else}}<a href="{{ownerURL .OwnerKind .OwnerID}}">{{.OwnerKind}}</a> <span class="mono">{{.OwnerID}}</span>{{end}}{{template "orphan" .}}{{end}}
+
+{{define "orphan"}}{{if .Orphan}} <span class="badge" title="this owner doesn't exist in iam, so no user may act on this row">orphan</span>{{end}}{{end}}
+
+{{define "projectTable"}}
+<table><tr><th>name</th><th>owner</th><th>state</th><th>locked</th><th>created</th></tr>
+{{range .}}<tr {{if .DeletingAt}}class="trashed"{{end}}>
+  <td><a href="/projects/{{.ID}}">{{.Name}}</a></td>
+  <td>{{if eq .OwnerKind "gyoza"}}gyoza{{else}}<a href="{{ownerURL .OwnerKind .OwnerID}}">{{.OwnerName}}</a> <span class="muted">{{.OwnerKind}}</span>{{end}}{{template "orphan" .}}</td>
+  <td>{{.State}}{{if .DeletingAt}} <span class="muted">deleting</span>{{end}}</td><td>{{if .OrgLocked}}yes{{end}}</td><td>{{time .CreatedAt}}</td>
+</tr>{{end}}
+</table>
+{{end}}
+
+{{define "inviteTable"}}
+<table><tr><th>org</th><th>email</th><th>role</th><th>invited by</th><th>expires</th><th></th></tr>
+{{range .}}<tr>
+  <td><a href="/orgs/{{.OrgID}}">{{.OrgName}}</a></td><td>{{.Email}}</td><td>{{.Role}}</td><td>{{.InvitedBy}}</td><td>{{time .ExpiresAt}}</td>
+  <td>
+    <form method="post" action="/invites/{{.ID}}/accept" class="inline"><button>accept</button></form>
+    <form method="post" action="/invites/{{.ID}}/decline" class="inline"><button>decline</button></form>
+    <form method="post" action="/invites/{{.ID}}/revoke" class="inline"><button class="danger">revoke</button></form>
+  </td>
+</tr>{{end}}
+</table>
+{{end}}
+
+{{define "assetTable"}}
+<table><tr><th>name</th><th>owner</th><th>type</th><th>v</th><th>folder</th><th>updated</th><th></th></tr>
+{{range .}}<tr {{if .DeletedAt}}class="trashed"{{end}}>
+  <td><a href="/assets/{{.ID}}">{{.Name}}</a>{{if .DeletedAt}} <span class="muted">trashed</span>{{end}}</td>
+  <td>{{template "owner" .}}</td>
+  <td>{{.Category}} <span class="muted">{{.ContentType}}</span></td><td>{{.CurrentVersion}}</td>
+  <td>{{deref .FolderName}}</td><td>{{time .UpdatedAt}}</td>
+  <td><a href="/assets/{{.ID}}/download">download</a></td>
+</tr>{{end}}
+</table>
+{{end}}
+
+{{define "useTable"}}
+<table><tr><th>project</th><th>asset</th><th>version</th><th>since</th><th></th></tr>
+{{range .}}<tr><td><a href="/projects/{{.ProjectID}}">{{or (deref .ProjectName) .ProjectID}}</a></td><td><a href="/assets/{{.AssetID}}">{{.AssetName}}</a></td><td>{{.Version}}</td><td>{{time .CreatedAt}}</td>
+  <td><form method="post" action="/uses/forget" class="inline">
+    <input type="hidden" name="project_id" value="{{.ProjectID}}"><input type="hidden" name="asset_id" value="{{.AssetID}}"><input type="hidden" name="version" value="{{.Version}}">
+    <button class="danger">forget</button></form></td></tr>{{end}}
+</table>
+{{end}}
+
+{{define "uploadForm"}}
+<div class="box">
+  <form method="post" action="/assets/upload" enctype="multipart/form-data">
+    <strong>Upload new asset</strong> (as the acting user)
+    <input type="file" name="file" required>
+    <input name="name" placeholder="name (default file name)">
+    {{template "ownerPicker"}}
+    <input name="project_id" placeholder="project id (optional)" size="38">
+    <input name="folder_id" placeholder="folder id (optional)" size="38">
+    <input name="tags" placeholder="tags,comma,separated">
+    <button>Upload</button>
+  </form>
+</div>
+{{end}}

@@ -1,0 +1,21 @@
+{{define "content"}}
+<h1>Dashboard</h1>
+<table style="max-width:400px">
+<tr><th>table</th><th>rows</th></tr>
+{{range .Data.Counts}}<tr><td class="mono">{{.TableName}}</td><td>{{.N}}</td></tr>{{end}}
+</table>
+
+<h2>Orphan owners ({{len .Data.Orphans}})</h2>
+<p class="muted">Owners that rows point at but that don't exist in iam. No user may act on these rows. Sign in a user with that ID (Users page) to adopt them, or run DeleteOwned for the owner (Ledger page).</p>
+{{if .Data.Orphans}}
+<table style="max-width:900px">
+<tr><th>owner</th><th>table</th><th>rows</th><th></th></tr>
+{{range .Data.Orphans}}<tr>
+  <td>{{.OwnerKind}} <span class="mono">{{.OwnerID}}</span></td><td class="mono">{{.TableName}}</td><td>{{.N}}</td>
+  <td><a href="/assets?owner_kind={{.OwnerKind}}&owner_id={{.OwnerID}}&trashed=on">assets</a> · <a href="/objects?owner_kind={{.OwnerKind}}&owner_id={{.OwnerID}}">ledger</a></td>
+</tr>{{end}}
+</table>
+{{else}}<p>None.</p>{{end}}
+
+<p class="muted">Reads come straight from Postgres; changes go through the running services, acting as the user picked top right.</p>
+{{end}}

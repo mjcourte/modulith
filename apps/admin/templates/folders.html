@@ -1,0 +1,18 @@
+{{define "content"}}
+<h1>Folders</h1>
+<form method="get" action="/folders" class="filters">
+  <select name="owner_kind">
+    {{range $k := (list "user" "org" "project" "gyoza")}}<option {{if eq $k $.Data.OwnerKind}}selected{{end}}>{{$k}}</option>{{end}}
+  </select>
+  <input name="owner_id" value="{{.Data.OwnerID}}" placeholder="owner id" size="38">
+  <button>Show tree</button>
+</form>
+{{if .Data.OwnerKind}}
+<table><tr><th>name</th><th>id</th><th>assets</th><th>created</th></tr>
+{{range .Data.Folders}}<tr {{if .DeletedAt}}class="trashed"{{end}}>
+  <td>{{indent .Depth}}📁 <a href="/assets?folder_id={{.ID}}&trashed=on">{{.Name}}</a>{{if .DeletedAt}} <span class="muted">trashed</span>{{end}}</td>
+  <td class="mono">{{.ID}}{{template "orphan" .}}</td><td>{{.Assets}}</td><td>{{time .CreatedAt}}</td>
+</tr>{{else}}<tr><td colspan="4" class="muted">no folders</td></tr>{{end}}
+</table>
+{{else}}<p class="muted">Pick an owner.</p>{{end}}
+{{end}}

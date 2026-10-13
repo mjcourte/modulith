@@ -1,0 +1,30 @@
+{{define "content"}}
+{{with .Data}}
+<h1>{{.User.Name}} <span class="muted mono">{{.User.ID}}</span></h1>
+<dl>
+  <dt>email</dt><dd>{{.User.Email}}</dd>
+  <dt>org</dt><dd>{{if .User.OrgID}}<a href="/orgs/{{deref .User.OrgID}}">{{deref .User.OrgName}}</a> ({{deref .User.Role}}){{else}}<span class="muted">none</span>{{end}}</dd>
+  <dt>created</dt><dd>{{time .User.CreatedAt}}</dd>
+  {{if .User.DeletingAt}}<dt>deleting since</dt><dd>{{time .User.DeletingAt}}</dd>{{end}}
+  <dt>storage</dt><dd>{{.Usage.Objects}} objects, {{bytes .Usage.Bytes}} · <a href="/objects?owner_kind=user&owner_id={{.User.ID}}">ledger</a> · <a href="/folders?owner_kind=user&owner_id={{.User.ID}}">folders</a></dd>
+</dl>
+<div class="box">
+  <form method="post" action="/act"><input type="hidden" name="actor" value="{{.User.ID}}"><button>Act as {{.User.Name}}</button></form>
+  <form method="post" action="/users/{{.User.ID}}/delete" onsubmit="return confirm('Delete this account and everything it owns?')"><button class="danger">Delete account</button></form>
+</div>
+
+<h2>Projects owned ({{len .Projects}})</h2>
+{{template "projectTable" .Projects}}
+
+<h2>Shared with them ({{len .Shared}})</h2>
+<table><tr><th>project</th><th>access</th><th>shared by</th><th>since</th></tr>
+{{range .Shared}}<tr><td><a href="/projects/{{.ProjectID}}">{{.ProjectName}}</a></td><td>{{.Access}}</td><td><a href="/users/{{.SharedBy}}">{{.SharedBy}}</a></td><td>{{time .CreatedAt}}</td></tr>{{end}}
+</table>
+
+<h2>Pending invites ({{len .Invites}})</h2>
+{{template "inviteTable" .Invites}}
+
+<h2>Assets owned ({{len .Assets}})</h2>
+{{template "assetTable" .Assets}}
+{{end}}
+{{end}}

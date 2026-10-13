@@ -1,0 +1,54 @@
+{{define "content"}}
+{{with .Data}}{{$p := .Project}}
+<h1>{{$p.Name}} <span class="muted mono">{{$p.ID}}</span>{{template "orphan" $p}}</h1>
+<dl>
+  <dt>owner</dt><dd>{{if eq $p.OwnerKind "gyoza"}}gyoza (template){{else}}<a href="{{ownerURL $p.OwnerKind $p.OwnerID}}">{{$p.OwnerName}}</a> <span class="muted">{{$p.OwnerKind}}</span>{{end}}</dd>
+  <dt>state</dt><dd>{{$p.State}}</dd>
+  <dt>org-locked</dt><dd>{{$p.OrgLocked}}</dd>
+  {{if $p.ClonedFrom}}<dt>cloned from</dt><dd><a href="/projects/{{deref $p.ClonedFrom}}" class="mono">{{deref $p.ClonedFrom}}</a></dd>{{end}}
+  <dt>created</dt><dd>{{time $p.CreatedAt}} by {{if $p.CreatedBy}}<a href="/users/{{$p.CreatedBy}}">{{$p.CreatedBy}}</a>{{else}}<span class="muted">tooling</span>{{end}}</dd>
+  {{if $p.DeletingAt}}<dt>deleting since</dt><dd>{{time $p.DeletingAt}}</dd>{{end}}
+  <dt>files</dt><dd><a href="/objects?owner_kind=project&owner_id={{$p.ID}}">ledger</a> · <a href="/folders?owner_kind=project&owner_id={{$p.ID}}">folders</a></dd>
+</dl>
+<div class="box">
+  <form method="post" action="/projects/{{$p.ID}}/rename"><input name="name" value="{{$p.Name}}"><button>Rename</button></form>
+  <form method="post" action="/projects/{{$p.ID}}/share"><input name="email" type="email" placeholder="email" required>
+    <select name="access"><option>viewer</option><option>editor</option></select><button>Share</button></form>
+  <form method="post" action="/projects/{{$p.ID}}/clone">Clone into {{template "ownerPicker"}}<button>Clone</button></form>
+  {{if eq $p.OwnerKind "org"}}
+  <form method="post" action="/projects/{{$p.ID}}/lock">
+    {{if $p.OrgLocked}}<input type="hidden" name="locked" value="false"><button>Unlock</button>
+    {{else}}<input type="hidden" name="locked" value="true"><button>Org-lock</button>{{end}}
+  </form>
+  {{else if eq $p.OwnerKind "user"}}
+  <form method="post" action="/projects/{{$p.ID}}/move-to-org"><button>Move to the actor's org</button></form>
+  {{end}}
+  <form method="post" action="/projects/{{$p.ID}}/delete" onsubmit="return confirm('Delete this project and its files?')">
+    {{if eq $p.OwnerKind "gyoza"}}<input type="hidden" name="template" value="true">{{end}}<button class="danger">Delete</button></form>
+</div>
+
+<h2>Shares ({{len .Shares}})</h2>
+<table><tr><th>user</th><th>access</th><th>shared by</th><th>since</th><th></th></tr>
+{{range .Shares}}<tr><td><a href="/users/{{.UserID}}">{{.Email}}</a></td><td>{{.Access}}</td><td>{{.SharedBy}}</td><td>{{time .CreatedAt}}</td>
+<td><form method="post" action="/projects/{{$p.ID}}/shares/{{.UserID}}/remove" class="inline"><button class="danger">remove</button></form></td></tr>{{end}}
+</table>
+
+<h2>Assets used ({{len .Uses}})</h2>
+{{template "useTable" .Uses}}
+<div class="box">
+  {{if .Usable}}
+  <form method="post" action="/uses">
+    <strong>Use asset</strong> (as the acting user)
+    <input type="hidden" name="project_id" value="{{$p.ID}}">
+    <select name="asset">{{range .Usable}}<option value="{{.ID}}:{{.CurrentVersion}}">{{.Name}} · v{{.CurrentVersion}} · {{.OwnerKind}}</option>{{end}}</select>
+    <button>Record use</button>
+  </form>
+  <p class="muted" style="margin:4px 0 0">Live assets this project may use in place: its own, its owner's and gyoza's, at their current version. Other versions: record from the asset's page.</p>
+  {{else}}<span class="muted">No assets this project can use in place.</span>{{end}}
+</div>
+
+<h2>Project-owned assets ({{len .Assets}})</h2>
+{{template "assetTable" .Assets}}
+<p class="muted">To upload for this project, use the form on <a href="/assets?owner_kind=project&owner_id={{$p.ID}}">Assets</a> with owner <code>project</code> / <code>{{$p.ID}}</code>.</p>
+{{end}}
+{{end}}

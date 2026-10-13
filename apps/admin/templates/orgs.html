@@ -1,0 +1,13 @@
+{{define "content"}}
+<h1>Orgs</h1>
+<div class="box">
+  <form method="post" action="/orgs"><strong>New org</strong> (as the acting user, who becomes its admin)
+    <input name="name" placeholder="name" required><button>Create</button></form>
+</div>
+<input type="search" name="q" value="{{.Query.Get "q"}}" placeholder="search id, name"
+       hx-get="/orgs" hx-trigger="input changed delay:250ms, search" hx-select="#rows" hx-target="#rows" hx-swap="outerHTML" hx-push-url="true">
+<table id="rows">
+<tr><th>name</th><th>id</th><th>members</th><th>created</th></tr>
+{{range .Data}}<tr {{if .DeletingAt}}class="trashed"{{end}}><td><a href="/orgs/{{.ID}}">{{.Name}}</a></td><td class="mono">{{.ID}}</td><td>{{.Members}}</td><td>{{time .CreatedAt}}</td></tr>{{end}}
+</table>
+{{end}}
