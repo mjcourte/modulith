@@ -287,8 +287,10 @@ func TestMockIntermittentPeerIsNotLeftBehind(t *testing.T) {
 	}
 }
 
-// Stamps can't be forged into the future: a delta or snapshot stamped past
+// Stamps can't be forged into the future: an untrusted delta stamped past
 // now + MaxSkew is refused, so it can't win every write or drag clocks.
+// Trusted deltas and snapshots come from servers, whose clocks may run
+// ahead: they aren't bounded (engine/PLAN.md row 2).
 func TestMockRejectsFutureStamps(t *testing.T) {
 	clock := &fakeNow{t: time.Date(2026, 10, 12, 9, 0, 0, 0, time.UTC)}
 	d := openAt(t, "server", clock)
@@ -310,12 +312,21 @@ func TestMockRejectsFutureStamps(t *testing.T) {
 		t.Errorf("k = %v after forged deltas, want them refused", got)
 	}
 
-	// A snapshot from a replica whose clock ran far ahead is refused too.
+	trusted := mockDelta(t, "other-server", engine.HLC(clock.t.Add(time.Hour)), engine.MockSet{Key: "k", Value: "from a fast server"})
+	trusted.Trusted = true
+	if _, err := d.Edit(ctx, trusted); err != nil {
+		t.Errorf("a trusted delta an hour ahead: %v", err)
+	}
+
+	// A snapshot from a server whose clock ran far ahead merges.
 	future := &fakeNow{t: clock.t.Add(24 * time.Hour)}
 	ahead := openAt(t, "ahead", future)
 	edit(t, ahead, mockDelta(t, "", 0, engine.MockSet{Key: "k", Value: "from tomorrow"}))
-	if err := d.Merge(ctx, snapshot(t, ahead)); !errors.Is(err, engine.ErrBadStamp) {
-		t.Errorf("merging a snapshot stamped tomorrow: got %v, want ErrBadStamp", err)
+	if err := d.Merge(ctx, snapshot(t, ahead)); err != nil {
+		t.Errorf("merging a snapshot stamped tomorrow: %v", err)
+	}
+	if got := registers(t, d)["k"]; got != "from tomorrow" {
+		t.Errorf("k = %v after the merge", got)
 	}
 }
 
@@ -390,5 +401,45 @@ func TestMockRevertTo(t *testing.T) {
 	again, err := a.RevertTo(ctx, good)
 	if err != nil || len(again.Payload) != 0 {
 		t.Errorf("reverting to the current state: %d bytes, %v; want an empty delta", len(again.Payload), err)
+	}
+}
+
+// Two writers sharing a replica ID (two tabs, a reused ID) can stamp
+// different values with the same stamp. Each replica must still converge on
+// one of them (engine/PLAN.md, row 1).
+func TestMockConvergesWhenReplicaIDsCollide(t *testing.T) {
+
+	clock := &fakeNow{t: time.Date(2026, 10, 12, 9, 0, 0, 0, time.UTC)}
+	a, b := openAt(t, "tab", clock), openAt(t, "tab", clock)
+	fromA := asDelta(edit(t, a, mockDelta(t, "", 0, engine.MockSet{Key: "title", Value: "from a"})))
+	fromB := asDelta(edit(t, b, mockDelta(t, "", 0, engine.MockSet{Key: "title", Value: "from b"})))
+	edit(t, a, fromB)
+	edit(t, b, fromA)
+	if ra, rb := registers(t, a)["title"], registers(t, b)["title"]; ra != rb {
+		t.Errorf("replicas diverged: a has %v, b has %v", ra, rb)
+	}
+	if !bytes.Equal(snapshot(t, a).Payload, snapshot(t, b).Payload) {
+		t.Error("snapshots differ")
+	}
+}
+
+// StampOf reads what Edit would see: the stamp a client put on its delta, or
+// none, and the stamp a document put on a local edit.
+func TestStampOf(t *testing.T) {
+	lamport, replica, err := engine.StampOf(mockDelta(t, "tab-1", 42, engine.MockSet{Key: "k", Value: "v"}))
+	if err != nil || lamport != 42 || replica != "tab-1" {
+		t.Errorf("stamped: got %d %q %v", lamport, replica, err)
+	}
+	unstamped := mockDelta(t, "", 0, engine.MockSet{Key: "k", Value: "v"})
+	if lamport, replica, err := engine.StampOf(unstamped); err != nil || lamport != 0 || replica != "" {
+		t.Errorf("unstamped: got %d %q %v", lamport, replica, err)
+	}
+	out := edit(t, openMock(t, "server"), unstamped)
+	if lamport, replica, err := engine.StampOf(asDelta(out)); err != nil || lamport == 0 || replica != "server" {
+		t.Errorf("local edit: got %d %q %v", lamport, replica, err)
+	}
+	bad := engine.DeltaInput{Format: engine.WireNative, Version: 1, Payload: []byte("not a delta")}
+	if _, _, err := engine.StampOf(bad); !errors.Is(err, engine.ErrUnsupportedFormat) {
+		t.Errorf("garbage: got %v, want ErrUnsupportedFormat", err)
 	}
 }

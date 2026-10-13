@@ -45,10 +45,40 @@ services:
     environment:
       GYOZA_DATABASE_URL: postgres://gyoza:gyoza@postgres:5432/gyoza
       GYOZA_STORAGE_ADDR: storage:9090
+      GYOZA_DOCUMENTS_ADDR: documents:9090
+      GYOZA_SUPERTOKENS_URL: http://supertokens:3567
     ports:
       - "127.0.0.1:9093:9090" # gRPC, as go run ./cmd/iam serves it
     depends_on:
       postgres: { condition: service_healthy }
+
+  # The browser-facing gateway: sign-in (SuperTokens), the REST API and the
+  # WebSocket (relaying live document traffic from NATS). It calls iam to
+  # record each sign-in.
+  gateway:
+    build:
+      context: ../..
+      target: gateway
+    environment:
+      GYOZA_IAM_ADDR: iam:9090
+      GYOZA_STORAGE_ADDR: storage:9090
+      GYOZA_DOCUMENTS_ADDR: documents:9090
+      GYOZA_NATS_URL: nats://nats-1:4222,nats-2:4222,nats-3:4222
+      GYOZA_SUPERTOKENS_URL: http://supertokens:3567
+      GYOZA_PUBLIC_URL: http://localhost:8080
+      # SuperTokens' public demo Google client: localhost only (see .env.example).
+      GYOZA_GOOGLE_CLIENT_ID: 1060725074195-kmeum4crr01uirfl2op9kd5acmi9jutn.apps.googleusercontent.com
+      GYOZA_GOOGLE_CLIENT_SECRET: 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
+      GYOZA_GATEWAY_DEV_PAGES: "true"
+    ports:
+      - "127.0.0.1:8080:8080" # as go run ./cmd/gateway serves it
+    depends_on:
+      supertokens: { condition: service_healthy }
+      # Not iam: gRPC connects lazily; sign-ins fail until it's up.
+      # NATS is connected at startup.
+      nats-1: { condition: service_started }
+      nats-2: { condition: service_started }
+      nats-3: { condition: service_started }
 
   # Live documents: applies edits, distributes them on NATS, and saves
   # snapshots through storage (the bytes go straight to S3 by presigned URL,

@@ -30,6 +30,15 @@ service DocumentsService {
   // one fresh edit, returned like UpdateDocument's. Administrative. NOT_FOUND
   // / SNAPSHOT_NOT_FOUND if retention removed that version.
   rpc RevertDocument(RevertDocumentRequest) returns (RevertDocumentResponse);
+  // Copies a project's document into its clone, pointing every asset ref at
+  // the clone's copy. Called by iam's clone job only: actor_id must read
+  // the source; the clone (still being cloned) is trusted. Does nothing if
+  // the clone already has a document, so it can be retried.
+  rpc CloneDocument(CloneDocumentRequest) returns (CloneDocumentResponse);
+  // Points every use of one asset version at another, as one edit returned
+  // like UpdateDocument's: after storage's ForkAsset. delta's payload is
+  // empty if the document didn't use from.
+  rpc ReplaceAssetRef(ReplaceAssetRefRequest) returns (ReplaceAssetRefResponse);
 }
 
 // Engine bytes: a snapshot or a delta.
@@ -98,6 +107,32 @@ message RevertDocumentRequest {
 }
 // As UpdateDocumentResponse; delta's payload is empty if nothing differed.
 message RevertDocumentResponse {
+  Wire delta = 1;
+  string not_published = 2;
+  string uses_not_recorded = 3;
+}
+
+message CloneDocumentRequest {
+  string actor_id = 1;
+  string from_project_id = 2;
+  string to_project_id = 3;
+}
+message CloneDocumentResponse {}
+
+// An asset version a document uses (storage's AssetRef).
+message AssetRef {
+  string asset_id = 1;
+  int32 version = 2;
+}
+
+message ReplaceAssetRefRequest {
+  string actor_id = 1;
+  string project_id = 2;
+  AssetRef from = 3;
+  AssetRef to = 4;
+}
+// As UpdateDocumentResponse.
+message ReplaceAssetRefResponse {
   Wire delta = 1;
   string not_published = 2;
   string uses_not_recorded = 3;

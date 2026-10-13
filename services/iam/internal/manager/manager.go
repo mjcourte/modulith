@@ -44,6 +44,15 @@ type Storage interface {
 	CopyProjectFiles(ctx context.Context, actorID, from, to string) (storage.CopyReport, error)
 }
 
+// Documents is what iam needs from documents: copying a project's document
+// into a clone (step 3 of a clone, see manager_clone.go), pointing its asset
+// refs at the copies storage made. It must succeed without doing anything if
+// the clone already has a document, so a resumed clone can repeat it.
+// documents.Service satisfies it, in-process or over gRPC.
+type Documents interface {
+	CloneDocument(ctx context.Context, actorID, from, to string) error
+}
+
 // IdentityProvider deletes a user's sign-in account (SuperTokens, through
 // the gateway) at the end of an account deletion, so iam never talks to
 // SuperTokens itself. Deleting a missing account must succeed, so a resumed
@@ -64,19 +73,22 @@ func (NoIdentityProvider) DeleteUser(context.Context, string) error { return nil
 type Manager struct {
 	store   directory.Store
 	storage Storage
+	docs    Documents
 	idp     IdentityProvider
 	cfg     Config
 	now     func() time.Time // the clock; tests replace it (export_test.go)
 }
 
 // NewManager wires a Manager on store, calling files and idp in the
-// deletion cascades.
-func NewManager(store directory.Store, files Storage, idp IdentityProvider, cfg Config) (*Manager, error) {
+// deletion cascades, and files and docs when cloning.
+func NewManager(store directory.Store, files Storage, docs Documents, idp IdentityProvider, cfg Config) (*Manager, error) {
 	switch {
 	case store == nil:
 		return nil, errors.New("iam: NewManager needs a store")
 	case files == nil:
 		return nil, errors.New("iam: NewManager needs storage")
+	case docs == nil:
+		return nil, errors.New("iam: NewManager needs documents")
 	case idp == nil:
 		return nil, errors.New("iam: NewManager needs an identity provider")
 	}
@@ -84,7 +96,7 @@ func NewManager(store directory.Store, files Storage, idp IdentityProvider, cfg 
 	if err != nil {
 		return nil, err
 	}
-	return &Manager{store: store, storage: files, idp: idp, cfg: cfg, now: time.Now}, nil
+	return &Manager{store: store, storage: files, docs: docs, idp: idp, cfg: cfg, now: time.Now}, nil
 }
 
 // Config returns the effective configuration, with defaults filled in.

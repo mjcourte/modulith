@@ -4,6 +4,7 @@
 #   docker build --target storage .
 #   docker build --target iam .
 #   docker build --target documents .
+#   docker build --target gateway .
 #   docker build --target mediaprocessor .   # ffprobe, and no secrets at run time
 #
 # deploy/monolith and deploy/distributed build them through compose.
@@ -55,9 +56,17 @@ ENV GYOZA_GRPC_ADDR=:9090
 EXPOSE 9090
 ENTRYPOINT ["mediaprocessor"]
 
+# The gateway serves browsers over HTTP on :8080, not gRPC.
+FROM base AS gateway
+COPY --from=build /out/gateway /usr/local/bin/
+ENV GYOZA_GATEWAY_ADDR=:8080
+EXPOSE 8080
+ENTRYPOINT ["gateway"]
+
 # Last, so a plain `docker build .` builds the monolith.
 FROM base-ffprobe AS gyoza
 COPY --from=build /out/gyoza /usr/local/bin/
 ENV GYOZA_GRPC_ADDR=:9090
-EXPOSE 9090
+ENV GYOZA_GATEWAY_ADDR=:8080
+EXPOSE 9090 8080
 ENTRYPOINT ["gyoza"]

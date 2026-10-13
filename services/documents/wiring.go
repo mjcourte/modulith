@@ -71,6 +71,17 @@ func Open(s Settings, st storage.Service, iamAuthz storage.Authorizer, nc *gnats
 	return manager.New(engine.Mock{}, store, NewIAMAuthorizer(iamAuthz), storageUses{st}, cfg)
 }
 
+// SnapshotTransfer moves snapshot bytes to and from presigned URLs.
+type SnapshotTransfer = snapshots.Transfer
+
+// OpenLocal builds documents like Open but without NATS: one instance alone,
+// nothing distributed. For tests of what is built on documents (the
+// gateway's), over storage.NewMemory and a transfer adapting it.
+func OpenLocal(st storage.Service, t SnapshotTransfer, iamAuthz storage.Authorizer) *Manager {
+	store := snapshots.NewStorageStore(st, t)
+	return manager.New(engine.Mock{}, store, NewIAMAuthorizer(iamAuthz), storageUses{st}, Config{Replica: "local"})
+}
+
 // StartConsumer runs documents' one NATS consumer (every project's deltas)
 // in the background until ctx is done. The returned channel closes once it
 // has stopped, after finishing the message in hand.

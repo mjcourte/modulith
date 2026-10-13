@@ -2,9 +2,10 @@
 
 - ez just reproduce the entire
 - transport schema eg flatbuffers wire format
-- CRDT layer
+- CRDT layer -> Yrs?
+- C++ or Rust graph representation, i guess we'd call this "native"?
 - document API
-- ECS layer
+- ECS layer? do we need ECS?
 - rendering layer
 - effects n shaders
 - animation and playback layers

@@ -122,3 +122,11 @@ func documentFromProto(p *pb.Document) manager.Document {
 		Seq:      p.GetSeq(),
 	}
 }
+
+func refToProto(r engine.AssetRef) *pb.AssetRef {
+	return &pb.AssetRef{AssetId: r.ID, Version: int32(r.Version)}
+}
+
+func refFromProto(p *pb.AssetRef) engine.AssetRef {
+	return engine.AssetRef{ID: p.GetAssetId(), Version: int(p.GetVersion())}
+}

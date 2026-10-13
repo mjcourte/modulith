@@ -22,7 +22,7 @@ func newManagerWithFiles(t *testing.T) (*manager.Manager, *directory.MemoryStore
 	t.Helper()
 	s := directory.NewMemoryStore()
 	files := newFilesFor(t, s)
-	m, err := manager.NewManager(s, files, manager.NoIdentityProvider{}, manager.Config{})
+	m, err := manager.NewManager(s, files, &recordingDocs{}, manager.NoIdentityProvider{}, manager.Config{})
 	if err != nil {
 		t.Fatalf("NewManager: %v", err)
 	}
@@ -68,16 +68,19 @@ func TestNewManagerConfig(t *testing.T) {
 	if got := m.Config().InviteTTL; got != manager.DefaultInviteTTL {
 		t.Errorf("InviteTTL = %s, want the default %s", got, manager.DefaultInviteTTL)
 	}
-	if _, err := manager.NewManager(directory.NewMemoryStore(), newFilesFor(t, directory.NewMemoryStore()), manager.NoIdentityProvider{}, manager.Config{InviteTTL: -time.Hour}); err == nil {
+	if _, err := manager.NewManager(directory.NewMemoryStore(), newFilesFor(t, directory.NewMemoryStore()), &recordingDocs{}, manager.NoIdentityProvider{}, manager.Config{InviteTTL: -time.Hour}); err == nil {
 		t.Error("negative InviteTTL accepted")
 	}
-	if _, err := manager.NewManager(nil, newFilesFor(t, directory.NewMemoryStore()), manager.NoIdentityProvider{}, manager.Config{}); err == nil {
+	if _, err := manager.NewManager(nil, newFilesFor(t, directory.NewMemoryStore()), &recordingDocs{}, manager.NoIdentityProvider{}, manager.Config{}); err == nil {
 		t.Error("NewManager without a store succeeded")
 	}
-	if _, err := manager.NewManager(directory.NewMemoryStore(), nil, manager.NoIdentityProvider{}, manager.Config{}); err == nil {
+	if _, err := manager.NewManager(directory.NewMemoryStore(), nil, &recordingDocs{}, manager.NoIdentityProvider{}, manager.Config{}); err == nil {
 		t.Error("NewManager without storage succeeded")
 	}
-	if _, err := manager.NewManager(directory.NewMemoryStore(), newFilesFor(t, directory.NewMemoryStore()), nil, manager.Config{}); err == nil {
+	if _, err := manager.NewManager(directory.NewMemoryStore(), newFilesFor(t, directory.NewMemoryStore()), nil, manager.NoIdentityProvider{}, manager.Config{}); err == nil {
+		t.Error("NewManager without documents succeeded")
+	}
+	if _, err := manager.NewManager(directory.NewMemoryStore(), newFilesFor(t, directory.NewMemoryStore()), &recordingDocs{}, nil, manager.Config{}); err == nil {
 		t.Error("NewManager without an identity provider succeeded")
 	}
 }

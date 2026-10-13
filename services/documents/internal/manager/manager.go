@@ -122,7 +122,7 @@ func (m *Manager) replay(ctx context.Context, projectID string, doc engine.Docum
 		return seq, nil
 	}
 	err := m.cfg.WAL.DeltasAfter(ctx, projectID, seq, func(d wal.Delta) error {
-		if _, err := doc.Edit(ctx, d.Delta); err != nil {
+		if _, err := doc.Edit(ctx, streamInput(d)); err != nil {
 			slog.Error("documents: skipping a delta that can't be applied", "project", projectID, "seq", d.Seq, "err", err)
 		}
 		seq = d.Seq

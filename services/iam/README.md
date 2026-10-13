@@ -141,8 +141,9 @@ and what's actively shared with them, each once, never clones in progress.
   leave it. Without: their projects and library are deleted. Then iam forgets them, the
   `IdentityProvider` deletes their sign-in account, and the row goes (freeing the email)
 - dependencies are consumer-side interfaces: `Storage` (`DeleteOwned`, `RemoveUser`;
-  `storage.Service` satisfies it) and `IdentityProvider` (`NoIdentityProvider` until the
-  gateway exists)
+  `storage.Service` satisfies it) and `IdentityProvider` (the gateway's
+  `IdentityProviderFromEnv`: the SuperTokens core's `/user/remove`, which succeeds for a
+  missing user; `NoIdentityProvider` stays for tests)
 - `manager_cleanup.go`: `Cleanup`/`RunCleanup` finish deletions cut off part-way (e.g. by a
   storage outage) and remove expired invites; off `Service`, run by whichever binary
   hosts the Manager. If an org's other admins step down while an admin's deletion is
@@ -170,9 +171,10 @@ and what's actively shared with them, each once, never clones in progress.
   (domain `iam.gyoza`), rebuilt by the clients from one table (`wireErrors`); an
   `AuthzService` refusal comes back as `storage.ErrForbidden`, and an unreachable iam as
   an error that is never mistaken for a refusal
-- the monolith builds iam's store, the `StorageAuthorizer` on it, storage, then iam's
-  `Manager` (which calls storage), and serves all of them. `cmd/iam` (`localhost:9093`)
-  calls storage at `GYOZA_STORAGE_ADDR`; `cmd/storage` asks iam at `GYOZA_IAM_ADDR`
+- the monolith builds iam's store, the `StorageAuthorizer` on it, storage, documents, then
+  iam's `Manager` (which calls storage, and documents when cloning), and serves all of
+  them. `cmd/iam` (`localhost:9093`) calls storage at `GYOZA_STORAGE_ADDR` and documents
+  at `GYOZA_DOCUMENTS_ADDR`; `cmd/storage` asks iam at `GYOZA_IAM_ADDR`
 - settings: `GYOZA_INVITE_TTL` (default 14 days), `GYOZA_IAM_CLEANUP_INTERVAL` (10m)
 
 ## Cloning (step 7)
@@ -182,15 +184,18 @@ and what's actively shared with them, each once, never clones in progress.
   org-locked source only clones into its own org, and the clone is locked too. The clone
   gets the source's name and `ClonedFrom`; shares aren't copied. Also `IAMService.CloneProject`
 - a clone is a job: the row is created `cloning` (hidden, granting nothing), storage
-  copies the files (`CopyProjectFiles`, resumable), then it's marked `ready`. If copying
+  copies the files (`CopyProjectFiles`, resumable), documents copies the document and
+  points its refs at the copies (`CloneDocument`, a no-op once done), then it's marked
+  `ready`. If a step
   fails, the call returns the half-made clone with the error (over gRPC, just the error)
+- `Documents` (`manager.go`) is the one call iam needs from documents, declared here
+  so iam doesn't import it; `NewManager` takes it
 - the cleanup loop picks up clones still `cloning` 5 minutes after they started
   (`ListCloningProjects`, partial index from migration 00002): it finishes them, or
   deletes them if their source is gone or they've failed for 24 hours. A clone abandoned
   during an outage is marked for deletion and finished as a project deletion
-- not yet: documents copying the document and rewriting its refs (it slots in
-  between the copy and `ready`)
-- tests: `manager_clone_test.go` (cloning, every refusal, resumed and abandoned clones);
+- tests: `manager_clone_test.go` (cloning, every refusal, resumed and abandoned clones, the document copied after
+  a documents outage);
   mutation-checked 11/12. The survivor is the "source being deleted" check, which
   `Cleanup` can't reach (deletions finish before clones are looked at); it guards
   against two replicas racing

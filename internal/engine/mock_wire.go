@@ -47,6 +47,18 @@ func MockDelta(replica string, lamport uint64, sets ...MockSet) (DeltaInput, err
 	return DeltaInput{Format: WireNative, Version: mockVersion, Payload: encodeDelta(d)}, nil
 }
 
+// StampOf reads a delta's stamp without applying it: lamport 0 (and replica
+// "") means unstamped. The stamp is in the wire format's delta header
+// (engine/schema), the same for every engine, so callers holding no document
+// (the gateway, checking a browser's delta) can read it.
+func StampOf(in DeltaInput) (lamport uint64, replica string, err error) {
+	d, err := decodeDelta(in)
+	if err != nil {
+		return 0, "", err
+	}
+	return d.Lamport, d.Replica, nil
+}
+
 func toValue(v any) (*fbs.ValueT, error) {
 	switch v := v.(type) {
 	case int64:

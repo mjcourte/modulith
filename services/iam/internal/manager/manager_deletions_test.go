@@ -18,6 +18,21 @@ import (
 var errOutage = errors.New("storage unreachable")
 
 // flakyStorage fails every call while down, as an outage would.
+// recordingDocs is documents: it records each clone's document copy, and
+// fails while down.
+type recordingDocs struct {
+	down   bool
+	clones []string // "from->to"
+}
+
+func (d *recordingDocs) CloneDocument(ctx context.Context, actorID, from, to string) error {
+	if d.down {
+		return errOutage
+	}
+	d.clones = append(d.clones, from+"->"+to)
+	return nil
+}
+
 type flakyStorage struct {
 	manager.Storage
 	down bool
@@ -58,15 +73,16 @@ type deletionWorld struct {
 	store *directory.MemoryStore
 	files *storage.Memory
 	flaky *flakyStorage
+	docs  *recordingDocs
 	idp   *recordingIDP
 }
 
 func newDeletionWorld(t *testing.T) deletionWorld {
 	t.Helper()
 	s := directory.NewMemoryStore()
-	w := deletionWorld{store: s, files: newFilesFor(t, s), idp: &recordingIDP{}}
+	w := deletionWorld{store: s, files: newFilesFor(t, s), idp: &recordingIDP{}, docs: &recordingDocs{}}
 	w.flaky = &flakyStorage{Storage: w.files}
-	m, err := manager.NewManager(s, w.flaky, w.idp, manager.Config{})
+	m, err := manager.NewManager(s, w.flaky, w.docs, w.idp, manager.Config{})
 	if err != nil {
 		t.Fatalf("NewManager: %v", err)
 	}

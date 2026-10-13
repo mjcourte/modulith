@@ -13,7 +13,7 @@ Built and running in `cmd/gyoza` and `cmd/documents` (gRPC `DocumentsService`, p
 | --- | --- |
 | `documents.go`, `wiring.go` | public surface; `SettingsFromEnv`, `Open`, `StartConsumer`; `IAMAuthorizer` (`iam_authz.go`) |
 | `internal/live` | open documents: load once, debounced saves, TTL eviction |
-| `internal/manager` | `Service`: Get, Query, Init, Update; `ApplyDelta` for the consumer; asset uses |
+| `internal/manager` | `Service`: Get, Query, Init, Update, Revert, Clone, ReplaceAssetRef; `ApplyDelta` for the consumer; asset uses |
 | `internal/snapshots` | `Store`: `Memory` (tests), `StorageStore` (S3 through storage, durable) |
 | `internal/wal` | the NATS write-ahead log: publish, replay by Direct Get, the one consumer |
 | `internal/grpcapi` | `DocumentsService` server and client |

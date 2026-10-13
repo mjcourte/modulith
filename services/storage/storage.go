@@ -86,6 +86,40 @@ var ErrForkRequired = manager.ErrForkRequired
 // open a real storage against RustFS.
 type S3Config = blob.S3Config
 
+// The DAM: assets, versions, folders and uploads, as the Service takes and
+// returns them (the gateway encodes them for browsers).
+type (
+	Asset               = dam.Asset
+	AssetPage           = dam.AssetPage
+	AssetQuery          = dam.AssetQuery
+	AssetUpdate         = dam.AssetUpdate
+	Version             = dam.Version
+	Category            = dam.Category
+	Folder              = dam.Folder
+	FolderDeletion      = dam.FolderDeletion
+	FolderNotEmptyError = dam.FolderNotEmptyError
+	FolderContents      = manager.FolderContents
+	Trash               = manager.Trash
+	UploadTicket        = manager.UploadTicket
+)
+
+// DAM errors. Over gRPC the client rebuilds them, so errors.Is works on
+// either transport.
+var (
+	ErrAssetNotFound   = dam.ErrAssetNotFound
+	ErrVersionNotFound = dam.ErrVersionNotFound
+	ErrInvalidAsset    = dam.ErrInvalidAsset
+	ErrInvalidQuery    = dam.ErrInvalidQuery
+	ErrFolderNotFound  = dam.ErrFolderNotFound
+	ErrInvalidFolder   = dam.ErrInvalidFolder
+	ErrFolderNotEmpty  = dam.ErrFolderNotEmpty // also as *FolderNotEmptyError, with counts
+	ErrNameTaken       = dam.ErrNameTaken
+	ErrUploadNotFound  = dam.ErrUploadNotFound
+	ErrUploadExpired   = dam.ErrUploadExpired
+	ErrInvalidUpload   = dam.ErrInvalidUpload
+	ErrUploadTooLarge  = manager.ErrUploadTooLarge
+)
+
 // Snapshot errors.
 var (
 	ErrSnapshotStale    = manager.ErrSnapshotStale

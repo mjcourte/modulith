@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"strings"
 	"testing"
 	"time"
 
@@ -18,6 +19,7 @@ import (
 	"gyoza/services/documents/internal/grpcapi"
 	"gyoza/services/documents/internal/manager"
 	"gyoza/services/documents/internal/snapshots"
+	"gyoza/services/storage"
 )
 
 // testAuthz lets "ann" write and "rita" read; others get nothing.
@@ -171,5 +173,34 @@ func TestGRPCRevertDocument(t *testing.T) {
 	}
 	if _, err := c.RevertDocument(ctx, "rita", "p", 1); !errors.Is(err, manager.ErrForbidden) {
 		t.Errorf("reader over gRPC: got %v, want ErrForbidden", err)
+	}
+}
+
+func TestGRPCCloneAndReplaceAssetRef(t *testing.T) {
+	c, m := newClient(t, &testUses{})
+	ctx := context.Background()
+	x1 := engine.AssetRef{ID: "x", Version: 1}
+	if _, err := c.UpdateDocument(ctx, "ann", "p", set(t, "bg", x1)); err != nil {
+		t.Fatal(err)
+	}
+	if err := c.CloneDocument(ctx, "rita", "p", "q"); err != nil {
+		t.Fatalf("CloneDocument over gRPC: %v", err)
+	}
+	copyID := storage.CopyAssetID("q", storage.Owner{Kind: storage.OwnerProject, ID: "q"}, storage.AssetRef{AssetID: "x", Version: 1})
+	v, err := m.QueryDocument(ctx, "ann", "q", engine.Query{Format: engine.QueryNative})
+	if err != nil || !strings.Contains(string(v.Data), copyID) {
+		t.Errorf("clone = %s, %v; want it to use %s", v.Data, err, copyID)
+	}
+	if err := c.CloneDocument(ctx, "mallory", "p", "r"); !errors.Is(err, manager.ErrForbidden) {
+		t.Errorf("stranger's clone over gRPC: got %v, want ErrForbidden", err)
+	}
+
+	fork := engine.AssetRef{ID: "fork", Version: 1}
+	out, err := c.ReplaceAssetRef(ctx, "ann", "p", x1, fork)
+	if err != nil || len(out.Payload) == 0 {
+		t.Fatalf("ReplaceAssetRef over gRPC = %d bytes, %v", len(out.Payload), err)
+	}
+	if v, _ := m.QueryDocument(ctx, "ann", "p", engine.Query{Format: engine.QueryNative}); !strings.Contains(string(v.Data), `"fork"`) {
+		t.Errorf("after ReplaceAssetRef: %s", v.Data)
 	}
 }

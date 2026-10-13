@@ -26,8 +26,9 @@ type Settings struct {
 	Options map[string]any
 	// Now is the wall clock for stamps (HLC below); nil means time.Now.
 	Now func() time.Time
-	// MaxSkew is how far ahead of Now a received stamp may be before it is
-	// rejected (ErrBadStamp); zero means DefaultMaxSkew.
+	// MaxSkew is how far ahead of Now a received delta's stamp may be before
+	// it is rejected (ErrBadStamp), unless the delta is Trusted; zero means
+	// DefaultMaxSkew. Snapshots aren't bounded.
 	MaxSkew time.Duration
 }
 
@@ -87,6 +88,10 @@ type DeltaInput struct {
 	Format  WireFormat
 	Version int
 	Payload []byte
+	// Trusted skips the MaxSkew bound on the delta's stamp. Set it only for
+	// deltas a trusted server stamped or already checked (another documents
+	// replica); a browser's must be bounded where it enters.
+	Trusted bool
 }
 
 type Delta struct {

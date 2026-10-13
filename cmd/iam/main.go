@@ -16,6 +16,8 @@ import (
 	"gyoza/platform/config"
 	"gyoza/platform/postgres"
 	"gyoza/platform/shutdown"
+	"gyoza/services/documents"
+	"gyoza/services/gateway"
 	"gyoza/services/iam"
 	"gyoza/services/storage"
 )
@@ -45,7 +47,12 @@ func run() error {
 	// cmd/storage's local default. The deletion cascades call it; while it's
 	// unreachable they stop part-way and the cleanup loop finishes them later.
 	storageAddr := env.String("GYOZA_STORAGE_ADDR", "localhost:9091")
+	// cmd/documents' local default. Clones call it; while it's unreachable they
+	// stay hidden and the cleanup loop finishes them later.
+	documentsAddr := env.String("GYOZA_DOCUMENTS_ADDR", "localhost:9094")
 	settings := iam.SettingsFromEnv(env)
+	// Deleting an account also deletes its sign-in account (SuperTokens core).
+	idp := gateway.IdentityProviderFromEnv(env)
 	if err := env.Err(); err != nil {
 		return err
 	}
@@ -60,6 +67,11 @@ func run() error {
 	}
 	// Closed last (defers run after the shutdown below), once nothing uses it.
 	defer storageConn.Close()
+	documentsConn, err := grpc.NewClient(documentsAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return fmt.Errorf("documents client: %w", err)
+	}
+	defer documentsConn.Close()
 
 	pool, err := postgres.Connect(ctx, dbURL, "iam")
 	if err != nil {
@@ -70,8 +82,7 @@ func run() error {
 		pool.Close() // nothing is running yet, so this returns promptly
 		return err
 	}
-	// No identity provider until the gateway (and SuperTokens) exists.
-	manager, err := iam.NewManager(store, storage.NewGRPCClient(storageConn), iam.NoIdentityProvider{}, settings.Manager)
+	manager, err := iam.NewManager(store, storage.NewGRPCClient(storageConn), documents.NewGRPCClient(documentsConn), idp, settings.Manager)
 	if err != nil {
 		pool.Close()
 		return err

@@ -30,6 +30,7 @@ type (
 	Config             = manager.Config
 	StorageAuthorizer  = manager.StorageAuthorizer
 	Storage            = manager.Storage
+	Documents          = manager.Documents
 	IdentityProvider   = manager.IdentityProvider
 	NoIdentityProvider = manager.NoIdentityProvider
 	CleanupReport      = manager.CleanupReport
@@ -92,8 +93,8 @@ func NewMemoryStore() Store { return directory.NewMemoryStore() }
 
 // NewManager builds iam's logic on store; the deletion cascades call files
 // (storage) and idp.
-func NewManager(store Store, files Storage, idp IdentityProvider, cfg Config) (*Manager, error) {
-	return manager.NewManager(store, files, idp, cfg)
+func NewManager(store Store, files Storage, docs Documents, idp IdentityProvider, cfg Config) (*Manager, error) {
+	return manager.NewManager(store, files, docs, idp, cfg)
 }
 
 // NewStorageAuthorizer answers storage's permission questions from store

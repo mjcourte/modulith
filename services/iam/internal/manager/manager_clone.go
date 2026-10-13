@@ -7,7 +7,7 @@ package manager
 //
 //  1. create the project row (ProjectCloning, ClonedFrom the source)
 //  2. storage copies the files (CopyProjectFiles: resumable, idempotent)
-//  3. (later) documents copies the document and rewrites its refs
+//  3. documents copies the document and rewrites its refs (CloneDocument)
 //  4. mark it ready
 
 import (
@@ -63,6 +63,9 @@ func (m *Manager) CloneProject(ctx context.Context, actorID, sourceID string, ta
 func (m *Manager) finishClone(ctx context.Context, clone directory.Project) (directory.Project, error) {
 	if _, err := m.storage.CopyProjectFiles(ctx, clone.CreatedBy, clone.ClonedFrom, clone.ID); err != nil {
 		return clone, fmt.Errorf("copy files of %s into clone %s: %w", clone.ClonedFrom, clone.ID, err)
+	}
+	if err := m.docs.CloneDocument(ctx, clone.CreatedBy, clone.ClonedFrom, clone.ID); err != nil {
+		return clone, fmt.Errorf("copy the document of %s into clone %s: %w", clone.ClonedFrom, clone.ID, err)
 	}
 	return m.store.MarkProjectReady(ctx, clone.ID)
 }

@@ -75,6 +75,24 @@ func (c *Client) RevertDocument(ctx context.Context, actorID, projectID string, 
 	return editFromProto(resp.GetDelta(), resp.GetNotPublished(), resp.GetUsesNotRecorded())
 }
 
+func (c *Client) CloneDocument(ctx context.Context, actorID, from, to string) error {
+	_, err := c.c.CloneDocument(ctx, &pb.CloneDocumentRequest{
+		ActorId: actorID, FromProjectId: from, ToProjectId: to,
+	})
+	if err != nil {
+		return fromStatus(err)
+	}
+	return nil
+}
+
+func (c *Client) ReplaceAssetRef(ctx context.Context, actorID, projectID string, from, to engine.AssetRef) (engine.Delta, error) {
+	resp, err := c.c.ReplaceAssetRef(ctx, &pb.ReplaceAssetRefRequest{ActorId: actorID, ProjectId: projectID, From: refToProto(from), To: refToProto(to)})
+	if err != nil {
+		return engine.Delta{}, fromStatus(err)
+	}
+	return editFromProto(resp.GetDelta(), resp.GetNotPublished(), resp.GetUsesNotRecorded())
+}
+
 // editFromProto rebuilds an applied edit and the errors the server reported
 // with it in the response.
 func editFromProto(w *pb.Wire, notPublished, usesNotRecorded string) (engine.Delta, error) {
