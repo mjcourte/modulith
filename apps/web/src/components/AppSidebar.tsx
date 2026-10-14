@@ -1,4 +1,5 @@
 import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
+import { UserNav } from "@/components/UserNav";
 import { WorkspaceSwitcher } from "@/components/WorkspaceSwitcher";
 import { BuildingIcon, FolderIcon, HouseIcon, ImagesIcon, ShareIcon, TrashIcon } from "@phosphor-icons/react";
 import { Link, useMatchRoute } from "@tanstack/react-router";
@@ -20,9 +21,11 @@ export function AppSidebar() {
     return (
         <Sidebar>
             <SidebarHeader>
-                <SidebarMenuItem>
-                    <WorkspaceSwitcher />
-                </SidebarMenuItem>
+                <SidebarMenu>
+                    <SidebarMenuItem>
+                        <WorkspaceSwitcher />
+                    </SidebarMenuItem>
+                </SidebarMenu>
             </SidebarHeader>
             <SidebarContent>
                 <SidebarGroup>
@@ -41,7 +44,7 @@ export function AppSidebar() {
                 </SidebarGroup>
             </SidebarContent>
             <SidebarFooter>
-                // Footer: Profile
+                <UserNav />
             </SidebarFooter>
         </Sidebar>
     )
