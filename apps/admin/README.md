@@ -33,6 +33,9 @@ GYOZA_ADMIN=1 go run ./cmd/admin      # in another; open http://localhost:8081
   (`GYOZA_ADMIN_ADDR`), and calls iam and storage on `localhost:9090`
   (`GYOZA_ADMIN_IAM_ADDR`, `GYOZA_ADMIN_STORAGE_ADDR`, `GYOZA_ADMIN_DOCUMENTS_ADDR`;
   point them at 9093/9091/9094 for the distributed binaries). Never deploy it.
+- No authentication, so other sites are kept out instead (`guard`): requests must be
+  addressed to `localhost` or a loopback IP (against DNS rebinding), and changes must be
+  same-origin (`http.CrossOriginProtection`, against forms posted from other pages).
 
 ## Not yet
 

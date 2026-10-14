@@ -16,11 +16,17 @@ import (
 var ErrForbidden = errors.New("iam: forbidden")
 
 // Defaults for Config.
-const DefaultInviteTTL = 14 * 24 * time.Hour
+const (
+	DefaultInviteTTL = 14 * 24 * time.Hour
+	DefaultShareTTL  = 30 * 24 * time.Hour
+)
 
 // Config is the Manager's policy. Zero values mean "use the default".
 type Config struct {
 	InviteTTL time.Duration // how long an invite can be accepted; default 14 days
+	// ShareTTL is how long a pending share (to an email with no verified
+	// account) can be claimed; default 30 days.
+	ShareTTL time.Duration
 }
 
 func (c Config) withDefaults() (Config, error) {
@@ -29,6 +35,12 @@ func (c Config) withDefaults() (Config, error) {
 	}
 	if c.InviteTTL < 0 {
 		return c, fmt.Errorf("iam config: InviteTTL %s must be positive", c.InviteTTL)
+	}
+	if c.ShareTTL == 0 {
+		c.ShareTTL = DefaultShareTTL
+	}
+	if c.ShareTTL < 0 {
+		return c, fmt.Errorf("iam config: ShareTTL %s must be positive", c.ShareTTL)
 	}
 	return c, nil
 }

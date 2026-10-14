@@ -33,6 +33,16 @@ type IamOrg struct {
 	DeletingAt *time.Time
 }
 
+type IamPendingShare struct {
+	ProjectID string
+	Email     string
+	Access    string
+	SharedBy  string
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	ExpiresAt time.Time
+}
+
 type IamProject struct {
 	ID         string
 	OwnerKind  string

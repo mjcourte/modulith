@@ -77,3 +77,22 @@ SELECT * FROM iam.projects
 WHERE state = 'cloning' AND deleting_at IS NULL AND created_at < sqlc.arg(before)
 ORDER BY created_at, id
 LIMIT sqlc.arg(row_limit);
+
+-- name: UpsertPendingShare :one
+-- Sharing with the same address again refreshes the pending share (access,
+-- sharer, expiry), keeping its creation time.
+INSERT INTO iam.pending_shares (project_id, email, access, shared_by, created_at, updated_at, expires_at)
+VALUES (sqlc.arg(project_id), sqlc.arg(email), sqlc.arg(access), sqlc.arg(shared_by), sqlc.arg(at), sqlc.arg(at), sqlc.arg(expires_at))
+ON CONFLICT (project_id, email) DO UPDATE
+SET access = excluded.access, shared_by = excluded.shared_by, updated_at = excluded.updated_at, expires_at = excluded.expires_at
+RETURNING *;
+
+-- name: ListPendingShares :many
+SELECT * FROM iam.pending_shares WHERE project_id = $1 ORDER BY created_at, email;
+
+-- name: ListPendingSharesTo :many
+-- The unexpired pending shares to an address, in lock order (by project).
+SELECT * FROM iam.pending_shares WHERE email = $1 AND expires_at > $2 ORDER BY project_id;
+
+-- name: DeletePendingShare :execrows
+DELETE FROM iam.pending_shares WHERE project_id = $1 AND email = $2;

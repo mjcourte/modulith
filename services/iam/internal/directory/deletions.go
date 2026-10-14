@@ -47,13 +47,14 @@ type DeletionStore interface {
 	// many moved. The org must exist and not be deleting (ErrOrgNotFound).
 	TransferUserProjects(ctx context.Context, userID, toOrgID string) (int, error)
 	// ForgetUser removes a user being deleted from everything that isn't
-	// theirs: shares to them and invites to their email are deleted; they're
-	// cleared as creator (projects), sharer (shares) and inviter (invites).
-	// It returns how many rows changed.
+	// theirs: shares to them, and invites and pending shares to their email,
+	// are deleted; they're cleared as creator (projects), sharer (shares,
+	// pending shares) and inviter (invites). It returns how many rows changed.
 	ForgetUser(ctx context.Context, userID string) (int, error)
 
-	// DeleteProject removes a project marked deleting, with its shares.
-	// ErrNotDeleting if it isn't marked; a missing project is fine.
+	// DeleteProject removes a project marked deleting, with its shares and
+	// pending shares. ErrNotDeleting if it isn't marked; a missing project is
+	// fine.
 	DeleteProject(ctx context.Context, projectID string) error
 	// DeleteOrg removes an org marked deleting, with its memberships and
 	// invites. ErrNotDeleting if it isn't marked; ErrInvalidOrg while it still
@@ -68,4 +69,7 @@ type DeletionStore interface {
 	// DeleteExpiredInvites removes up to limit invites that expired before the
 	// given time and returns how many.
 	DeleteExpiredInvites(ctx context.Context, before time.Time, limit int) (int, error)
+	// DeleteExpiredPendingShares removes up to limit pending shares that
+	// expired before the given time and returns how many.
+	DeleteExpiredPendingShares(ctx context.Context, before time.Time, limit int) (int, error)
 }

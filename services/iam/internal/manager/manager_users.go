@@ -16,12 +16,14 @@ type SignInResult struct {
 }
 
 // SignIn records a sign-in the gateway has authenticated: it creates the user
-// the first time and refreshes their profile after that, and returns their
-// pending org invites. It's a service-to-service call (the gateway's sign-in
-// hook), so it takes no acting user.
+// the first time and refreshes their profile after that, claims the pending
+// shares to their email, and returns their pending org invites. It's a
+// service-to-service call (the gateway's sign-in hook), so it takes no acting
+// user.
 //
-// Invites are only offered to verified email addresses: an invite is addressed
-// to an email, so an unverified claim to it proves nothing.
+// Invites are only offered, and pending shares only claimed, for verified
+// email addresses: both are addressed to an email, so an unverified claim to
+// it proves nothing.
 func (m *Manager) SignIn(ctx context.Context, id directory.Identity) (SignInResult, error) {
 	u, created, err := m.store.UpsertUser(ctx, id)
 	if err != nil {
@@ -29,6 +31,10 @@ func (m *Manager) SignIn(ctx context.Context, id directory.Identity) (SignInResu
 	}
 	r := SignInResult{User: u, Created: created}
 	if u.EmailVerified {
+		// Shares made before they had an account become theirs.
+		if _, err := m.store.ClaimPendingShares(ctx, u.ID, u.Email, m.now()); err != nil {
+			return SignInResult{}, err
+		}
 		if r.Invites, err = m.store.ListEmailInvites(ctx, u.Email); err != nil {
 			return SignInResult{}, err
 		}

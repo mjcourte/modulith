@@ -319,15 +319,15 @@ func projectFromProto(p *pb.Project) directory.Project {
 
 func shareToProto(s directory.Share) *pb.Share {
 	return &pb.Share{
-		ProjectId: s.ProjectID, UserId: s.UserID, Access: accessToProto[s.Access], SharedBy: s.SharedBy,
-		CreatedAt: timestamp(s.CreatedAt), UpdatedAt: timestamp(s.UpdatedAt),
+		ProjectId: s.ProjectID, UserId: s.UserID, Email: s.Email, Access: accessToProto[s.Access], SharedBy: s.SharedBy,
+		CreatedAt: timestamp(s.CreatedAt), UpdatedAt: timestamp(s.UpdatedAt), ExpiresAt: timestamp(s.ExpiresAt),
 	}
 }
 
 func shareFromProto(p *pb.Share) directory.Share {
 	return directory.Share{
-		ProjectID: p.GetProjectId(), UserID: p.GetUserId(), Access: accessFromProto[p.GetAccess()], SharedBy: p.GetSharedBy(),
-		CreatedAt: timeOf(p.GetCreatedAt()), UpdatedAt: timeOf(p.GetUpdatedAt()),
+		ProjectID: p.GetProjectId(), UserID: p.GetUserId(), Email: p.GetEmail(), Access: accessFromProto[p.GetAccess()], SharedBy: p.GetSharedBy(),
+		CreatedAt: timeOf(p.GetCreatedAt()), UpdatedAt: timeOf(p.GetUpdatedAt()), ExpiresAt: timeOf(p.GetExpiresAt()),
 	}
 }
 

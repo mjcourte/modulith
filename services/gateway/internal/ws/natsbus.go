@@ -8,8 +8,11 @@ import (
 
 	natsgo "github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 
 	gnats "gyoza/platform/nats"
+	"gyoza/platform/telemetry"
 )
 
 // NATSBus is the Bus on NATS: one ordered consumer on the DOCUMENTS stream
@@ -23,7 +26,7 @@ type NATSBus struct {
 func NewNATSBus(c *gnats.Client) *NATSBus { return &NATSBus{conn: c.Conn, js: c.JS} }
 
 func (b *NATSBus) PublishDelta(ctx context.Context, d gnats.Delta) (uint64, error) {
-	msg, err := d.Msg()
+	msg, err := d.Msg(ctx)
 	if err != nil {
 		return 0, err
 	}
@@ -74,7 +77,9 @@ func (b *NATSBus) Run(ctx context.Context, f Feed) error {
 				slog.Warn("ws: bad snapshot pointer", "subject", m.Subject(), "err", err)
 				return
 			}
+			span := startFanout(ctx, m.Headers(), "ws.fanout.snapshot", projectID) // rare: always kept
 			f.Snapshot(projectID, p)
+			span.End()
 			return
 		}
 		d, err := gnats.DecodeDelta(m.Subject(), meta.Sequence.Stream, m.Headers(), m.Data())
@@ -82,7 +87,9 @@ func (b *NATSBus) Run(ctx context.Context, f Feed) error {
 			slog.Warn("ws: bad delta", "subject", m.Subject(), "err", err)
 			return
 		}
+		span := startFanout(ctx, m.Headers(), "ws.fanout", d.ProjectID, telemetry.Hot)
 		f.Delta(d)
+		span.End()
 	})
 	if err != nil {
 		return fmt.Errorf("ws: consume: %w", err)
@@ -103,4 +110,16 @@ func (b *NATSBus) Run(ctx context.Context, f Feed) error {
 
 	<-ctx.Done()
 	return nil
+}
+
+// startFanout starts the span of relaying one message to the project's
+// sockets: a trace of its own, linked to the publisher's rather than its
+// child, since one message is delivered many times (once per gateway
+// instance, then to every socket).
+func startFanout(ctx context.Context, h natsgo.Header, name, projectID string, opts ...trace.SpanStartOption) trace.Span {
+	link := trace.LinkFromContext(gnats.TraceContext(ctx, h))
+	opts = append(opts, trace.WithNewRoot(), trace.WithSpanKind(trace.SpanKindConsumer), trace.WithLinks(link),
+		trace.WithAttributes(attribute.String("gyoza.project_id", projectID)))
+	_, span := tracer.Start(ctx, name, opts...)
+	return span
 }

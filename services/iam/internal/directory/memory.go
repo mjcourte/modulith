@@ -13,13 +13,14 @@ import "sync"
 // callers can never change what's stored through a returned value.
 type MemoryStore struct {
 	mu       sync.Mutex
-	users    map[string]User    // by user ID
-	emails   map[string]string  // email -> user ID, keeping emails unique
-	orgs     map[string]Org     // by org ID
-	members  map[string]Member  // by user ID: a user has at most one org
-	invites  map[string]Invite  // by invite ID
-	projects map[string]Project // by project ID
-	shares   map[shareKey]Share // one per (project, user)
+	users    map[string]User      // by user ID
+	emails   map[string]string    // email -> user ID, keeping emails unique
+	orgs     map[string]Org       // by org ID
+	members  map[string]Member    // by user ID: a user has at most one org
+	invites  map[string]Invite    // by invite ID
+	projects map[string]Project   // by project ID
+	shares   map[shareKey]Share   // one per (project, user)
+	pending  map[pendingKey]Share // pending shares, one per (project, email)
 }
 
 // NewMemoryStore returns an empty MemoryStore.
@@ -32,12 +33,15 @@ func NewMemoryStore() *MemoryStore {
 		invites:  make(map[string]Invite),
 		projects: make(map[string]Project),
 		shares:   make(map[shareKey]Share),
+		pending:  make(map[pendingKey]Share),
 	}
 }
 
 // shareKey identifies a share. Any comparable struct can be a map key, so no
 // string concatenation (and no separator to get wrong) is needed.
 type shareKey struct{ projectID, userID string }
+
+type pendingKey struct{ projectID, email string }
 
 // Compile-time check that *MemoryStore satisfies Store.
 var _ Store = (*MemoryStore)(nil)

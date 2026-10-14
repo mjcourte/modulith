@@ -19,6 +19,10 @@ import (
 	"errors"
 	"fmt"
 
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
+
+	"gyoza/platform/telemetry"
 	"gyoza/services/iam/internal/directory"
 	"gyoza/services/storage"
 )
@@ -106,7 +110,9 @@ func (m *Manager) checkNotLastAdmin(ctx context.Context, orgID, userID string) e
 
 // deleteProject marks the project, trashes its files and removes it with its
 // shares. A project already gone is done.
-func (m *Manager) deleteProject(ctx context.Context, projectID string) error {
+func (m *Manager) deleteProject(ctx context.Context, projectID string) (err error) {
+	ctx, span := tracer.Start(ctx, "iam.delete_project", trace.WithAttributes(attribute.String("gyoza.project_id", projectID)))
+	defer telemetry.End(span, &err)
 	if _, err := m.store.MarkProjectDeleting(ctx, projectID); err != nil {
 		if errors.Is(err, directory.ErrProjectNotFound) {
 			return nil
@@ -122,7 +128,9 @@ func (m *Manager) deleteProject(ctx context.Context, projectID string) error {
 // deleteOrg marks the org (and its projects, in the same step), deletes its
 // projects, trashes its files and removes it with its memberships and
 // invites. An org already gone is done.
-func (m *Manager) deleteOrg(ctx context.Context, orgID string) error {
+func (m *Manager) deleteOrg(ctx context.Context, orgID string) (err error) {
+	ctx, span := tracer.Start(ctx, "iam.delete_org", trace.WithAttributes(attribute.String("gyoza.org_id", orgID)))
+	defer telemetry.End(span, &err)
 	if _, err := m.store.MarkOrgDeleting(ctx, orgID); err != nil {
 		if errors.Is(err, directory.ErrOrgNotFound) {
 			return nil
@@ -186,7 +194,9 @@ func (m *Manager) removeMember(ctx context.Context, orgID, userID string) (int, 
 
 // finishUser runs (or resumes) the deletion of a user already marked
 // deleting. A user already gone is done.
-func (m *Manager) finishUser(ctx context.Context, userID string) error {
+func (m *Manager) finishUser(ctx context.Context, userID string) (err error) {
+	ctx, span := tracer.Start(ctx, "iam.delete_user", trace.WithAttributes(attribute.String("enduser.id", userID)))
+	defer telemetry.End(span, &err)
 	u, err := m.store.GetUser(ctx, userID)
 	if errors.Is(err, directory.ErrUserNotFound) {
 		return nil

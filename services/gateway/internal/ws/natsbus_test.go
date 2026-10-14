@@ -81,7 +81,7 @@ func TestNATSBus(t *testing.T) {
 	time.Sleep(300 * time.Millisecond) // let the consumer start (it delivers new messages only)
 
 	// documents' delta, with its origin.
-	msg, err := gnats.Delta{ProjectID: p, ID: uuid.NewString(), ActorID: "ann", Origin: "docs-1", Format: "native", Version: 1, Payload: []byte("x")}.Msg()
+	msg, err := gnats.Delta{ProjectID: p, ID: uuid.NewString(), ActorID: "ann", Origin: "docs-1", Format: "native", Version: 1, Payload: []byte("x")}.Msg(t.Context())
 	if err != nil {
 		t.Fatal(err)
 	}

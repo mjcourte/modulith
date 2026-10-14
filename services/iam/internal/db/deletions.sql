@@ -73,3 +73,19 @@ DELETE FROM iam.users WHERE id = $1;
 -- Up to a batch at a time, longest-expired first.
 DELETE FROM iam.invites
 WHERE id IN (SELECT i.id FROM iam.invites i WHERE i.expires_at <= $1 ORDER BY i.expires_at LIMIT $2);
+
+-- name: DeletePendingSharesTo :execrows
+DELETE FROM iam.pending_shares WHERE email = $1;
+
+-- name: ClearPendingSharedBy :execrows
+UPDATE iam.pending_shares SET shared_by = '' WHERE shared_by = $1;
+
+-- name: DeleteProjectPendingShares :exec
+DELETE FROM iam.pending_shares WHERE project_id = $1;
+
+-- name: DeleteExpiredPendingShares :execrows
+-- Up to a batch at a time, longest-expired first.
+DELETE FROM iam.pending_shares
+WHERE (project_id, email) IN (
+    SELECT ps.project_id, ps.email FROM iam.pending_shares ps WHERE ps.expires_at <= $1 ORDER BY ps.expires_at LIMIT $2
+);

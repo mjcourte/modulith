@@ -57,6 +57,7 @@ service IAMService {
   rpc ShareProject(ShareProjectRequest) returns (ShareProjectResponse);
   rpc ListShares(ListSharesRequest) returns (ListSharesResponse);
   rpc Unshare(UnshareRequest) returns (UnshareResponse);
+  rpc RevokePendingShare(RevokePendingShareRequest) returns (RevokePendingShareResponse);
   rpc DeleteProject(DeleteProjectRequest) returns (DeleteProjectResponse);
 
   // Gyoza templates: service to service only (tooling); never exposed to browsers.
@@ -154,6 +155,8 @@ message Project {
   google.protobuf.Timestamp deleting_at = 10;
 }
 
+// A pending share has email and expires_at instead of user_id: shared with an
+// address that has no verified account yet.
 message Share {
   string project_id = 1;
   string user_id = 2;
@@ -161,6 +164,8 @@ message Share {
   string shared_by = 4;
   google.protobuf.Timestamp created_at = 5;
   google.protobuf.Timestamp updated_at = 6;
+  string email = 7;
+  google.protobuf.Timestamp expires_at = 8;
 }
 
 // ---- Users
@@ -406,6 +411,13 @@ message UnshareRequest {
   string user_id = 3;
 }
 message UnshareResponse {}
+
+message RevokePendingShareRequest {
+  string actor_id = 1;
+  string project_id = 2;
+  string email = 3;
+}
+message RevokePendingShareResponse {}
 
 message DeleteProjectRequest {
   string actor_id = 1;

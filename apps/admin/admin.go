@@ -2,7 +2,9 @@
 // services. It reads iam.* and storage.* with SQL (exempt from the
 // one-schema rule, being a dev tool) and makes every change through
 // iam.Service and storage.Service, acting as whichever user is picked in the
-// header. It trusts its caller completely: never expose it beyond localhost.
+// header. It has no authentication: it answers only requests addressed to
+// localhost and refuses cross-origin changes (guard), but never expose it
+// beyond localhost.
 package admin
 
 import (
@@ -12,6 +14,7 @@ import (
 	"html/template"
 	"io/fs"
 	"log/slog"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -90,6 +93,7 @@ func (s *server) routes() http.Handler {
 	mux.HandleFunc("POST /projects/{id}/move-to-org", s.moveProject)
 	mux.HandleFunc("POST /projects/{id}/share", s.shareProject)
 	mux.HandleFunc("POST /projects/{id}/shares/{user}/remove", s.unshareProject)
+	mux.HandleFunc("POST /projects/{id}/pending-shares/remove", s.revokePendingShare)
 	mux.HandleFunc("POST /projects/{id}/clone", s.cloneProject)
 	mux.HandleFunc("POST /projects/{id}/revert", s.revertDocument)
 	mux.HandleFunc("POST /projects/{id}/delete", s.deleteProject)
@@ -107,7 +111,26 @@ func (s *server) routes() http.Handler {
 	mux.HandleFunc("GET /uploads", s.listUploads)
 	mux.HandleFunc("POST /uses", s.recordUse)
 	mux.HandleFunc("POST /uses/forget", s.forgetUse)
-	return mux
+	return guard(mux)
+}
+
+// guard keeps other sites out of a UI with no authentication: it refuses
+// cross-origin changes (a form posted from another page) and any Host but
+// loopback. The cross-origin check alone isn't enough: a DNS-rebinding page
+// is same-origin with its own host name, which then resolves to localhost.
+func guard(next http.Handler) http.Handler {
+	next = http.NewCrossOriginProtection().Handler(next)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		host := r.Host
+		if h, _, err := net.SplitHostPort(host); err == nil {
+			host = h
+		}
+		if ip := net.ParseIP(host); host != "localhost" && (ip == nil || !ip.IsLoopback()) {
+			http.Error(w, "admin: only reachable as localhost", http.StatusForbidden)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 // --- rendering ---

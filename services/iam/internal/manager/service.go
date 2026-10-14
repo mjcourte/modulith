@@ -48,6 +48,7 @@ type Service interface {
 	ShareProject(ctx context.Context, actorID, projectID, email string, access directory.Access) (directory.Share, error)
 	ListShares(ctx context.Context, actorID, projectID string) ([]directory.Share, error)
 	Unshare(ctx context.Context, actorID, projectID, userID string) error
+	RevokePendingShare(ctx context.Context, actorID, projectID, email string) error
 	DeleteProject(ctx context.Context, actorID, projectID string) error
 
 	// Service to service only (seeding/admin tooling); never exposed by the gateway.

@@ -720,6 +720,8 @@ func (x *Project) GetDeletingAt() *timestamppb.Timestamp {
 	return nil
 }
 
+// A pending share has email and expires_at instead of user_id: shared with an
+// address that has no verified account yet.
 type Share struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ProjectId     string                 `protobuf:"bytes,1,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
@@ -728,6 +730,8 @@ type Share struct {
 	SharedBy      string                 `protobuf:"bytes,4,opt,name=shared_by,json=sharedBy,proto3" json:"shared_by,omitempty"`
 	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	Email         string                 `protobuf:"bytes,7,opt,name=email,proto3" json:"email,omitempty"`
+	ExpiresAt     *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -800,6 +804,20 @@ func (x *Share) GetCreatedAt() *timestamppb.Timestamp {
 func (x *Share) GetUpdatedAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.UpdatedAt
+	}
+	return nil
+}
+
+func (x *Share) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
+func (x *Share) GetExpiresAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.ExpiresAt
 	}
 	return nil
 }
@@ -3607,6 +3625,102 @@ func (*UnshareResponse) Descriptor() ([]byte, []int) {
 	return file_gyoza_iam_v1_iam_proto_rawDescGZIP(), []int{62}
 }
 
+type RevokePendingShareRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ActorId       string                 `protobuf:"bytes,1,opt,name=actor_id,json=actorId,proto3" json:"actor_id,omitempty"`
+	ProjectId     string                 `protobuf:"bytes,2,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
+	Email         string                 `protobuf:"bytes,3,opt,name=email,proto3" json:"email,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RevokePendingShareRequest) Reset() {
+	*x = RevokePendingShareRequest{}
+	mi := &file_gyoza_iam_v1_iam_proto_msgTypes[63]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RevokePendingShareRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RevokePendingShareRequest) ProtoMessage() {}
+
+func (x *RevokePendingShareRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_gyoza_iam_v1_iam_proto_msgTypes[63]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RevokePendingShareRequest.ProtoReflect.Descriptor instead.
+func (*RevokePendingShareRequest) Descriptor() ([]byte, []int) {
+	return file_gyoza_iam_v1_iam_proto_rawDescGZIP(), []int{63}
+}
+
+func (x *RevokePendingShareRequest) GetActorId() string {
+	if x != nil {
+		return x.ActorId
+	}
+	return ""
+}
+
+func (x *RevokePendingShareRequest) GetProjectId() string {
+	if x != nil {
+		return x.ProjectId
+	}
+	return ""
+}
+
+func (x *RevokePendingShareRequest) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
+type RevokePendingShareResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RevokePendingShareResponse) Reset() {
+	*x = RevokePendingShareResponse{}
+	mi := &file_gyoza_iam_v1_iam_proto_msgTypes[64]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RevokePendingShareResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RevokePendingShareResponse) ProtoMessage() {}
+
+func (x *RevokePendingShareResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_gyoza_iam_v1_iam_proto_msgTypes[64]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RevokePendingShareResponse.ProtoReflect.Descriptor instead.
+func (*RevokePendingShareResponse) Descriptor() ([]byte, []int) {
+	return file_gyoza_iam_v1_iam_proto_rawDescGZIP(), []int{64}
+}
+
 type DeleteProjectRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ActorId       string                 `protobuf:"bytes,1,opt,name=actor_id,json=actorId,proto3" json:"actor_id,omitempty"`
@@ -3617,7 +3731,7 @@ type DeleteProjectRequest struct {
 
 func (x *DeleteProjectRequest) Reset() {
 	*x = DeleteProjectRequest{}
-	mi := &file_gyoza_iam_v1_iam_proto_msgTypes[63]
+	mi := &file_gyoza_iam_v1_iam_proto_msgTypes[65]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3629,7 +3743,7 @@ func (x *DeleteProjectRequest) String() string {
 func (*DeleteProjectRequest) ProtoMessage() {}
 
 func (x *DeleteProjectRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_iam_v1_iam_proto_msgTypes[63]
+	mi := &file_gyoza_iam_v1_iam_proto_msgTypes[65]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3642,7 +3756,7 @@ func (x *DeleteProjectRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteProjectRequest.ProtoReflect.Descriptor instead.
 func (*DeleteProjectRequest) Descriptor() ([]byte, []int) {
-	return file_gyoza_iam_v1_iam_proto_rawDescGZIP(), []int{63}
+	return file_gyoza_iam_v1_iam_proto_rawDescGZIP(), []int{65}
 }
 
 func (x *DeleteProjectRequest) GetActorId() string {
@@ -3667,7 +3781,7 @@ type DeleteProjectResponse struct {
 
 func (x *DeleteProjectResponse) Reset() {
 	*x = DeleteProjectResponse{}
-	mi := &file_gyoza_iam_v1_iam_proto_msgTypes[64]
+	mi := &file_gyoza_iam_v1_iam_proto_msgTypes[66]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3679,7 +3793,7 @@ func (x *DeleteProjectResponse) String() string {
 func (*DeleteProjectResponse) ProtoMessage() {}
 
 func (x *DeleteProjectResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_iam_v1_iam_proto_msgTypes[64]
+	mi := &file_gyoza_iam_v1_iam_proto_msgTypes[66]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3692,7 +3806,7 @@ func (x *DeleteProjectResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteProjectResponse.ProtoReflect.Descriptor instead.
 func (*DeleteProjectResponse) Descriptor() ([]byte, []int) {
-	return file_gyoza_iam_v1_iam_proto_rawDescGZIP(), []int{64}
+	return file_gyoza_iam_v1_iam_proto_rawDescGZIP(), []int{66}
 }
 
 type CreateTemplateRequest struct {
@@ -3704,7 +3818,7 @@ type CreateTemplateRequest struct {
 
 func (x *CreateTemplateRequest) Reset() {
 	*x = CreateTemplateRequest{}
-	mi := &file_gyoza_iam_v1_iam_proto_msgTypes[65]
+	mi := &file_gyoza_iam_v1_iam_proto_msgTypes[67]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3716,7 +3830,7 @@ func (x *CreateTemplateRequest) String() string {
 func (*CreateTemplateRequest) ProtoMessage() {}
 
 func (x *CreateTemplateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_iam_v1_iam_proto_msgTypes[65]
+	mi := &file_gyoza_iam_v1_iam_proto_msgTypes[67]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3729,7 +3843,7 @@ func (x *CreateTemplateRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateTemplateRequest.ProtoReflect.Descriptor instead.
 func (*CreateTemplateRequest) Descriptor() ([]byte, []int) {
-	return file_gyoza_iam_v1_iam_proto_rawDescGZIP(), []int{65}
+	return file_gyoza_iam_v1_iam_proto_rawDescGZIP(), []int{67}
 }
 
 func (x *CreateTemplateRequest) GetName() string {
@@ -3748,7 +3862,7 @@ type CreateTemplateResponse struct {
 
 func (x *CreateTemplateResponse) Reset() {
 	*x = CreateTemplateResponse{}
-	mi := &file_gyoza_iam_v1_iam_proto_msgTypes[66]
+	mi := &file_gyoza_iam_v1_iam_proto_msgTypes[68]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3760,7 +3874,7 @@ func (x *CreateTemplateResponse) String() string {
 func (*CreateTemplateResponse) ProtoMessage() {}
 
 func (x *CreateTemplateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_iam_v1_iam_proto_msgTypes[66]
+	mi := &file_gyoza_iam_v1_iam_proto_msgTypes[68]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3773,7 +3887,7 @@ func (x *CreateTemplateResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateTemplateResponse.ProtoReflect.Descriptor instead.
 func (*CreateTemplateResponse) Descriptor() ([]byte, []int) {
-	return file_gyoza_iam_v1_iam_proto_rawDescGZIP(), []int{66}
+	return file_gyoza_iam_v1_iam_proto_rawDescGZIP(), []int{68}
 }
 
 func (x *CreateTemplateResponse) GetProject() *Project {
@@ -3792,7 +3906,7 @@ type DeleteTemplateRequest struct {
 
 func (x *DeleteTemplateRequest) Reset() {
 	*x = DeleteTemplateRequest{}
-	mi := &file_gyoza_iam_v1_iam_proto_msgTypes[67]
+	mi := &file_gyoza_iam_v1_iam_proto_msgTypes[69]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3804,7 +3918,7 @@ func (x *DeleteTemplateRequest) String() string {
 func (*DeleteTemplateRequest) ProtoMessage() {}
 
 func (x *DeleteTemplateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_iam_v1_iam_proto_msgTypes[67]
+	mi := &file_gyoza_iam_v1_iam_proto_msgTypes[69]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3817,7 +3931,7 @@ func (x *DeleteTemplateRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteTemplateRequest.ProtoReflect.Descriptor instead.
 func (*DeleteTemplateRequest) Descriptor() ([]byte, []int) {
-	return file_gyoza_iam_v1_iam_proto_rawDescGZIP(), []int{67}
+	return file_gyoza_iam_v1_iam_proto_rawDescGZIP(), []int{69}
 }
 
 func (x *DeleteTemplateRequest) GetProjectId() string {
@@ -3835,7 +3949,7 @@ type DeleteTemplateResponse struct {
 
 func (x *DeleteTemplateResponse) Reset() {
 	*x = DeleteTemplateResponse{}
-	mi := &file_gyoza_iam_v1_iam_proto_msgTypes[68]
+	mi := &file_gyoza_iam_v1_iam_proto_msgTypes[70]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3847,7 +3961,7 @@ func (x *DeleteTemplateResponse) String() string {
 func (*DeleteTemplateResponse) ProtoMessage() {}
 
 func (x *DeleteTemplateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_iam_v1_iam_proto_msgTypes[68]
+	mi := &file_gyoza_iam_v1_iam_proto_msgTypes[70]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3860,7 +3974,7 @@ func (x *DeleteTemplateResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteTemplateResponse.ProtoReflect.Descriptor instead.
 func (*DeleteTemplateResponse) Descriptor() ([]byte, []int) {
-	return file_gyoza_iam_v1_iam_proto_rawDescGZIP(), []int{68}
+	return file_gyoza_iam_v1_iam_proto_rawDescGZIP(), []int{70}
 }
 
 type CanReadRequest struct {
@@ -3875,7 +3989,7 @@ type CanReadRequest struct {
 
 func (x *CanReadRequest) Reset() {
 	*x = CanReadRequest{}
-	mi := &file_gyoza_iam_v1_iam_proto_msgTypes[69]
+	mi := &file_gyoza_iam_v1_iam_proto_msgTypes[71]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3887,7 +4001,7 @@ func (x *CanReadRequest) String() string {
 func (*CanReadRequest) ProtoMessage() {}
 
 func (x *CanReadRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_iam_v1_iam_proto_msgTypes[69]
+	mi := &file_gyoza_iam_v1_iam_proto_msgTypes[71]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3900,7 +4014,7 @@ func (x *CanReadRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CanReadRequest.ProtoReflect.Descriptor instead.
 func (*CanReadRequest) Descriptor() ([]byte, []int) {
-	return file_gyoza_iam_v1_iam_proto_rawDescGZIP(), []int{69}
+	return file_gyoza_iam_v1_iam_proto_rawDescGZIP(), []int{71}
 }
 
 func (x *CanReadRequest) GetActorId() string {
@@ -3932,7 +4046,7 @@ type CanReadResponse struct {
 
 func (x *CanReadResponse) Reset() {
 	*x = CanReadResponse{}
-	mi := &file_gyoza_iam_v1_iam_proto_msgTypes[70]
+	mi := &file_gyoza_iam_v1_iam_proto_msgTypes[72]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3944,7 +4058,7 @@ func (x *CanReadResponse) String() string {
 func (*CanReadResponse) ProtoMessage() {}
 
 func (x *CanReadResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_iam_v1_iam_proto_msgTypes[70]
+	mi := &file_gyoza_iam_v1_iam_proto_msgTypes[72]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3957,7 +4071,7 @@ func (x *CanReadResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CanReadResponse.ProtoReflect.Descriptor instead.
 func (*CanReadResponse) Descriptor() ([]byte, []int) {
-	return file_gyoza_iam_v1_iam_proto_rawDescGZIP(), []int{70}
+	return file_gyoza_iam_v1_iam_proto_rawDescGZIP(), []int{72}
 }
 
 type CanWriteRequest struct {
@@ -3971,7 +4085,7 @@ type CanWriteRequest struct {
 
 func (x *CanWriteRequest) Reset() {
 	*x = CanWriteRequest{}
-	mi := &file_gyoza_iam_v1_iam_proto_msgTypes[71]
+	mi := &file_gyoza_iam_v1_iam_proto_msgTypes[73]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3983,7 +4097,7 @@ func (x *CanWriteRequest) String() string {
 func (*CanWriteRequest) ProtoMessage() {}
 
 func (x *CanWriteRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_iam_v1_iam_proto_msgTypes[71]
+	mi := &file_gyoza_iam_v1_iam_proto_msgTypes[73]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3996,7 +4110,7 @@ func (x *CanWriteRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CanWriteRequest.ProtoReflect.Descriptor instead.
 func (*CanWriteRequest) Descriptor() ([]byte, []int) {
-	return file_gyoza_iam_v1_iam_proto_rawDescGZIP(), []int{71}
+	return file_gyoza_iam_v1_iam_proto_rawDescGZIP(), []int{73}
 }
 
 func (x *CanWriteRequest) GetActorId() string {
@@ -4028,7 +4142,7 @@ type CanWriteResponse struct {
 
 func (x *CanWriteResponse) Reset() {
 	*x = CanWriteResponse{}
-	mi := &file_gyoza_iam_v1_iam_proto_msgTypes[72]
+	mi := &file_gyoza_iam_v1_iam_proto_msgTypes[74]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4040,7 +4154,7 @@ func (x *CanWriteResponse) String() string {
 func (*CanWriteResponse) ProtoMessage() {}
 
 func (x *CanWriteResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_iam_v1_iam_proto_msgTypes[72]
+	mi := &file_gyoza_iam_v1_iam_proto_msgTypes[74]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4053,7 +4167,7 @@ func (x *CanWriteResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CanWriteResponse.ProtoReflect.Descriptor instead.
 func (*CanWriteResponse) Descriptor() ([]byte, []int) {
-	return file_gyoza_iam_v1_iam_proto_rawDescGZIP(), []int{72}
+	return file_gyoza_iam_v1_iam_proto_rawDescGZIP(), []int{74}
 }
 
 type ProjectOwnerRequest struct {
@@ -4065,7 +4179,7 @@ type ProjectOwnerRequest struct {
 
 func (x *ProjectOwnerRequest) Reset() {
 	*x = ProjectOwnerRequest{}
-	mi := &file_gyoza_iam_v1_iam_proto_msgTypes[73]
+	mi := &file_gyoza_iam_v1_iam_proto_msgTypes[75]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4077,7 +4191,7 @@ func (x *ProjectOwnerRequest) String() string {
 func (*ProjectOwnerRequest) ProtoMessage() {}
 
 func (x *ProjectOwnerRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_iam_v1_iam_proto_msgTypes[73]
+	mi := &file_gyoza_iam_v1_iam_proto_msgTypes[75]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4090,7 +4204,7 @@ func (x *ProjectOwnerRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProjectOwnerRequest.ProtoReflect.Descriptor instead.
 func (*ProjectOwnerRequest) Descriptor() ([]byte, []int) {
-	return file_gyoza_iam_v1_iam_proto_rawDescGZIP(), []int{73}
+	return file_gyoza_iam_v1_iam_proto_rawDescGZIP(), []int{75}
 }
 
 func (x *ProjectOwnerRequest) GetProjectId() string {
@@ -4109,7 +4223,7 @@ type ProjectOwnerResponse struct {
 
 func (x *ProjectOwnerResponse) Reset() {
 	*x = ProjectOwnerResponse{}
-	mi := &file_gyoza_iam_v1_iam_proto_msgTypes[74]
+	mi := &file_gyoza_iam_v1_iam_proto_msgTypes[76]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4121,7 +4235,7 @@ func (x *ProjectOwnerResponse) String() string {
 func (*ProjectOwnerResponse) ProtoMessage() {}
 
 func (x *ProjectOwnerResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gyoza_iam_v1_iam_proto_msgTypes[74]
+	mi := &file_gyoza_iam_v1_iam_proto_msgTypes[76]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4134,7 +4248,7 @@ func (x *ProjectOwnerResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProjectOwnerResponse.ProtoReflect.Descriptor instead.
 func (*ProjectOwnerResponse) Descriptor() ([]byte, []int) {
-	return file_gyoza_iam_v1_iam_proto_rawDescGZIP(), []int{74}
+	return file_gyoza_iam_v1_iam_proto_rawDescGZIP(), []int{76}
 }
 
 func (x *ProjectOwnerResponse) GetOwner() *v1.Owner {
@@ -4210,7 +4324,7 @@ const file_gyoza_iam_v1_iam_proto_rawDesc = "" +
 	"updated_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12;\n" +
 	"\vdeleting_at\x18\n" +
 	" \x01(\v2\x1a.google.protobuf.TimestampR\n" +
-	"deletingAt\"\x80\x02\n" +
+	"deletingAt\"\xd1\x02\n" +
 	"\x05Share\x12\x1d\n" +
 	"\n" +
 	"project_id\x18\x01 \x01(\tR\tprojectId\x12\x17\n" +
@@ -4220,7 +4334,10 @@ const file_gyoza_iam_v1_iam_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
 	"\n" +
-	"updated_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"C\n" +
+	"updated_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12\x14\n" +
+	"\x05email\x18\a \x01(\tR\x05email\x129\n" +
+	"\n" +
+	"expires_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\"C\n" +
 	"\rSignInRequest\x122\n" +
 	"\bidentity\x18\x01 \x01(\v2\x16.gyoza.iam.v1.IdentityR\bidentity\"\x82\x01\n" +
 	"\x0eSignInResponse\x12&\n" +
@@ -4386,7 +4503,13 @@ const file_gyoza_iam_v1_iam_proto_rawDesc = "" +
 	"\n" +
 	"project_id\x18\x02 \x01(\tR\tprojectId\x12\x17\n" +
 	"\auser_id\x18\x03 \x01(\tR\x06userId\"\x11\n" +
-	"\x0fUnshareResponse\"P\n" +
+	"\x0fUnshareResponse\"k\n" +
+	"\x19RevokePendingShareRequest\x12\x19\n" +
+	"\bactor_id\x18\x01 \x01(\tR\aactorId\x12\x1d\n" +
+	"\n" +
+	"project_id\x18\x02 \x01(\tR\tprojectId\x12\x14\n" +
+	"\x05email\x18\x03 \x01(\tR\x05email\"\x1c\n" +
+	"\x1aRevokePendingShareResponse\"P\n" +
 	"\x14DeleteProjectRequest\x12\x19\n" +
 	"\bactor_id\x18\x01 \x01(\tR\aactorId\x12\x1d\n" +
 	"\n" +
@@ -4429,7 +4552,7 @@ const file_gyoza_iam_v1_iam_proto_rawDesc = "" +
 	"\fProjectState\x12\x1d\n" +
 	"\x19PROJECT_STATE_UNSPECIFIED\x10\x00\x12\x17\n" +
 	"\x13PROJECT_STATE_READY\x10\x01\x12\x19\n" +
-	"\x15PROJECT_STATE_CLONING\x10\x022\xc1\x14\n" +
+	"\x15PROJECT_STATE_CLONING\x10\x022\xaa\x15\n" +
 	"\n" +
 	"IAMService\x12C\n" +
 	"\x06SignIn\x12\x1b.gyoza.iam.v1.SignInRequest\x1a\x1c.gyoza.iam.v1.SignInResponse\x12@\n" +
@@ -4461,7 +4584,8 @@ const file_gyoza_iam_v1_iam_proto_rawDesc = "" +
 	"\fShareProject\x12!.gyoza.iam.v1.ShareProjectRequest\x1a\".gyoza.iam.v1.ShareProjectResponse\x12O\n" +
 	"\n" +
 	"ListShares\x12\x1f.gyoza.iam.v1.ListSharesRequest\x1a .gyoza.iam.v1.ListSharesResponse\x12F\n" +
-	"\aUnshare\x12\x1c.gyoza.iam.v1.UnshareRequest\x1a\x1d.gyoza.iam.v1.UnshareResponse\x12X\n" +
+	"\aUnshare\x12\x1c.gyoza.iam.v1.UnshareRequest\x1a\x1d.gyoza.iam.v1.UnshareResponse\x12g\n" +
+	"\x12RevokePendingShare\x12'.gyoza.iam.v1.RevokePendingShareRequest\x1a(.gyoza.iam.v1.RevokePendingShareResponse\x12X\n" +
 	"\rDeleteProject\x12\".gyoza.iam.v1.DeleteProjectRequest\x1a#.gyoza.iam.v1.DeleteProjectResponse\x12[\n" +
 	"\x0eCreateTemplate\x12#.gyoza.iam.v1.CreateTemplateRequest\x1a$.gyoza.iam.v1.CreateTemplateResponse\x12[\n" +
 	"\x0eDeleteTemplate\x12#.gyoza.iam.v1.DeleteTemplateRequest\x1a$.gyoza.iam.v1.DeleteTemplateResponse2\xf8\x01\n" +
@@ -4484,218 +4608,223 @@ func file_gyoza_iam_v1_iam_proto_rawDescGZIP() []byte {
 }
 
 var file_gyoza_iam_v1_iam_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_gyoza_iam_v1_iam_proto_msgTypes = make([]protoimpl.MessageInfo, 75)
+var file_gyoza_iam_v1_iam_proto_msgTypes = make([]protoimpl.MessageInfo, 77)
 var file_gyoza_iam_v1_iam_proto_goTypes = []any{
-	(Role)(0),                        // 0: gyoza.iam.v1.Role
-	(Access)(0),                      // 1: gyoza.iam.v1.Access
-	(ProjectState)(0),                // 2: gyoza.iam.v1.ProjectState
-	(*User)(nil),                     // 3: gyoza.iam.v1.User
-	(*Identity)(nil),                 // 4: gyoza.iam.v1.Identity
-	(*Org)(nil),                      // 5: gyoza.iam.v1.Org
-	(*Member)(nil),                   // 6: gyoza.iam.v1.Member
-	(*Invite)(nil),                   // 7: gyoza.iam.v1.Invite
-	(*Project)(nil),                  // 8: gyoza.iam.v1.Project
-	(*Share)(nil),                    // 9: gyoza.iam.v1.Share
-	(*SignInRequest)(nil),            // 10: gyoza.iam.v1.SignInRequest
-	(*SignInResponse)(nil),           // 11: gyoza.iam.v1.SignInResponse
-	(*GetMeRequest)(nil),             // 12: gyoza.iam.v1.GetMeRequest
-	(*GetMeResponse)(nil),            // 13: gyoza.iam.v1.GetMeResponse
-	(*DeleteAccountRequest)(nil),     // 14: gyoza.iam.v1.DeleteAccountRequest
-	(*DeleteAccountResponse)(nil),    // 15: gyoza.iam.v1.DeleteAccountResponse
-	(*CreateOrgRequest)(nil),         // 16: gyoza.iam.v1.CreateOrgRequest
-	(*CreateOrgResponse)(nil),        // 17: gyoza.iam.v1.CreateOrgResponse
-	(*GetOrgRequest)(nil),            // 18: gyoza.iam.v1.GetOrgRequest
-	(*GetOrgResponse)(nil),           // 19: gyoza.iam.v1.GetOrgResponse
-	(*RenameOrgRequest)(nil),         // 20: gyoza.iam.v1.RenameOrgRequest
-	(*RenameOrgResponse)(nil),        // 21: gyoza.iam.v1.RenameOrgResponse
-	(*ListMembersRequest)(nil),       // 22: gyoza.iam.v1.ListMembersRequest
-	(*ListMembersResponse)(nil),      // 23: gyoza.iam.v1.ListMembersResponse
-	(*SetRoleRequest)(nil),           // 24: gyoza.iam.v1.SetRoleRequest
-	(*SetRoleResponse)(nil),          // 25: gyoza.iam.v1.SetRoleResponse
-	(*RemoveMemberRequest)(nil),      // 26: gyoza.iam.v1.RemoveMemberRequest
-	(*RemoveMemberResponse)(nil),     // 27: gyoza.iam.v1.RemoveMemberResponse
-	(*LeaveOrgRequest)(nil),          // 28: gyoza.iam.v1.LeaveOrgRequest
-	(*LeaveOrgResponse)(nil),         // 29: gyoza.iam.v1.LeaveOrgResponse
-	(*DeleteOrgRequest)(nil),         // 30: gyoza.iam.v1.DeleteOrgRequest
-	(*DeleteOrgResponse)(nil),        // 31: gyoza.iam.v1.DeleteOrgResponse
-	(*InviteMemberRequest)(nil),      // 32: gyoza.iam.v1.InviteMemberRequest
-	(*InviteMemberResponse)(nil),     // 33: gyoza.iam.v1.InviteMemberResponse
-	(*ListOrgInvitesRequest)(nil),    // 34: gyoza.iam.v1.ListOrgInvitesRequest
-	(*ListOrgInvitesResponse)(nil),   // 35: gyoza.iam.v1.ListOrgInvitesResponse
-	(*RevokeInviteRequest)(nil),      // 36: gyoza.iam.v1.RevokeInviteRequest
-	(*RevokeInviteResponse)(nil),     // 37: gyoza.iam.v1.RevokeInviteResponse
-	(*ListMyInvitesRequest)(nil),     // 38: gyoza.iam.v1.ListMyInvitesRequest
-	(*ListMyInvitesResponse)(nil),    // 39: gyoza.iam.v1.ListMyInvitesResponse
-	(*AcceptInviteRequest)(nil),      // 40: gyoza.iam.v1.AcceptInviteRequest
-	(*AcceptInviteResponse)(nil),     // 41: gyoza.iam.v1.AcceptInviteResponse
-	(*DeclineInviteRequest)(nil),     // 42: gyoza.iam.v1.DeclineInviteRequest
-	(*DeclineInviteResponse)(nil),    // 43: gyoza.iam.v1.DeclineInviteResponse
-	(*CreateProjectRequest)(nil),     // 44: gyoza.iam.v1.CreateProjectRequest
-	(*CreateProjectResponse)(nil),    // 45: gyoza.iam.v1.CreateProjectResponse
-	(*CloneProjectRequest)(nil),      // 46: gyoza.iam.v1.CloneProjectRequest
-	(*CloneProjectResponse)(nil),     // 47: gyoza.iam.v1.CloneProjectResponse
-	(*GetProjectRequest)(nil),        // 48: gyoza.iam.v1.GetProjectRequest
-	(*GetProjectResponse)(nil),       // 49: gyoza.iam.v1.GetProjectResponse
-	(*ListMyProjectsRequest)(nil),    // 50: gyoza.iam.v1.ListMyProjectsRequest
-	(*ListMyProjectsResponse)(nil),   // 51: gyoza.iam.v1.ListMyProjectsResponse
-	(*ListTemplatesRequest)(nil),     // 52: gyoza.iam.v1.ListTemplatesRequest
-	(*ListTemplatesResponse)(nil),    // 53: gyoza.iam.v1.ListTemplatesResponse
-	(*RenameProjectRequest)(nil),     // 54: gyoza.iam.v1.RenameProjectRequest
-	(*RenameProjectResponse)(nil),    // 55: gyoza.iam.v1.RenameProjectResponse
-	(*MoveProjectToOrgRequest)(nil),  // 56: gyoza.iam.v1.MoveProjectToOrgRequest
-	(*MoveProjectToOrgResponse)(nil), // 57: gyoza.iam.v1.MoveProjectToOrgResponse
-	(*SetOrgLockedRequest)(nil),      // 58: gyoza.iam.v1.SetOrgLockedRequest
-	(*SetOrgLockedResponse)(nil),     // 59: gyoza.iam.v1.SetOrgLockedResponse
-	(*ShareProjectRequest)(nil),      // 60: gyoza.iam.v1.ShareProjectRequest
-	(*ShareProjectResponse)(nil),     // 61: gyoza.iam.v1.ShareProjectResponse
-	(*ListSharesRequest)(nil),        // 62: gyoza.iam.v1.ListSharesRequest
-	(*ListSharesResponse)(nil),       // 63: gyoza.iam.v1.ListSharesResponse
-	(*UnshareRequest)(nil),           // 64: gyoza.iam.v1.UnshareRequest
-	(*UnshareResponse)(nil),          // 65: gyoza.iam.v1.UnshareResponse
-	(*DeleteProjectRequest)(nil),     // 66: gyoza.iam.v1.DeleteProjectRequest
-	(*DeleteProjectResponse)(nil),    // 67: gyoza.iam.v1.DeleteProjectResponse
-	(*CreateTemplateRequest)(nil),    // 68: gyoza.iam.v1.CreateTemplateRequest
-	(*CreateTemplateResponse)(nil),   // 69: gyoza.iam.v1.CreateTemplateResponse
-	(*DeleteTemplateRequest)(nil),    // 70: gyoza.iam.v1.DeleteTemplateRequest
-	(*DeleteTemplateResponse)(nil),   // 71: gyoza.iam.v1.DeleteTemplateResponse
-	(*CanReadRequest)(nil),           // 72: gyoza.iam.v1.CanReadRequest
-	(*CanReadResponse)(nil),          // 73: gyoza.iam.v1.CanReadResponse
-	(*CanWriteRequest)(nil),          // 74: gyoza.iam.v1.CanWriteRequest
-	(*CanWriteResponse)(nil),         // 75: gyoza.iam.v1.CanWriteResponse
-	(*ProjectOwnerRequest)(nil),      // 76: gyoza.iam.v1.ProjectOwnerRequest
-	(*ProjectOwnerResponse)(nil),     // 77: gyoza.iam.v1.ProjectOwnerResponse
-	(*timestamppb.Timestamp)(nil),    // 78: google.protobuf.Timestamp
-	(*v1.Owner)(nil),                 // 79: gyoza.storage.v1.Owner
+	(Role)(0),                          // 0: gyoza.iam.v1.Role
+	(Access)(0),                        // 1: gyoza.iam.v1.Access
+	(ProjectState)(0),                  // 2: gyoza.iam.v1.ProjectState
+	(*User)(nil),                       // 3: gyoza.iam.v1.User
+	(*Identity)(nil),                   // 4: gyoza.iam.v1.Identity
+	(*Org)(nil),                        // 5: gyoza.iam.v1.Org
+	(*Member)(nil),                     // 6: gyoza.iam.v1.Member
+	(*Invite)(nil),                     // 7: gyoza.iam.v1.Invite
+	(*Project)(nil),                    // 8: gyoza.iam.v1.Project
+	(*Share)(nil),                      // 9: gyoza.iam.v1.Share
+	(*SignInRequest)(nil),              // 10: gyoza.iam.v1.SignInRequest
+	(*SignInResponse)(nil),             // 11: gyoza.iam.v1.SignInResponse
+	(*GetMeRequest)(nil),               // 12: gyoza.iam.v1.GetMeRequest
+	(*GetMeResponse)(nil),              // 13: gyoza.iam.v1.GetMeResponse
+	(*DeleteAccountRequest)(nil),       // 14: gyoza.iam.v1.DeleteAccountRequest
+	(*DeleteAccountResponse)(nil),      // 15: gyoza.iam.v1.DeleteAccountResponse
+	(*CreateOrgRequest)(nil),           // 16: gyoza.iam.v1.CreateOrgRequest
+	(*CreateOrgResponse)(nil),          // 17: gyoza.iam.v1.CreateOrgResponse
+	(*GetOrgRequest)(nil),              // 18: gyoza.iam.v1.GetOrgRequest
+	(*GetOrgResponse)(nil),             // 19: gyoza.iam.v1.GetOrgResponse
+	(*RenameOrgRequest)(nil),           // 20: gyoza.iam.v1.RenameOrgRequest
+	(*RenameOrgResponse)(nil),          // 21: gyoza.iam.v1.RenameOrgResponse
+	(*ListMembersRequest)(nil),         // 22: gyoza.iam.v1.ListMembersRequest
+	(*ListMembersResponse)(nil),        // 23: gyoza.iam.v1.ListMembersResponse
+	(*SetRoleRequest)(nil),             // 24: gyoza.iam.v1.SetRoleRequest
+	(*SetRoleResponse)(nil),            // 25: gyoza.iam.v1.SetRoleResponse
+	(*RemoveMemberRequest)(nil),        // 26: gyoza.iam.v1.RemoveMemberRequest
+	(*RemoveMemberResponse)(nil),       // 27: gyoza.iam.v1.RemoveMemberResponse
+	(*LeaveOrgRequest)(nil),            // 28: gyoza.iam.v1.LeaveOrgRequest
+	(*LeaveOrgResponse)(nil),           // 29: gyoza.iam.v1.LeaveOrgResponse
+	(*DeleteOrgRequest)(nil),           // 30: gyoza.iam.v1.DeleteOrgRequest
+	(*DeleteOrgResponse)(nil),          // 31: gyoza.iam.v1.DeleteOrgResponse
+	(*InviteMemberRequest)(nil),        // 32: gyoza.iam.v1.InviteMemberRequest
+	(*InviteMemberResponse)(nil),       // 33: gyoza.iam.v1.InviteMemberResponse
+	(*ListOrgInvitesRequest)(nil),      // 34: gyoza.iam.v1.ListOrgInvitesRequest
+	(*ListOrgInvitesResponse)(nil),     // 35: gyoza.iam.v1.ListOrgInvitesResponse
+	(*RevokeInviteRequest)(nil),        // 36: gyoza.iam.v1.RevokeInviteRequest
+	(*RevokeInviteResponse)(nil),       // 37: gyoza.iam.v1.RevokeInviteResponse
+	(*ListMyInvitesRequest)(nil),       // 38: gyoza.iam.v1.ListMyInvitesRequest
+	(*ListMyInvitesResponse)(nil),      // 39: gyoza.iam.v1.ListMyInvitesResponse
+	(*AcceptInviteRequest)(nil),        // 40: gyoza.iam.v1.AcceptInviteRequest
+	(*AcceptInviteResponse)(nil),       // 41: gyoza.iam.v1.AcceptInviteResponse
+	(*DeclineInviteRequest)(nil),       // 42: gyoza.iam.v1.DeclineInviteRequest
+	(*DeclineInviteResponse)(nil),      // 43: gyoza.iam.v1.DeclineInviteResponse
+	(*CreateProjectRequest)(nil),       // 44: gyoza.iam.v1.CreateProjectRequest
+	(*CreateProjectResponse)(nil),      // 45: gyoza.iam.v1.CreateProjectResponse
+	(*CloneProjectRequest)(nil),        // 46: gyoza.iam.v1.CloneProjectRequest
+	(*CloneProjectResponse)(nil),       // 47: gyoza.iam.v1.CloneProjectResponse
+	(*GetProjectRequest)(nil),          // 48: gyoza.iam.v1.GetProjectRequest
+	(*GetProjectResponse)(nil),         // 49: gyoza.iam.v1.GetProjectResponse
+	(*ListMyProjectsRequest)(nil),      // 50: gyoza.iam.v1.ListMyProjectsRequest
+	(*ListMyProjectsResponse)(nil),     // 51: gyoza.iam.v1.ListMyProjectsResponse
+	(*ListTemplatesRequest)(nil),       // 52: gyoza.iam.v1.ListTemplatesRequest
+	(*ListTemplatesResponse)(nil),      // 53: gyoza.iam.v1.ListTemplatesResponse
+	(*RenameProjectRequest)(nil),       // 54: gyoza.iam.v1.RenameProjectRequest
+	(*RenameProjectResponse)(nil),      // 55: gyoza.iam.v1.RenameProjectResponse
+	(*MoveProjectToOrgRequest)(nil),    // 56: gyoza.iam.v1.MoveProjectToOrgRequest
+	(*MoveProjectToOrgResponse)(nil),   // 57: gyoza.iam.v1.MoveProjectToOrgResponse
+	(*SetOrgLockedRequest)(nil),        // 58: gyoza.iam.v1.SetOrgLockedRequest
+	(*SetOrgLockedResponse)(nil),       // 59: gyoza.iam.v1.SetOrgLockedResponse
+	(*ShareProjectRequest)(nil),        // 60: gyoza.iam.v1.ShareProjectRequest
+	(*ShareProjectResponse)(nil),       // 61: gyoza.iam.v1.ShareProjectResponse
+	(*ListSharesRequest)(nil),          // 62: gyoza.iam.v1.ListSharesRequest
+	(*ListSharesResponse)(nil),         // 63: gyoza.iam.v1.ListSharesResponse
+	(*UnshareRequest)(nil),             // 64: gyoza.iam.v1.UnshareRequest
+	(*UnshareResponse)(nil),            // 65: gyoza.iam.v1.UnshareResponse
+	(*RevokePendingShareRequest)(nil),  // 66: gyoza.iam.v1.RevokePendingShareRequest
+	(*RevokePendingShareResponse)(nil), // 67: gyoza.iam.v1.RevokePendingShareResponse
+	(*DeleteProjectRequest)(nil),       // 68: gyoza.iam.v1.DeleteProjectRequest
+	(*DeleteProjectResponse)(nil),      // 69: gyoza.iam.v1.DeleteProjectResponse
+	(*CreateTemplateRequest)(nil),      // 70: gyoza.iam.v1.CreateTemplateRequest
+	(*CreateTemplateResponse)(nil),     // 71: gyoza.iam.v1.CreateTemplateResponse
+	(*DeleteTemplateRequest)(nil),      // 72: gyoza.iam.v1.DeleteTemplateRequest
+	(*DeleteTemplateResponse)(nil),     // 73: gyoza.iam.v1.DeleteTemplateResponse
+	(*CanReadRequest)(nil),             // 74: gyoza.iam.v1.CanReadRequest
+	(*CanReadResponse)(nil),            // 75: gyoza.iam.v1.CanReadResponse
+	(*CanWriteRequest)(nil),            // 76: gyoza.iam.v1.CanWriteRequest
+	(*CanWriteResponse)(nil),           // 77: gyoza.iam.v1.CanWriteResponse
+	(*ProjectOwnerRequest)(nil),        // 78: gyoza.iam.v1.ProjectOwnerRequest
+	(*ProjectOwnerResponse)(nil),       // 79: gyoza.iam.v1.ProjectOwnerResponse
+	(*timestamppb.Timestamp)(nil),      // 80: google.protobuf.Timestamp
+	(*v1.Owner)(nil),                   // 81: gyoza.storage.v1.Owner
 }
 var file_gyoza_iam_v1_iam_proto_depIdxs = []int32{
-	78, // 0: gyoza.iam.v1.User.created_at:type_name -> google.protobuf.Timestamp
-	78, // 1: gyoza.iam.v1.User.updated_at:type_name -> google.protobuf.Timestamp
-	78, // 2: gyoza.iam.v1.User.deleting_at:type_name -> google.protobuf.Timestamp
-	78, // 3: gyoza.iam.v1.Org.created_at:type_name -> google.protobuf.Timestamp
-	78, // 4: gyoza.iam.v1.Org.updated_at:type_name -> google.protobuf.Timestamp
-	78, // 5: gyoza.iam.v1.Org.deleting_at:type_name -> google.protobuf.Timestamp
+	80, // 0: gyoza.iam.v1.User.created_at:type_name -> google.protobuf.Timestamp
+	80, // 1: gyoza.iam.v1.User.updated_at:type_name -> google.protobuf.Timestamp
+	80, // 2: gyoza.iam.v1.User.deleting_at:type_name -> google.protobuf.Timestamp
+	80, // 3: gyoza.iam.v1.Org.created_at:type_name -> google.protobuf.Timestamp
+	80, // 4: gyoza.iam.v1.Org.updated_at:type_name -> google.protobuf.Timestamp
+	80, // 5: gyoza.iam.v1.Org.deleting_at:type_name -> google.protobuf.Timestamp
 	0,  // 6: gyoza.iam.v1.Member.role:type_name -> gyoza.iam.v1.Role
-	78, // 7: gyoza.iam.v1.Member.joined_at:type_name -> google.protobuf.Timestamp
+	80, // 7: gyoza.iam.v1.Member.joined_at:type_name -> google.protobuf.Timestamp
 	0,  // 8: gyoza.iam.v1.Invite.role:type_name -> gyoza.iam.v1.Role
-	78, // 9: gyoza.iam.v1.Invite.created_at:type_name -> google.protobuf.Timestamp
-	78, // 10: gyoza.iam.v1.Invite.expires_at:type_name -> google.protobuf.Timestamp
-	79, // 11: gyoza.iam.v1.Project.owner:type_name -> gyoza.storage.v1.Owner
+	80, // 9: gyoza.iam.v1.Invite.created_at:type_name -> google.protobuf.Timestamp
+	80, // 10: gyoza.iam.v1.Invite.expires_at:type_name -> google.protobuf.Timestamp
+	81, // 11: gyoza.iam.v1.Project.owner:type_name -> gyoza.storage.v1.Owner
 	2,  // 12: gyoza.iam.v1.Project.state:type_name -> gyoza.iam.v1.ProjectState
-	78, // 13: gyoza.iam.v1.Project.created_at:type_name -> google.protobuf.Timestamp
-	78, // 14: gyoza.iam.v1.Project.updated_at:type_name -> google.protobuf.Timestamp
-	78, // 15: gyoza.iam.v1.Project.deleting_at:type_name -> google.protobuf.Timestamp
+	80, // 13: gyoza.iam.v1.Project.created_at:type_name -> google.protobuf.Timestamp
+	80, // 14: gyoza.iam.v1.Project.updated_at:type_name -> google.protobuf.Timestamp
+	80, // 15: gyoza.iam.v1.Project.deleting_at:type_name -> google.protobuf.Timestamp
 	1,  // 16: gyoza.iam.v1.Share.access:type_name -> gyoza.iam.v1.Access
-	78, // 17: gyoza.iam.v1.Share.created_at:type_name -> google.protobuf.Timestamp
-	78, // 18: gyoza.iam.v1.Share.updated_at:type_name -> google.protobuf.Timestamp
-	4,  // 19: gyoza.iam.v1.SignInRequest.identity:type_name -> gyoza.iam.v1.Identity
-	3,  // 20: gyoza.iam.v1.SignInResponse.user:type_name -> gyoza.iam.v1.User
-	7,  // 21: gyoza.iam.v1.SignInResponse.invites:type_name -> gyoza.iam.v1.Invite
-	3,  // 22: gyoza.iam.v1.GetMeResponse.user:type_name -> gyoza.iam.v1.User
-	6,  // 23: gyoza.iam.v1.GetMeResponse.membership:type_name -> gyoza.iam.v1.Member
-	5,  // 24: gyoza.iam.v1.GetMeResponse.org:type_name -> gyoza.iam.v1.Org
-	5,  // 25: gyoza.iam.v1.CreateOrgResponse.org:type_name -> gyoza.iam.v1.Org
-	6,  // 26: gyoza.iam.v1.CreateOrgResponse.member:type_name -> gyoza.iam.v1.Member
-	5,  // 27: gyoza.iam.v1.GetOrgResponse.org:type_name -> gyoza.iam.v1.Org
-	5,  // 28: gyoza.iam.v1.RenameOrgResponse.org:type_name -> gyoza.iam.v1.Org
-	6,  // 29: gyoza.iam.v1.ListMembersResponse.members:type_name -> gyoza.iam.v1.Member
-	0,  // 30: gyoza.iam.v1.SetRoleRequest.role:type_name -> gyoza.iam.v1.Role
-	6,  // 31: gyoza.iam.v1.SetRoleResponse.member:type_name -> gyoza.iam.v1.Member
-	0,  // 32: gyoza.iam.v1.InviteMemberRequest.role:type_name -> gyoza.iam.v1.Role
-	7,  // 33: gyoza.iam.v1.InviteMemberResponse.invite:type_name -> gyoza.iam.v1.Invite
-	7,  // 34: gyoza.iam.v1.ListOrgInvitesResponse.invites:type_name -> gyoza.iam.v1.Invite
-	7,  // 35: gyoza.iam.v1.ListMyInvitesResponse.invites:type_name -> gyoza.iam.v1.Invite
-	6,  // 36: gyoza.iam.v1.AcceptInviteResponse.member:type_name -> gyoza.iam.v1.Member
-	79, // 37: gyoza.iam.v1.CreateProjectRequest.owner:type_name -> gyoza.storage.v1.Owner
-	8,  // 38: gyoza.iam.v1.CreateProjectResponse.project:type_name -> gyoza.iam.v1.Project
-	79, // 39: gyoza.iam.v1.CloneProjectRequest.target:type_name -> gyoza.storage.v1.Owner
-	8,  // 40: gyoza.iam.v1.CloneProjectResponse.project:type_name -> gyoza.iam.v1.Project
-	8,  // 41: gyoza.iam.v1.GetProjectResponse.project:type_name -> gyoza.iam.v1.Project
-	1,  // 42: gyoza.iam.v1.GetProjectResponse.access:type_name -> gyoza.iam.v1.Access
-	8,  // 43: gyoza.iam.v1.ListMyProjectsResponse.projects:type_name -> gyoza.iam.v1.Project
-	8,  // 44: gyoza.iam.v1.ListTemplatesResponse.projects:type_name -> gyoza.iam.v1.Project
-	8,  // 45: gyoza.iam.v1.RenameProjectResponse.project:type_name -> gyoza.iam.v1.Project
-	8,  // 46: gyoza.iam.v1.MoveProjectToOrgResponse.project:type_name -> gyoza.iam.v1.Project
-	8,  // 47: gyoza.iam.v1.SetOrgLockedResponse.project:type_name -> gyoza.iam.v1.Project
-	1,  // 48: gyoza.iam.v1.ShareProjectRequest.access:type_name -> gyoza.iam.v1.Access
-	9,  // 49: gyoza.iam.v1.ShareProjectResponse.share:type_name -> gyoza.iam.v1.Share
-	9,  // 50: gyoza.iam.v1.ListSharesResponse.shares:type_name -> gyoza.iam.v1.Share
-	8,  // 51: gyoza.iam.v1.CreateTemplateResponse.project:type_name -> gyoza.iam.v1.Project
-	79, // 52: gyoza.iam.v1.CanReadRequest.owner:type_name -> gyoza.storage.v1.Owner
-	79, // 53: gyoza.iam.v1.CanWriteRequest.owner:type_name -> gyoza.storage.v1.Owner
-	79, // 54: gyoza.iam.v1.ProjectOwnerResponse.owner:type_name -> gyoza.storage.v1.Owner
-	10, // 55: gyoza.iam.v1.IAMService.SignIn:input_type -> gyoza.iam.v1.SignInRequest
-	12, // 56: gyoza.iam.v1.IAMService.GetMe:input_type -> gyoza.iam.v1.GetMeRequest
-	14, // 57: gyoza.iam.v1.IAMService.DeleteAccount:input_type -> gyoza.iam.v1.DeleteAccountRequest
-	16, // 58: gyoza.iam.v1.IAMService.CreateOrg:input_type -> gyoza.iam.v1.CreateOrgRequest
-	18, // 59: gyoza.iam.v1.IAMService.GetOrg:input_type -> gyoza.iam.v1.GetOrgRequest
-	20, // 60: gyoza.iam.v1.IAMService.RenameOrg:input_type -> gyoza.iam.v1.RenameOrgRequest
-	22, // 61: gyoza.iam.v1.IAMService.ListMembers:input_type -> gyoza.iam.v1.ListMembersRequest
-	24, // 62: gyoza.iam.v1.IAMService.SetRole:input_type -> gyoza.iam.v1.SetRoleRequest
-	26, // 63: gyoza.iam.v1.IAMService.RemoveMember:input_type -> gyoza.iam.v1.RemoveMemberRequest
-	28, // 64: gyoza.iam.v1.IAMService.LeaveOrg:input_type -> gyoza.iam.v1.LeaveOrgRequest
-	30, // 65: gyoza.iam.v1.IAMService.DeleteOrg:input_type -> gyoza.iam.v1.DeleteOrgRequest
-	32, // 66: gyoza.iam.v1.IAMService.InviteMember:input_type -> gyoza.iam.v1.InviteMemberRequest
-	34, // 67: gyoza.iam.v1.IAMService.ListOrgInvites:input_type -> gyoza.iam.v1.ListOrgInvitesRequest
-	36, // 68: gyoza.iam.v1.IAMService.RevokeInvite:input_type -> gyoza.iam.v1.RevokeInviteRequest
-	38, // 69: gyoza.iam.v1.IAMService.ListMyInvites:input_type -> gyoza.iam.v1.ListMyInvitesRequest
-	40, // 70: gyoza.iam.v1.IAMService.AcceptInvite:input_type -> gyoza.iam.v1.AcceptInviteRequest
-	42, // 71: gyoza.iam.v1.IAMService.DeclineInvite:input_type -> gyoza.iam.v1.DeclineInviteRequest
-	44, // 72: gyoza.iam.v1.IAMService.CreateProject:input_type -> gyoza.iam.v1.CreateProjectRequest
-	46, // 73: gyoza.iam.v1.IAMService.CloneProject:input_type -> gyoza.iam.v1.CloneProjectRequest
-	48, // 74: gyoza.iam.v1.IAMService.GetProject:input_type -> gyoza.iam.v1.GetProjectRequest
-	50, // 75: gyoza.iam.v1.IAMService.ListMyProjects:input_type -> gyoza.iam.v1.ListMyProjectsRequest
-	52, // 76: gyoza.iam.v1.IAMService.ListTemplates:input_type -> gyoza.iam.v1.ListTemplatesRequest
-	54, // 77: gyoza.iam.v1.IAMService.RenameProject:input_type -> gyoza.iam.v1.RenameProjectRequest
-	56, // 78: gyoza.iam.v1.IAMService.MoveProjectToOrg:input_type -> gyoza.iam.v1.MoveProjectToOrgRequest
-	58, // 79: gyoza.iam.v1.IAMService.SetOrgLocked:input_type -> gyoza.iam.v1.SetOrgLockedRequest
-	60, // 80: gyoza.iam.v1.IAMService.ShareProject:input_type -> gyoza.iam.v1.ShareProjectRequest
-	62, // 81: gyoza.iam.v1.IAMService.ListShares:input_type -> gyoza.iam.v1.ListSharesRequest
-	64, // 82: gyoza.iam.v1.IAMService.Unshare:input_type -> gyoza.iam.v1.UnshareRequest
-	66, // 83: gyoza.iam.v1.IAMService.DeleteProject:input_type -> gyoza.iam.v1.DeleteProjectRequest
-	68, // 84: gyoza.iam.v1.IAMService.CreateTemplate:input_type -> gyoza.iam.v1.CreateTemplateRequest
-	70, // 85: gyoza.iam.v1.IAMService.DeleteTemplate:input_type -> gyoza.iam.v1.DeleteTemplateRequest
-	72, // 86: gyoza.iam.v1.AuthzService.CanRead:input_type -> gyoza.iam.v1.CanReadRequest
-	74, // 87: gyoza.iam.v1.AuthzService.CanWrite:input_type -> gyoza.iam.v1.CanWriteRequest
-	76, // 88: gyoza.iam.v1.AuthzService.ProjectOwner:input_type -> gyoza.iam.v1.ProjectOwnerRequest
-	11, // 89: gyoza.iam.v1.IAMService.SignIn:output_type -> gyoza.iam.v1.SignInResponse
-	13, // 90: gyoza.iam.v1.IAMService.GetMe:output_type -> gyoza.iam.v1.GetMeResponse
-	15, // 91: gyoza.iam.v1.IAMService.DeleteAccount:output_type -> gyoza.iam.v1.DeleteAccountResponse
-	17, // 92: gyoza.iam.v1.IAMService.CreateOrg:output_type -> gyoza.iam.v1.CreateOrgResponse
-	19, // 93: gyoza.iam.v1.IAMService.GetOrg:output_type -> gyoza.iam.v1.GetOrgResponse
-	21, // 94: gyoza.iam.v1.IAMService.RenameOrg:output_type -> gyoza.iam.v1.RenameOrgResponse
-	23, // 95: gyoza.iam.v1.IAMService.ListMembers:output_type -> gyoza.iam.v1.ListMembersResponse
-	25, // 96: gyoza.iam.v1.IAMService.SetRole:output_type -> gyoza.iam.v1.SetRoleResponse
-	27, // 97: gyoza.iam.v1.IAMService.RemoveMember:output_type -> gyoza.iam.v1.RemoveMemberResponse
-	29, // 98: gyoza.iam.v1.IAMService.LeaveOrg:output_type -> gyoza.iam.v1.LeaveOrgResponse
-	31, // 99: gyoza.iam.v1.IAMService.DeleteOrg:output_type -> gyoza.iam.v1.DeleteOrgResponse
-	33, // 100: gyoza.iam.v1.IAMService.InviteMember:output_type -> gyoza.iam.v1.InviteMemberResponse
-	35, // 101: gyoza.iam.v1.IAMService.ListOrgInvites:output_type -> gyoza.iam.v1.ListOrgInvitesResponse
-	37, // 102: gyoza.iam.v1.IAMService.RevokeInvite:output_type -> gyoza.iam.v1.RevokeInviteResponse
-	39, // 103: gyoza.iam.v1.IAMService.ListMyInvites:output_type -> gyoza.iam.v1.ListMyInvitesResponse
-	41, // 104: gyoza.iam.v1.IAMService.AcceptInvite:output_type -> gyoza.iam.v1.AcceptInviteResponse
-	43, // 105: gyoza.iam.v1.IAMService.DeclineInvite:output_type -> gyoza.iam.v1.DeclineInviteResponse
-	45, // 106: gyoza.iam.v1.IAMService.CreateProject:output_type -> gyoza.iam.v1.CreateProjectResponse
-	47, // 107: gyoza.iam.v1.IAMService.CloneProject:output_type -> gyoza.iam.v1.CloneProjectResponse
-	49, // 108: gyoza.iam.v1.IAMService.GetProject:output_type -> gyoza.iam.v1.GetProjectResponse
-	51, // 109: gyoza.iam.v1.IAMService.ListMyProjects:output_type -> gyoza.iam.v1.ListMyProjectsResponse
-	53, // 110: gyoza.iam.v1.IAMService.ListTemplates:output_type -> gyoza.iam.v1.ListTemplatesResponse
-	55, // 111: gyoza.iam.v1.IAMService.RenameProject:output_type -> gyoza.iam.v1.RenameProjectResponse
-	57, // 112: gyoza.iam.v1.IAMService.MoveProjectToOrg:output_type -> gyoza.iam.v1.MoveProjectToOrgResponse
-	59, // 113: gyoza.iam.v1.IAMService.SetOrgLocked:output_type -> gyoza.iam.v1.SetOrgLockedResponse
-	61, // 114: gyoza.iam.v1.IAMService.ShareProject:output_type -> gyoza.iam.v1.ShareProjectResponse
-	63, // 115: gyoza.iam.v1.IAMService.ListShares:output_type -> gyoza.iam.v1.ListSharesResponse
-	65, // 116: gyoza.iam.v1.IAMService.Unshare:output_type -> gyoza.iam.v1.UnshareResponse
-	67, // 117: gyoza.iam.v1.IAMService.DeleteProject:output_type -> gyoza.iam.v1.DeleteProjectResponse
-	69, // 118: gyoza.iam.v1.IAMService.CreateTemplate:output_type -> gyoza.iam.v1.CreateTemplateResponse
-	71, // 119: gyoza.iam.v1.IAMService.DeleteTemplate:output_type -> gyoza.iam.v1.DeleteTemplateResponse
-	73, // 120: gyoza.iam.v1.AuthzService.CanRead:output_type -> gyoza.iam.v1.CanReadResponse
-	75, // 121: gyoza.iam.v1.AuthzService.CanWrite:output_type -> gyoza.iam.v1.CanWriteResponse
-	77, // 122: gyoza.iam.v1.AuthzService.ProjectOwner:output_type -> gyoza.iam.v1.ProjectOwnerResponse
-	89, // [89:123] is the sub-list for method output_type
-	55, // [55:89] is the sub-list for method input_type
-	55, // [55:55] is the sub-list for extension type_name
-	55, // [55:55] is the sub-list for extension extendee
-	0,  // [0:55] is the sub-list for field type_name
+	80, // 17: gyoza.iam.v1.Share.created_at:type_name -> google.protobuf.Timestamp
+	80, // 18: gyoza.iam.v1.Share.updated_at:type_name -> google.protobuf.Timestamp
+	80, // 19: gyoza.iam.v1.Share.expires_at:type_name -> google.protobuf.Timestamp
+	4,  // 20: gyoza.iam.v1.SignInRequest.identity:type_name -> gyoza.iam.v1.Identity
+	3,  // 21: gyoza.iam.v1.SignInResponse.user:type_name -> gyoza.iam.v1.User
+	7,  // 22: gyoza.iam.v1.SignInResponse.invites:type_name -> gyoza.iam.v1.Invite
+	3,  // 23: gyoza.iam.v1.GetMeResponse.user:type_name -> gyoza.iam.v1.User
+	6,  // 24: gyoza.iam.v1.GetMeResponse.membership:type_name -> gyoza.iam.v1.Member
+	5,  // 25: gyoza.iam.v1.GetMeResponse.org:type_name -> gyoza.iam.v1.Org
+	5,  // 26: gyoza.iam.v1.CreateOrgResponse.org:type_name -> gyoza.iam.v1.Org
+	6,  // 27: gyoza.iam.v1.CreateOrgResponse.member:type_name -> gyoza.iam.v1.Member
+	5,  // 28: gyoza.iam.v1.GetOrgResponse.org:type_name -> gyoza.iam.v1.Org
+	5,  // 29: gyoza.iam.v1.RenameOrgResponse.org:type_name -> gyoza.iam.v1.Org
+	6,  // 30: gyoza.iam.v1.ListMembersResponse.members:type_name -> gyoza.iam.v1.Member
+	0,  // 31: gyoza.iam.v1.SetRoleRequest.role:type_name -> gyoza.iam.v1.Role
+	6,  // 32: gyoza.iam.v1.SetRoleResponse.member:type_name -> gyoza.iam.v1.Member
+	0,  // 33: gyoza.iam.v1.InviteMemberRequest.role:type_name -> gyoza.iam.v1.Role
+	7,  // 34: gyoza.iam.v1.InviteMemberResponse.invite:type_name -> gyoza.iam.v1.Invite
+	7,  // 35: gyoza.iam.v1.ListOrgInvitesResponse.invites:type_name -> gyoza.iam.v1.Invite
+	7,  // 36: gyoza.iam.v1.ListMyInvitesResponse.invites:type_name -> gyoza.iam.v1.Invite
+	6,  // 37: gyoza.iam.v1.AcceptInviteResponse.member:type_name -> gyoza.iam.v1.Member
+	81, // 38: gyoza.iam.v1.CreateProjectRequest.owner:type_name -> gyoza.storage.v1.Owner
+	8,  // 39: gyoza.iam.v1.CreateProjectResponse.project:type_name -> gyoza.iam.v1.Project
+	81, // 40: gyoza.iam.v1.CloneProjectRequest.target:type_name -> gyoza.storage.v1.Owner
+	8,  // 41: gyoza.iam.v1.CloneProjectResponse.project:type_name -> gyoza.iam.v1.Project
+	8,  // 42: gyoza.iam.v1.GetProjectResponse.project:type_name -> gyoza.iam.v1.Project
+	1,  // 43: gyoza.iam.v1.GetProjectResponse.access:type_name -> gyoza.iam.v1.Access
+	8,  // 44: gyoza.iam.v1.ListMyProjectsResponse.projects:type_name -> gyoza.iam.v1.Project
+	8,  // 45: gyoza.iam.v1.ListTemplatesResponse.projects:type_name -> gyoza.iam.v1.Project
+	8,  // 46: gyoza.iam.v1.RenameProjectResponse.project:type_name -> gyoza.iam.v1.Project
+	8,  // 47: gyoza.iam.v1.MoveProjectToOrgResponse.project:type_name -> gyoza.iam.v1.Project
+	8,  // 48: gyoza.iam.v1.SetOrgLockedResponse.project:type_name -> gyoza.iam.v1.Project
+	1,  // 49: gyoza.iam.v1.ShareProjectRequest.access:type_name -> gyoza.iam.v1.Access
+	9,  // 50: gyoza.iam.v1.ShareProjectResponse.share:type_name -> gyoza.iam.v1.Share
+	9,  // 51: gyoza.iam.v1.ListSharesResponse.shares:type_name -> gyoza.iam.v1.Share
+	8,  // 52: gyoza.iam.v1.CreateTemplateResponse.project:type_name -> gyoza.iam.v1.Project
+	81, // 53: gyoza.iam.v1.CanReadRequest.owner:type_name -> gyoza.storage.v1.Owner
+	81, // 54: gyoza.iam.v1.CanWriteRequest.owner:type_name -> gyoza.storage.v1.Owner
+	81, // 55: gyoza.iam.v1.ProjectOwnerResponse.owner:type_name -> gyoza.storage.v1.Owner
+	10, // 56: gyoza.iam.v1.IAMService.SignIn:input_type -> gyoza.iam.v1.SignInRequest
+	12, // 57: gyoza.iam.v1.IAMService.GetMe:input_type -> gyoza.iam.v1.GetMeRequest
+	14, // 58: gyoza.iam.v1.IAMService.DeleteAccount:input_type -> gyoza.iam.v1.DeleteAccountRequest
+	16, // 59: gyoza.iam.v1.IAMService.CreateOrg:input_type -> gyoza.iam.v1.CreateOrgRequest
+	18, // 60: gyoza.iam.v1.IAMService.GetOrg:input_type -> gyoza.iam.v1.GetOrgRequest
+	20, // 61: gyoza.iam.v1.IAMService.RenameOrg:input_type -> gyoza.iam.v1.RenameOrgRequest
+	22, // 62: gyoza.iam.v1.IAMService.ListMembers:input_type -> gyoza.iam.v1.ListMembersRequest
+	24, // 63: gyoza.iam.v1.IAMService.SetRole:input_type -> gyoza.iam.v1.SetRoleRequest
+	26, // 64: gyoza.iam.v1.IAMService.RemoveMember:input_type -> gyoza.iam.v1.RemoveMemberRequest
+	28, // 65: gyoza.iam.v1.IAMService.LeaveOrg:input_type -> gyoza.iam.v1.LeaveOrgRequest
+	30, // 66: gyoza.iam.v1.IAMService.DeleteOrg:input_type -> gyoza.iam.v1.DeleteOrgRequest
+	32, // 67: gyoza.iam.v1.IAMService.InviteMember:input_type -> gyoza.iam.v1.InviteMemberRequest
+	34, // 68: gyoza.iam.v1.IAMService.ListOrgInvites:input_type -> gyoza.iam.v1.ListOrgInvitesRequest
+	36, // 69: gyoza.iam.v1.IAMService.RevokeInvite:input_type -> gyoza.iam.v1.RevokeInviteRequest
+	38, // 70: gyoza.iam.v1.IAMService.ListMyInvites:input_type -> gyoza.iam.v1.ListMyInvitesRequest
+	40, // 71: gyoza.iam.v1.IAMService.AcceptInvite:input_type -> gyoza.iam.v1.AcceptInviteRequest
+	42, // 72: gyoza.iam.v1.IAMService.DeclineInvite:input_type -> gyoza.iam.v1.DeclineInviteRequest
+	44, // 73: gyoza.iam.v1.IAMService.CreateProject:input_type -> gyoza.iam.v1.CreateProjectRequest
+	46, // 74: gyoza.iam.v1.IAMService.CloneProject:input_type -> gyoza.iam.v1.CloneProjectRequest
+	48, // 75: gyoza.iam.v1.IAMService.GetProject:input_type -> gyoza.iam.v1.GetProjectRequest
+	50, // 76: gyoza.iam.v1.IAMService.ListMyProjects:input_type -> gyoza.iam.v1.ListMyProjectsRequest
+	52, // 77: gyoza.iam.v1.IAMService.ListTemplates:input_type -> gyoza.iam.v1.ListTemplatesRequest
+	54, // 78: gyoza.iam.v1.IAMService.RenameProject:input_type -> gyoza.iam.v1.RenameProjectRequest
+	56, // 79: gyoza.iam.v1.IAMService.MoveProjectToOrg:input_type -> gyoza.iam.v1.MoveProjectToOrgRequest
+	58, // 80: gyoza.iam.v1.IAMService.SetOrgLocked:input_type -> gyoza.iam.v1.SetOrgLockedRequest
+	60, // 81: gyoza.iam.v1.IAMService.ShareProject:input_type -> gyoza.iam.v1.ShareProjectRequest
+	62, // 82: gyoza.iam.v1.IAMService.ListShares:input_type -> gyoza.iam.v1.ListSharesRequest
+	64, // 83: gyoza.iam.v1.IAMService.Unshare:input_type -> gyoza.iam.v1.UnshareRequest
+	66, // 84: gyoza.iam.v1.IAMService.RevokePendingShare:input_type -> gyoza.iam.v1.RevokePendingShareRequest
+	68, // 85: gyoza.iam.v1.IAMService.DeleteProject:input_type -> gyoza.iam.v1.DeleteProjectRequest
+	70, // 86: gyoza.iam.v1.IAMService.CreateTemplate:input_type -> gyoza.iam.v1.CreateTemplateRequest
+	72, // 87: gyoza.iam.v1.IAMService.DeleteTemplate:input_type -> gyoza.iam.v1.DeleteTemplateRequest
+	74, // 88: gyoza.iam.v1.AuthzService.CanRead:input_type -> gyoza.iam.v1.CanReadRequest
+	76, // 89: gyoza.iam.v1.AuthzService.CanWrite:input_type -> gyoza.iam.v1.CanWriteRequest
+	78, // 90: gyoza.iam.v1.AuthzService.ProjectOwner:input_type -> gyoza.iam.v1.ProjectOwnerRequest
+	11, // 91: gyoza.iam.v1.IAMService.SignIn:output_type -> gyoza.iam.v1.SignInResponse
+	13, // 92: gyoza.iam.v1.IAMService.GetMe:output_type -> gyoza.iam.v1.GetMeResponse
+	15, // 93: gyoza.iam.v1.IAMService.DeleteAccount:output_type -> gyoza.iam.v1.DeleteAccountResponse
+	17, // 94: gyoza.iam.v1.IAMService.CreateOrg:output_type -> gyoza.iam.v1.CreateOrgResponse
+	19, // 95: gyoza.iam.v1.IAMService.GetOrg:output_type -> gyoza.iam.v1.GetOrgResponse
+	21, // 96: gyoza.iam.v1.IAMService.RenameOrg:output_type -> gyoza.iam.v1.RenameOrgResponse
+	23, // 97: gyoza.iam.v1.IAMService.ListMembers:output_type -> gyoza.iam.v1.ListMembersResponse
+	25, // 98: gyoza.iam.v1.IAMService.SetRole:output_type -> gyoza.iam.v1.SetRoleResponse
+	27, // 99: gyoza.iam.v1.IAMService.RemoveMember:output_type -> gyoza.iam.v1.RemoveMemberResponse
+	29, // 100: gyoza.iam.v1.IAMService.LeaveOrg:output_type -> gyoza.iam.v1.LeaveOrgResponse
+	31, // 101: gyoza.iam.v1.IAMService.DeleteOrg:output_type -> gyoza.iam.v1.DeleteOrgResponse
+	33, // 102: gyoza.iam.v1.IAMService.InviteMember:output_type -> gyoza.iam.v1.InviteMemberResponse
+	35, // 103: gyoza.iam.v1.IAMService.ListOrgInvites:output_type -> gyoza.iam.v1.ListOrgInvitesResponse
+	37, // 104: gyoza.iam.v1.IAMService.RevokeInvite:output_type -> gyoza.iam.v1.RevokeInviteResponse
+	39, // 105: gyoza.iam.v1.IAMService.ListMyInvites:output_type -> gyoza.iam.v1.ListMyInvitesResponse
+	41, // 106: gyoza.iam.v1.IAMService.AcceptInvite:output_type -> gyoza.iam.v1.AcceptInviteResponse
+	43, // 107: gyoza.iam.v1.IAMService.DeclineInvite:output_type -> gyoza.iam.v1.DeclineInviteResponse
+	45, // 108: gyoza.iam.v1.IAMService.CreateProject:output_type -> gyoza.iam.v1.CreateProjectResponse
+	47, // 109: gyoza.iam.v1.IAMService.CloneProject:output_type -> gyoza.iam.v1.CloneProjectResponse
+	49, // 110: gyoza.iam.v1.IAMService.GetProject:output_type -> gyoza.iam.v1.GetProjectResponse
+	51, // 111: gyoza.iam.v1.IAMService.ListMyProjects:output_type -> gyoza.iam.v1.ListMyProjectsResponse
+	53, // 112: gyoza.iam.v1.IAMService.ListTemplates:output_type -> gyoza.iam.v1.ListTemplatesResponse
+	55, // 113: gyoza.iam.v1.IAMService.RenameProject:output_type -> gyoza.iam.v1.RenameProjectResponse
+	57, // 114: gyoza.iam.v1.IAMService.MoveProjectToOrg:output_type -> gyoza.iam.v1.MoveProjectToOrgResponse
+	59, // 115: gyoza.iam.v1.IAMService.SetOrgLocked:output_type -> gyoza.iam.v1.SetOrgLockedResponse
+	61, // 116: gyoza.iam.v1.IAMService.ShareProject:output_type -> gyoza.iam.v1.ShareProjectResponse
+	63, // 117: gyoza.iam.v1.IAMService.ListShares:output_type -> gyoza.iam.v1.ListSharesResponse
+	65, // 118: gyoza.iam.v1.IAMService.Unshare:output_type -> gyoza.iam.v1.UnshareResponse
+	67, // 119: gyoza.iam.v1.IAMService.RevokePendingShare:output_type -> gyoza.iam.v1.RevokePendingShareResponse
+	69, // 120: gyoza.iam.v1.IAMService.DeleteProject:output_type -> gyoza.iam.v1.DeleteProjectResponse
+	71, // 121: gyoza.iam.v1.IAMService.CreateTemplate:output_type -> gyoza.iam.v1.CreateTemplateResponse
+	73, // 122: gyoza.iam.v1.IAMService.DeleteTemplate:output_type -> gyoza.iam.v1.DeleteTemplateResponse
+	75, // 123: gyoza.iam.v1.AuthzService.CanRead:output_type -> gyoza.iam.v1.CanReadResponse
+	77, // 124: gyoza.iam.v1.AuthzService.CanWrite:output_type -> gyoza.iam.v1.CanWriteResponse
+	79, // 125: gyoza.iam.v1.AuthzService.ProjectOwner:output_type -> gyoza.iam.v1.ProjectOwnerResponse
+	91, // [91:126] is the sub-list for method output_type
+	56, // [56:91] is the sub-list for method input_type
+	56, // [56:56] is the sub-list for extension type_name
+	56, // [56:56] is the sub-list for extension extendee
+	0,  // [0:56] is the sub-list for field type_name
 }
 
 func init() { file_gyoza_iam_v1_iam_proto_init() }
@@ -4709,7 +4838,7 @@ func file_gyoza_iam_v1_iam_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_gyoza_iam_v1_iam_proto_rawDesc), len(file_gyoza_iam_v1_iam_proto_rawDesc)),
 			NumEnums:      3,
-			NumMessages:   75,
+			NumMessages:   77,
 			NumExtensions: 0,
 			NumServices:   2,
 		},

@@ -162,28 +162,59 @@ func (m *Manager) SetOrgLocked(ctx context.Context, actorID, projectID string, l
 }
 
 // ShareProject gives the user with this email access to the project, or
-// changes their level; anyone with editor access may. Only people who have
-// signed up can be found (ErrUserNotFound). Sharing with someone who already
-// has more access changes nothing they can do (they keep the greater). A
-// locked project refuses people outside its org; templates can't be shared.
+// changes their level; anyone with editor access may. An address with no
+// verified account gets a pending share instead, claimed when someone signs
+// in with it (SignIn), so sharing never says whether an address has an
+// account. Sharing with someone who already has more access changes nothing
+// they can do (they keep the greater). A locked project refuses people
+// outside its org; templates can't be shared.
 func (m *Manager) ShareProject(ctx context.Context, actorID, projectID, email string, access directory.Access) (directory.Share, error) {
 	if _, _, err := m.access(ctx, actorID, projectID, directory.AccessEditor); err != nil {
 		return directory.Share{}, err
 	}
 	u, err := m.store.GetUserByEmail(ctx, email)
-	if err != nil {
+	switch {
+	case err == nil && u.EmailVerified && u.DeletingAt == nil:
+		sh, err := m.store.ShareProject(ctx, directory.Share{ProjectID: projectID, UserID: u.ID, Access: access, SharedBy: actorID})
+		if !errors.Is(err, directory.ErrUserNotFound) {
+			return sh, err
+		} // deleted meanwhile: a pending share, like an unknown address
+	case err != nil && !errors.Is(err, directory.ErrUserNotFound):
 		return directory.Share{}, err
 	}
-	return m.store.ShareProject(ctx, directory.Share{ProjectID: projectID, UserID: u.ID, Access: access, SharedBy: actorID})
+	// An unverified claim to an address proves nothing (as with invites):
+	// the share waits for a verified sign-in.
+	return m.store.SharePending(ctx, directory.Share{
+		ProjectID: projectID, Email: email, Access: access, SharedBy: actorID,
+		ExpiresAt: m.now().Add(m.cfg.ShareTTL),
+	})
 }
 
-// ListShares lists a project's shares, suspended ones included; for anyone
-// with editor access (who manage them).
+// ListShares lists a project's shares, suspended ones included, then its
+// pending shares, expired ones included (to share again); for anyone with
+// editor access (who manage them).
 func (m *Manager) ListShares(ctx context.Context, actorID, projectID string) ([]directory.Share, error) {
 	if _, _, err := m.access(ctx, actorID, projectID, directory.AccessEditor); err != nil {
 		return nil, err
 	}
-	return m.store.ListShares(ctx, projectID)
+	shares, err := m.store.ListShares(ctx, projectID)
+	if err != nil {
+		return nil, err
+	}
+	pending, err := m.store.ListPendingShares(ctx, projectID)
+	if err != nil {
+		return nil, err
+	}
+	return append(shares, pending...), nil
+}
+
+// RevokePendingShare removes the pending share to an email, for anyone with
+// editor access. Revoking a missing one is not an error.
+func (m *Manager) RevokePendingShare(ctx context.Context, actorID, projectID, email string) error {
+	if _, _, err := m.access(ctx, actorID, projectID, directory.AccessEditor); err != nil {
+		return err
+	}
+	return m.store.DeletePendingShare(ctx, projectID, email)
 }
 
 // Unshare removes userID's share: anyone with editor access may remove any

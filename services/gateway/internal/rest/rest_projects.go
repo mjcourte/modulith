@@ -35,18 +35,27 @@ func projectPageOut(p iam.ProjectPage) ProjectPage {
 	return ProjectPage{Projects: mapSlice(p.Projects, projectOut), NextPageToken: p.NextPageToken}
 }
 
+// Share is a user's share, or a pending one (email and expiresAt set, userId
+// ""): to an address with no account yet, claimed when someone signs up
+// with it.
 type Share struct {
-	ProjectID string    `json:"projectId"`
-	UserID    string    `json:"userId"`
-	Access    string    `json:"access"`
-	SharedBy  string    `json:"sharedBy"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
+	ProjectID string     `json:"projectId"`
+	UserID    string     `json:"userId"`
+	Email     string     `json:"email,omitempty"`
+	Access    string     `json:"access"`
+	SharedBy  string     `json:"sharedBy"`
+	CreatedAt time.Time  `json:"createdAt"`
+	UpdatedAt time.Time  `json:"updatedAt"`
+	ExpiresAt *time.Time `json:"expiresAt,omitempty"`
 }
 
 func shareOut(sh iam.Share) Share {
-	return Share{ProjectID: sh.ProjectID, UserID: sh.UserID, Access: string(sh.Access), SharedBy: sh.SharedBy,
+	out := Share{ProjectID: sh.ProjectID, UserID: sh.UserID, Email: sh.Email, Access: string(sh.Access), SharedBy: sh.SharedBy,
 		CreatedAt: sh.CreatedAt.UTC(), UpdatedAt: sh.UpdatedAt.UTC()}
+	if sh.Pending() {
+		out.ExpiresAt = timeOut(&sh.ExpiresAt)
+	}
+	return out
 }
 
 // ---- Routes
@@ -146,7 +155,8 @@ func (s *Server) routesProjects(mux *http.ServeMux) {
 		shares, err := s.iam.ListShares(r.Context(), actor, r.PathValue("id"))
 		return mapSlice(shares, shareOut), err
 	}))
-	// Share with a user by email, or change their access.
+	// Share by email, or change the access. An address with no account gets a
+	// pending share: the same 200, so nobody learns who has an account.
 	mux.Handle("POST /projects/{id}/shares", serve(func(r *http.Request, actor string) (any, error) {
 		b, err := decode[struct {
 			Email  string `json:"email"`
@@ -160,5 +170,8 @@ func (s *Server) routesProjects(mux *http.ServeMux) {
 	}))
 	mux.Handle("DELETE /projects/{id}/shares/{userId}", serve(func(r *http.Request, actor string) (any, error) {
 		return nil, s.iam.Unshare(r.Context(), actor, r.PathValue("id"), r.PathValue("userId"))
+	}))
+	mux.Handle("DELETE /projects/{id}/pending-shares/{email}", serve(func(r *http.Request, actor string) (any, error) {
+		return nil, s.iam.RevokePendingShare(r.Context(), actor, r.PathValue("id"), r.PathValue("email"))
 	}))
 }

@@ -18,6 +18,7 @@ import (
 	"gyoza/platform/config"
 	gnats "gyoza/platform/nats"
 	"gyoza/platform/shutdown"
+	"gyoza/platform/telemetry"
 	"gyoza/services/documents"
 	"gyoza/services/gateway"
 	"gyoza/services/iam"
@@ -40,6 +41,7 @@ func run() error {
 	env := config.FromEnv()
 	logLevel := slog.LevelInfo
 	env.Text("GYOZA_LOG_LEVEL", &logLevel)
+	telemetrySettings := telemetry.SettingsFromEnv(env)
 	shutdownTimeout := env.Duration("GYOZA_SHUTDOWN_TIMEOUT", 20*time.Second)
 	// cmd/iam's local default. Sign-ins fail while it's unreachable.
 	iamAddr := env.String("GYOZA_IAM_ADDR", "localhost:9093")
@@ -51,14 +53,22 @@ func run() error {
 	if err := env.Err(); err != nil {
 		return err
 	}
-	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: logLevel})))
+	tel, err := telemetry.Setup(ctx, "gateway", telemetrySettings)
+	if err != nil {
+		return err
+	}
+	slog.SetDefault(slog.New(tel.LogHandler(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: logLevel}), logLevel)))
+	stopDebug, err := telemetry.StartDebug(telemetrySettings.DebugAddr)
+	if err != nil {
+		return fmt.Errorf("debug listener: %w", err)
+	}
 
 	// Plaintext: services only talk inside the platform's private network.
 	// NewClient doesn't connect yet, so the services may start after us.
 	// Closed last (defers run after the shutdown below), once nothing uses them.
 	conns := map[string]*grpc.ClientConn{}
 	for name, addr := range map[string]string{"iam": iamAddr, "storage": storageAddr, "documents": documentsAddr} {
-		conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()), telemetry.DialOption())
 		if err != nil {
 			return fmt.Errorf("%s client: %w", name, err)
 		}
@@ -122,6 +132,13 @@ func run() error {
 	if err := <-serveErr; !errors.Is(err, http.ErrServerClosed) {
 		return err
 	}
+	if err := stopDebug(shutdownCtx); err != nil {
+		slog.Warn("debug listener shutdown", "err", err)
+	}
 	slog.Info("stopped cleanly")
+	// Last: flush the spans and logs of everything above.
+	if err := tel.Shutdown(shutdownCtx); err != nil {
+		slog.Warn("telemetry flush failed", "err", err)
+	}
 	return nil
 }

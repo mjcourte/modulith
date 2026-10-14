@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/nats-io/nats.go/jetstream"
+
 	"gyoza/internal/engine"
 	gnats "gyoza/platform/nats"
 	"gyoza/services/documents/internal/live"
@@ -92,7 +94,7 @@ func (w *natsWorld) replica(name string, consume bool) *manager.Manager {
 			<-done
 			w.nc.JS.DeleteConsumer(context.Background(), gnats.Documents.Name, durable)
 		})
-		time.Sleep(200 * time.Millisecond) // let the consumer start
+		waitForConsumer(w.t, w.ctx, w.nc.JS, durable)
 	}
 	return m
 }
@@ -264,5 +266,29 @@ func TestNATSNoCompactionWithoutDurableStore(t *testing.T) {
 	next := w.replica("next", false)
 	if got := valueOn(t, next, p, "k"); got != "only in the stream" {
 		t.Errorf("after a crash k = %v, want the edit rebuilt from the deltas", got)
+	}
+}
+
+
+// waitForConsumer waits until the durable consumer has a cluster leader. A
+// DeliverNew consumer fixes where it starts only once its leader is elected
+// (about 60ms after it exists, longer under load): a message published before
+// that is skipped. A fixed sleep lost that race when the whole suite ran.
+func waitForConsumer(t *testing.T, ctx context.Context, js jetstream.JetStream, durable string) {
+	t.Helper()
+	led := func() bool {
+		ctx, cancel := context.WithTimeout(ctx, 2*time.Second) // a slow API call can't outlast the deadline
+		defer cancel()
+		cons, err := js.Consumer(ctx, gnats.Documents.Name, durable)
+		if err != nil {
+			return false
+		}
+		info, err := cons.Info(ctx)
+		return err == nil && info.Cluster != nil && info.Cluster.Leader != ""
+	}
+	for deadline := time.Now().Add(10 * time.Second); !led(); time.Sleep(20 * time.Millisecond) {
+		if time.Now().After(deadline) {
+			t.Fatalf("consumer %s never started", durable)
+		}
 	}
 }

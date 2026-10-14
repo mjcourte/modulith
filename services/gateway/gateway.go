@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	gnats "gyoza/platform/nats"
+	"gyoza/platform/telemetry"
 	"gyoza/services/documents"
 	"gyoza/services/gateway/internal/auth"
 	"gyoza/services/gateway/internal/rest"
@@ -48,6 +49,9 @@ func Open(s Settings, svc Services) (*Gateway, error) {
 	if err != nil {
 		return nil, err
 	}
+	// One span per request, outermost so sign-in (/auth) is traced too. Not
+	// the WebSocket upgrade: its messages get their own spans (internal/ws).
+	handler = telemetry.HTTPHandler(handler, func(r *http.Request) bool { return r.URL.Path == "/api/ws" })
 	return &Gateway{Handler: handler, hub: hub}, nil
 }
 

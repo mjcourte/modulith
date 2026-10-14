@@ -16,6 +16,7 @@ import (
 	"gyoza/platform/config"
 	gnats "gyoza/platform/nats"
 	"gyoza/platform/shutdown"
+	"gyoza/platform/telemetry"
 	"gyoza/services/documents"
 	"gyoza/services/iam"
 	"gyoza/services/storage"
@@ -37,6 +38,7 @@ func run() error {
 	env := config.FromEnv()
 	logLevel := slog.LevelInfo
 	env.Text("GYOZA_LOG_LEVEL", &logLevel)
+	telemetrySettings := telemetry.SettingsFromEnv(env)
 	shutdownTimeout := env.Duration("GYOZA_SHUTDOWN_TIMEOUT", 20*time.Second)
 	// localhost by default so local runs don't listen on the network;
 	// deployments set ":9090". Differs from the other binaries' defaults so
@@ -51,16 +53,24 @@ func run() error {
 	if err := env.Err(); err != nil {
 		return err
 	}
-	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: logLevel})))
+	tel, err := telemetry.Setup(ctx, "documents", telemetrySettings)
+	if err != nil {
+		return err
+	}
+	slog.SetDefault(slog.New(tel.LogHandler(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: logLevel}), logLevel)))
+	stopDebug, err := telemetry.StartDebug(telemetrySettings.DebugAddr)
+	if err != nil {
+		return fmt.Errorf("debug listener: %w", err)
+	}
 
 	// Plaintext inside the platform's private network. NewClient doesn't
 	// connect yet, so storage and iam may start after us.
-	storageConn, err := grpc.NewClient(storageAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	storageConn, err := grpc.NewClient(storageAddr, grpc.WithTransportCredentials(insecure.NewCredentials()), telemetry.DialOption())
 	if err != nil {
 		return fmt.Errorf("storage client: %w", err)
 	}
 	defer storageConn.Close() // after the shutdown below: Close saves through storage
-	iamConn, err := grpc.NewClient(iamAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	iamConn, err := grpc.NewClient(iamAddr, grpc.WithTransportCredentials(insecure.NewCredentials()), telemetry.DialOption())
 	if err != nil {
 		return fmt.Errorf("iam client: %w", err)
 	}
@@ -77,7 +87,7 @@ func run() error {
 		nc.Close(context.WithoutCancel(ctx))
 		return err
 	}
-	server := grpc.NewServer()
+	server := grpc.NewServer(telemetry.ServerOption())
 	documents.RegisterGRPC(server, docs)
 	serveErr := make(chan error, 1)
 	go func() { serveErr <- server.Serve(lis) }()
@@ -119,6 +129,13 @@ func run() error {
 	if failed != nil {
 		return failed
 	}
+	if err := stopDebug(shutdownCtx); err != nil {
+		slog.Warn("debug listener shutdown", "err", err)
+	}
 	slog.Info("stopped cleanly")
+	// Last: flush the spans and logs of everything above.
+	if err := tel.Shutdown(shutdownCtx); err != nil {
+		slog.Warn("telemetry flush failed", "err", err)
+	}
 	return nil
 }

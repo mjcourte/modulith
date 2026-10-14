@@ -53,6 +53,10 @@ func runStoreTests(t *testing.T, newStore func(t *testing.T) directory.Store) {
 		{"ShareLockedProject", testShareLockedProject},
 		{"Unshare", testUnshare},
 
+		// Pending shares: store_pending_test.go
+		{"SharePending", testSharePending},
+		{"ClaimPendingShares", testClaimPendingShares},
+
 		// Deletions: store_deletions_test.go
 		{"MarkProjectDeleting", testMarkProjectDeleting},
 		{"DeleteProject", testDeleteProject},
@@ -65,6 +69,7 @@ func runStoreTests(t *testing.T, newStore func(t *testing.T) directory.Store) {
 		{"DeleteUser", testDeleteUser},
 		{"ListDeleting", testListDeleting},
 		{"DeleteExpiredInvites", testDeleteExpiredInvites},
+		{"DeleteExpiredPendingShares", testDeleteExpiredPendingShares},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

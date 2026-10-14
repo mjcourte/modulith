@@ -17,6 +17,11 @@ Performance findings, with evidence. See `services/README.md` for the format.
   it's a round trip to iam per edit. When to act: edit latency or iam load shows it;
   then cache the answer per socket and project for a few seconds (a revoked share then
   takes that long to apply).
+- **Access re-checks poll iam** (2026-10-13): every socket calls `CanRead` once a minute
+  per joined project (`socket.recheck`), a few iam queries each, whether or not
+  anything changed. When to act: iam load from re-checks shows up; then have iam
+  publish revocations (unshare, member removed, account deleting) on NATS and drop
+  sockets on those, keeping a slow poll as the backstop.
 - **Joins block the socket's later messages** while `GetDocument` loads the document
   (messages are handled in order). When to act: users notice a slow first edit after
   switching projects; then load in the background and queue that project's messages.

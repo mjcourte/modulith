@@ -11,6 +11,11 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/nats-io/nats.go/jetstream"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/trace"
 
 	"gyoza/internal/engine"
 	gnats "gyoza/platform/nats"
@@ -114,7 +119,7 @@ func TestConsume(t *testing.T) {
 				}
 			})
 	}()
-	time.Sleep(200 * time.Millisecond) // let the consumer start before publishing
+	waitForConsumer(t, ctx, c.JS, durable)
 
 	for i, actor := range []string{"ann", "poison", "flaky"} {
 		if _, err := log.PublishDelta(ctx, wal.Delta{ProjectID: p, ActorID: actor, Delta: delta(t, "k", fmt.Sprint(i))}); err != nil {
@@ -190,5 +195,73 @@ func TestReplaySkipsUnreadableMessages(t *testing.T) {
 	err := log.DeltasAfter(ctx, p, 0, func(wal.Delta) error { good++; return nil }, func(error) { bad++ })
 	if err != nil || good != 2 || bad != 1 {
 		t.Errorf("replay: %d good, %d bad, %v; want 2, 1, nil", good, bad, err)
+	}
+}
+
+// A delta's trace crosses NATS: the consumer applies it inside the
+// publisher's trace (a browser's edit is one trace, gateway to documents).
+func TestConsumeContinuesTheTrace(t *testing.T) {
+	ctx, c := connect(t)
+	otel.SetTracerProvider(sdktrace.NewTracerProvider())
+	otel.SetTextMapPropagator(propagation.TraceContext{})
+	log := wal.New(c.JS)
+	p := uniqueID("p")
+	durable := uniqueID("test")
+	t.Cleanup(func() { c.JS.DeleteConsumer(context.Background(), gnats.Documents.Name, durable) })
+
+	got := make(chan trace.SpanContext, 1)
+	cctx, stop := context.WithCancel(ctx)
+	done := make(chan error)
+	go func() {
+		done <- log.Consume(cctx, wal.ConsumerConfig{Durable: durable, DeliverNew: true},
+			func(ctx context.Context, d wal.Delta) error {
+				if d.ProjectID == p {
+					got <- trace.SpanContextFromContext(ctx)
+				}
+				return nil
+			}, func(error) {})
+	}()
+	waitForConsumer(t, ctx, c.JS, durable)
+
+	pctx, edit := otel.Tracer("test").Start(ctx, "ws.edit")
+	if _, err := log.PublishDelta(pctx, wal.Delta{ProjectID: p, ActorID: "ann", Delta: delta(t, "k", "v")}); err != nil {
+		t.Fatal(err)
+	}
+	edit.End()
+	select {
+	case sc := <-got:
+		if sc.TraceID() != edit.SpanContext().TraceID() {
+			t.Errorf("applied in trace %s, want the publisher's %s", sc.TraceID(), edit.SpanContext().TraceID())
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatal("the delta wasn't consumed")
+	}
+	stop()
+	if err := <-done; err != nil {
+		t.Fatal(err)
+	}
+}
+
+
+// waitForConsumer waits until the durable consumer has a cluster leader. A
+// DeliverNew consumer fixes where it starts only once its leader is elected
+// (about 60ms after it exists, longer under load): a message published before
+// that is skipped. A fixed sleep lost that race when the whole suite ran.
+func waitForConsumer(t *testing.T, ctx context.Context, js jetstream.JetStream, durable string) {
+	t.Helper()
+	led := func() bool {
+		ctx, cancel := context.WithTimeout(ctx, 2*time.Second) // a slow API call can't outlast the deadline
+		defer cancel()
+		cons, err := js.Consumer(ctx, gnats.Documents.Name, durable)
+		if err != nil {
+			return false
+		}
+		info, err := cons.Info(ctx)
+		return err == nil && info.Cluster != nil && info.Cluster.Leader != ""
+	}
+	for deadline := time.Now().Add(10 * time.Second); !led(); time.Sleep(20 * time.Millisecond) {
+		if time.Now().After(deadline) {
+			t.Fatalf("consumer %s never started", durable)
+		}
 	}
 }

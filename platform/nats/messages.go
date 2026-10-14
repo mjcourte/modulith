@@ -1,13 +1,17 @@
 package nats
 
 import (
+	"context"
 	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
 	natsgo "github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
 )
 
 // The DOCUMENTS stream's messages, as every publisher and reader sees them
@@ -39,8 +43,8 @@ type Delta struct {
 	Payload []byte
 }
 
-// Msg builds the message to publish.
-func (d Delta) Msg() (*natsgo.Msg, error) {
+// Msg builds the message to publish, carrying ctx's trace (InjectTrace).
+func (d Delta) Msg(ctx context.Context) (*natsgo.Msg, error) {
 	subj, err := DocumentDelta(d.ProjectID)
 	if err != nil {
 		return nil, err
@@ -57,6 +61,7 @@ func (d Delta) Msg() (*natsgo.Msg, error) {
 	if d.Origin != "" {
 		msg.Header.Set(HeaderOrigin, d.Origin)
 	}
+	InjectTrace(ctx, msg.Header)
 	return msg, nil
 }
 
@@ -127,4 +132,19 @@ func ParseUserState(subject string) (projectID, userID, kind string, ok bool) {
 		return parts[1], parts[2], parts[3], true
 	}
 	return "", "", "", false
+}
+
+// InjectTrace writes ctx's trace into h (traceparent), so a reader's span can
+// continue it. A no-op until telemetry is set up.
+func InjectTrace(ctx context.Context, h natsgo.Header) {
+	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(http.Header(h)))
+}
+
+// TraceContext returns ctx carrying the trace a message's headers hold (from
+// InjectTrace), for a reader's span to continue or link to.
+func TraceContext(ctx context.Context, h natsgo.Header) context.Context {
+	if h == nil {
+		return ctx
+	}
+	return otel.GetTextMapPropagator().Extract(ctx, propagation.HeaderCarrier(http.Header(h)))
 }

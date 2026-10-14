@@ -16,6 +16,9 @@ import (
 	"time"
 
 	"github.com/coder/websocket"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 
 	gnats "gyoza/platform/nats"
 	"gyoza/services/documents"
@@ -57,6 +60,9 @@ const (
 	maxMessage   = 1 << 20 // a client frame; deltas are at most 256 KiB, base64 adds a third
 	maxUserState = 4 << 10 // a userstate message's data
 	maxEditID    = 64
+	// recheck is how often a socket re-checks read access to its joined
+	// projects, so a revoked share or membership stops the traffic.
+	recheck      = time.Minute
 	writeTimeout = 10 * time.Second
 	pingInterval = 30 * time.Second
 	retryFeed    = 2 * time.Second
@@ -79,6 +85,9 @@ type Hub struct {
 	authz storage.Authorizer
 	bus   Bus
 	now   func() time.Time
+	// recheck is the access re-check interval (the recheck constant;
+	// tests shorten it).
+	recheck time.Duration
 
 	mu       sync.RWMutex
 	sockets  map[*socket]struct{}
@@ -90,7 +99,7 @@ var _ Feed = (*Hub)(nil)
 // New returns a Hub. Run must be running for sockets to receive live
 // traffic.
 func New(docs documents.Service, authz storage.Authorizer, bus Bus) *Hub {
-	return &Hub{docs: docs, authz: authz, bus: bus, now: time.Now,
+	return &Hub{docs: docs, authz: authz, bus: bus, now: time.Now, recheck: recheck,
 		sockets: map[*socket]struct{}{}, projects: map[string]map[*socket]struct{}{}}
 }
 
@@ -99,6 +108,7 @@ func New(docs documents.Service, authz storage.Authorizer, bus Bus) *Hub {
 // this one is shutting down). A feed that fails to start (NATS unreachable)
 // is retried.
 func (h *Hub) Run(ctx context.Context) {
+	defer h.observe()()
 	for {
 		err := h.bus.Run(ctx, h)
 		if ctx.Err() != nil {
@@ -157,6 +167,7 @@ func (h *Hub) serve(ctx context.Context, conn *websocket.Conn, actor string) {
 		t := time.AfterFunc(time.Until(exp), func() { s.close(CloseSessionExpired, "session expired") })
 		defer t.Stop()
 	}
+	go s.recheckLoop(h.recheck)
 	s.send(helloMsg{Type: "hello", Replica: s.replica, ServerTime: h.now().UnixMilli()})
 
 	written := make(chan struct{})
@@ -256,4 +267,46 @@ func (h *Hub) fanout(projectID string, seq uint64, msg func() any) {
 	for s := range subs {
 		s.deliver(projectID, seq, b)
 	}
+}
+
+var (
+	meter = otel.Meter("gyoza/services/gateway/internal/ws")
+	// messages counts client messages by type, presence included: the
+	// busiest message, which gets no spans.
+	messages, _ = meter.Int64Counter("gyoza.ws.messages",
+		metric.WithDescription("Messages received from browsers, by type."), metric.WithUnit("{message}"))
+)
+
+// messageTypes are the types messages are counted under; anything else is
+// "unknown", so a client can't create metric series at will.
+var messageTypes = map[string]bool{"join": true, "leave": true, "edit": true, "userstate": true}
+
+func countMessage(ctx context.Context, typ string) {
+	if !messageTypes[typ] {
+		typ = "unknown"
+	}
+	messages.Add(ctx, 1, metric.WithAttributes(attribute.String("type", typ)))
+}
+
+// observe reports the open sockets and the projects they joined at each
+// collection, until the returned function stops it.
+func (h *Hub) observe() func() {
+	sockets, err1 := meter.Int64ObservableGauge("gyoza.ws.sockets",
+		metric.WithDescription("Open WebSockets."), metric.WithUnit("{socket}"))
+	projects, err2 := meter.Int64ObservableGauge("gyoza.ws.projects",
+		metric.WithDescription("Projects at least one WebSocket has joined."), metric.WithUnit("{project}"))
+	if err := errors.Join(err1, err2); err != nil {
+		return func() {}
+	}
+	reg, err := meter.RegisterCallback(func(_ context.Context, o metric.Observer) error {
+		h.mu.RLock()
+		defer h.mu.RUnlock()
+		o.ObserveInt64(sockets, int64(len(h.sockets)))
+		o.ObserveInt64(projects, int64(len(h.projects)))
+		return nil
+	}, sockets, projects)
+	if err != nil {
+		return func() {}
+	}
+	return func() { reg.Unregister() }
 }

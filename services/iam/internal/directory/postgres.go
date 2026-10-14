@@ -196,3 +196,10 @@ func shareFromRow(r db.IamProjectShare) Share {
 		CreatedAt: r.CreatedAt.UTC(), UpdatedAt: r.UpdatedAt.UTC(),
 	}
 }
+
+func pendingShareFromRow(r db.IamPendingShare) Share {
+	return Share{
+		ProjectID: r.ProjectID, Email: r.Email, Access: Access(r.Access), SharedBy: r.SharedBy,
+		CreatedAt: r.CreatedAt.UTC(), UpdatedAt: r.UpdatedAt.UTC(), ExpiresAt: r.ExpiresAt.UTC(),
+	}
+}

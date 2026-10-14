@@ -279,3 +279,130 @@ func (p *Postgres) ListCloningProjects(ctx context.Context, before time.Time, li
 	}
 	return projectsFromRows(rows), nil
 }
+
+func (p *Postgres) SharePending(ctx context.Context, s Share) (Share, error) {
+	s, err := s.normalizePending()
+	if err != nil {
+		return Share{}, err
+	}
+	if !validID(s.ProjectID) {
+		return Share{}, ErrProjectNotFound
+	}
+	err = p.inTx(ctx, func(q *db.Queries) error {
+		// The project's lock makes pending shares take turns with its
+		// shares, its lock and its deletion.
+		row, err := q.GetProjectForUpdate(ctx, s.ProjectID)
+		if noRows(err) || (err == nil && row.DeletingAt != nil) {
+			return ErrProjectNotFound
+		}
+		if err != nil {
+			return err
+		}
+		pr := projectFromRow(row)
+		if err := checkShareable(pr); err != nil {
+			return err
+		}
+		if !shareActive(pr, "") {
+			return fmt.Errorf("%w: the project is locked to its org", ErrInvalidShare)
+		}
+		saved, err := q.UpsertPendingShare(ctx, db.UpsertPendingShareParams{
+			ProjectID: s.ProjectID, Email: s.Email, Access: string(s.Access), SharedBy: s.SharedBy,
+			At: now(), ExpiresAt: s.ExpiresAt,
+		})
+		s = pendingShareFromRow(saved)
+		return err
+	})
+	if err != nil {
+		return Share{}, err
+	}
+	return s, nil
+}
+
+func (p *Postgres) ListPendingShares(ctx context.Context, projectID string) ([]Share, error) {
+	if _, err := p.GetProject(ctx, projectID); err != nil {
+		return nil, err
+	}
+	rows, err := p.q.ListPendingShares(ctx, projectID)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]Share, len(rows))
+	for i, r := range rows {
+		out[i] = pendingShareFromRow(r)
+	}
+	return out, nil
+}
+
+func (p *Postgres) DeletePendingShare(ctx context.Context, projectID, email string) error {
+	if !validID(projectID) {
+		return nil // can't exist, so it's already gone
+	}
+	_, err := p.q.DeletePendingShare(ctx, db.DeletePendingShareParams{ProjectID: projectID, Email: emailKey(email)})
+	return err
+}
+
+func (p *Postgres) ClaimPendingShares(ctx context.Context, userID, email string, at time.Time) (int, error) {
+	n := 0
+	err := p.inTx(ctx, func(q *db.Queries) error {
+		pending, err := q.ListPendingSharesTo(ctx, db.ListPendingSharesToParams{Email: emailKey(email), ExpiresAt: at})
+		if err != nil {
+			return err
+		}
+		// Projects first (in ID order), then the user: ShareProject's order.
+		projects := make(map[string]Project, len(pending))
+		for _, ps := range pending {
+			row, err := q.GetProjectForUpdate(ctx, ps.ProjectID)
+			if noRows(err) {
+				continue
+			}
+			if err != nil {
+				return err
+			}
+			projects[ps.ProjectID] = projectFromRow(row)
+		}
+		if err := lockLiveUser(ctx, q, userID); err != nil {
+			return err
+		}
+		userOrg := ""
+		if m, err := q.GetMembership(ctx, userID); err == nil {
+			userOrg = m.OrgID
+		} else if !noRows(err) {
+			return err
+		}
+
+		for _, ps := range pending {
+			pr, ok := projects[ps.ProjectID]
+			if !ok || pr.DeletingAt != nil || !shareActive(pr, userOrg) {
+				continue // can't apply yet: stays pending
+			}
+			// Only the transaction that deletes the pending share uses it:
+			// one revoked meanwhile grants nothing.
+			deleted, err := q.DeletePendingShare(ctx, db.DeletePendingShareParams{ProjectID: ps.ProjectID, Email: ps.Email})
+			if err != nil {
+				return err
+			}
+			if deleted == 0 {
+				continue
+			}
+			n++
+			existing, err := q.GetShare(ctx, db.GetShareParams{ProjectID: ps.ProjectID, UserID: userID})
+			switch {
+			case noRows(err):
+				err = q.InsertShare(ctx, db.InsertShareParams{
+					ProjectID: ps.ProjectID, UserID: userID, Access: ps.Access, SharedBy: ps.SharedBy, CreatedAt: now(),
+				})
+			case err != nil:
+			case Access(existing.Access).AtLeast(Access(ps.Access)):
+			default:
+				err = q.UpdateShare(ctx, db.UpdateShareParams{
+					ProjectID: ps.ProjectID, UserID: userID, Access: ps.Access, SharedBy: ps.SharedBy, UpdatedAt: now(),
+				})
+			}
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	return n, err
+}

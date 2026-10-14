@@ -22,6 +22,18 @@ func (q *Queries) ClearInvitedBy(ctx context.Context, invitedBy string) (int64, 
 	return result.RowsAffected(), nil
 }
 
+const clearPendingSharedBy = `-- name: ClearPendingSharedBy :execrows
+UPDATE iam.pending_shares SET shared_by = '' WHERE shared_by = $1
+`
+
+func (q *Queries) ClearPendingSharedBy(ctx context.Context, sharedBy string) (int64, error) {
+	result, err := q.db.Exec(ctx, clearPendingSharedBy, sharedBy)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const clearProjectCreator = `-- name: ClearProjectCreator :execrows
 UPDATE iam.projects SET created_by = '' WHERE created_by = $1
 `
@@ -81,6 +93,27 @@ func (q *Queries) DeleteExpiredInvites(ctx context.Context, arg DeleteExpiredInv
 	return result.RowsAffected(), nil
 }
 
+const deleteExpiredPendingShares = `-- name: DeleteExpiredPendingShares :execrows
+DELETE FROM iam.pending_shares
+WHERE (project_id, email) IN (
+    SELECT ps.project_id, ps.email FROM iam.pending_shares ps WHERE ps.expires_at <= $1 ORDER BY ps.expires_at LIMIT $2
+)
+`
+
+type DeleteExpiredPendingSharesParams struct {
+	ExpiresAt time.Time
+	Limit     int32
+}
+
+// Up to a batch at a time, longest-expired first.
+func (q *Queries) DeleteExpiredPendingShares(ctx context.Context, arg DeleteExpiredPendingSharesParams) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteExpiredPendingShares, arg.ExpiresAt, arg.Limit)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const deleteInvitesTo = `-- name: DeleteInvitesTo :execrows
 DELETE FROM iam.invites WHERE email = $1
 `
@@ -120,12 +153,33 @@ func (q *Queries) DeleteOrgMemberships(ctx context.Context, orgID string) error 
 	return err
 }
 
+const deletePendingSharesTo = `-- name: DeletePendingSharesTo :execrows
+DELETE FROM iam.pending_shares WHERE email = $1
+`
+
+func (q *Queries) DeletePendingSharesTo(ctx context.Context, email string) (int64, error) {
+	result, err := q.db.Exec(ctx, deletePendingSharesTo, email)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const deleteProject = `-- name: DeleteProject :exec
 DELETE FROM iam.projects WHERE id = $1
 `
 
 func (q *Queries) DeleteProject(ctx context.Context, id string) error {
 	_, err := q.db.Exec(ctx, deleteProject, id)
+	return err
+}
+
+const deleteProjectPendingShares = `-- name: DeleteProjectPendingShares :exec
+DELETE FROM iam.pending_shares WHERE project_id = $1
+`
+
+func (q *Queries) DeleteProjectPendingShares(ctx context.Context, projectID string) error {
+	_, err := q.db.Exec(ctx, deleteProjectPendingShares, projectID)
 	return err
 }
 

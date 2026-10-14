@@ -15,14 +15,17 @@ import (
 // Settings is everything iam reads from the environment.
 type Settings struct {
 	Manager         Config
-	CleanupInterval time.Duration // how often unfinished deletions and expired invites are dealt with
+	CleanupInterval time.Duration // how often unfinished deletions, expired invites and pending shares are dealt with
 }
 
 // SettingsFromEnv reads iam's settings. Problems are recorded in env; check
 // env.Err() after reading everything.
 func SettingsFromEnv(env *config.Env) Settings {
 	return Settings{
-		Manager:         Config{InviteTTL: env.Duration("GYOZA_INVITE_TTL", DefaultInviteTTL)},
+		Manager: Config{
+			InviteTTL: env.Duration("GYOZA_INVITE_TTL", DefaultInviteTTL),
+			ShareTTL:  time.Duration(env.PositiveInt("GYOZA_SHARE_EXPIRY_DAYS", int64(DefaultShareTTL/(24*time.Hour)))) * 24 * time.Hour,
+		},
 		CleanupInterval: env.Duration("GYOZA_IAM_CLEANUP_INTERVAL", 10*time.Minute),
 	}
 }

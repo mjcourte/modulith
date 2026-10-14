@@ -33,6 +33,14 @@
 <td><form method="post" action="/projects/{{$p.ID}}/shares/{{.UserID}}/remove" class="inline"><button class="danger">remove</button></form></td></tr>{{end}}
 </table>
 
+<h2>Pending shares ({{len .Pending}})</h2>
+<p>To addresses with no verified account yet: claimed when someone signs in with one.</p>
+<table><tr><th>email</th><th>access</th><th>shared by</th><th>since</th><th>expires</th><th></th></tr>
+{{range .Pending}}<tr><td>{{.Email}}</td><td>{{.Access}}</td><td>{{.SharedBy}}</td><td>{{time .CreatedAt}}</td>
+<td>{{if .Expired}}expired {{end}}{{time .ExpiresAt}}</td>
+<td><form method="post" action="/projects/{{$p.ID}}/pending-shares/remove" class="inline"><input type="hidden" name="email" value="{{.Email}}"><button class="danger">revoke</button></form></td></tr>{{end}}
+</table>
+
 <h2>Assets used ({{len .Uses}})</h2>
 {{template "useTable" .Uses}}
 <div class="box">

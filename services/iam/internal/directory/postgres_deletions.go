@@ -145,6 +145,8 @@ func (p *Postgres) ForgetUser(ctx context.Context, userID string) (int, error) {
 			func() (int64, error) { return q.ClearSharedBy(ctx, userID) },
 			func() (int64, error) { return q.DeleteInvitesTo(ctx, row.Email) },
 			func() (int64, error) { return q.ClearInvitedBy(ctx, userID) },
+			func() (int64, error) { return q.DeletePendingSharesTo(ctx, row.Email) },
+			func() (int64, error) { return q.ClearPendingSharedBy(ctx, userID) },
 			func() (int64, error) { return q.ClearProjectCreator(ctx, userID) },
 		}
 		for _, step := range steps {
@@ -172,6 +174,9 @@ func (p *Postgres) DeleteProject(ctx context.Context, projectID string) error {
 			return err
 		case row.DeletingAt == nil:
 			return fmt.Errorf("%w: project %s", ErrNotDeleting, projectID)
+		}
+		if err := q.DeleteProjectPendingShares(ctx, projectID); err != nil {
+			return err
 		}
 		if err := q.DeleteProjectShares(ctx, projectID); err != nil {
 			return err
@@ -246,5 +251,13 @@ func (p *Postgres) DeleteExpiredInvites(ctx context.Context, before time.Time, l
 		return 0, err
 	}
 	n, err := p.q.DeleteExpiredInvites(ctx, db.DeleteExpiredInvitesParams{ExpiresAt: before, Limit: int32(limit)})
+	return int(n), err
+}
+
+func (p *Postgres) DeleteExpiredPendingShares(ctx context.Context, before time.Time, limit int) (int, error) {
+	if err := checkLimit(limit); err != nil {
+		return 0, err
+	}
+	n, err := p.q.DeleteExpiredPendingShares(ctx, db.DeleteExpiredPendingSharesParams{ExpiresAt: before, Limit: int32(limit)})
 	return int(n), err
 }

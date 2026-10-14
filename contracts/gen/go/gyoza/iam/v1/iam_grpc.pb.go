@@ -31,37 +31,38 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	IAMService_SignIn_FullMethodName           = "/gyoza.iam.v1.IAMService/SignIn"
-	IAMService_GetMe_FullMethodName            = "/gyoza.iam.v1.IAMService/GetMe"
-	IAMService_DeleteAccount_FullMethodName    = "/gyoza.iam.v1.IAMService/DeleteAccount"
-	IAMService_CreateOrg_FullMethodName        = "/gyoza.iam.v1.IAMService/CreateOrg"
-	IAMService_GetOrg_FullMethodName           = "/gyoza.iam.v1.IAMService/GetOrg"
-	IAMService_RenameOrg_FullMethodName        = "/gyoza.iam.v1.IAMService/RenameOrg"
-	IAMService_ListMembers_FullMethodName      = "/gyoza.iam.v1.IAMService/ListMembers"
-	IAMService_SetRole_FullMethodName          = "/gyoza.iam.v1.IAMService/SetRole"
-	IAMService_RemoveMember_FullMethodName     = "/gyoza.iam.v1.IAMService/RemoveMember"
-	IAMService_LeaveOrg_FullMethodName         = "/gyoza.iam.v1.IAMService/LeaveOrg"
-	IAMService_DeleteOrg_FullMethodName        = "/gyoza.iam.v1.IAMService/DeleteOrg"
-	IAMService_InviteMember_FullMethodName     = "/gyoza.iam.v1.IAMService/InviteMember"
-	IAMService_ListOrgInvites_FullMethodName   = "/gyoza.iam.v1.IAMService/ListOrgInvites"
-	IAMService_RevokeInvite_FullMethodName     = "/gyoza.iam.v1.IAMService/RevokeInvite"
-	IAMService_ListMyInvites_FullMethodName    = "/gyoza.iam.v1.IAMService/ListMyInvites"
-	IAMService_AcceptInvite_FullMethodName     = "/gyoza.iam.v1.IAMService/AcceptInvite"
-	IAMService_DeclineInvite_FullMethodName    = "/gyoza.iam.v1.IAMService/DeclineInvite"
-	IAMService_CreateProject_FullMethodName    = "/gyoza.iam.v1.IAMService/CreateProject"
-	IAMService_CloneProject_FullMethodName     = "/gyoza.iam.v1.IAMService/CloneProject"
-	IAMService_GetProject_FullMethodName       = "/gyoza.iam.v1.IAMService/GetProject"
-	IAMService_ListMyProjects_FullMethodName   = "/gyoza.iam.v1.IAMService/ListMyProjects"
-	IAMService_ListTemplates_FullMethodName    = "/gyoza.iam.v1.IAMService/ListTemplates"
-	IAMService_RenameProject_FullMethodName    = "/gyoza.iam.v1.IAMService/RenameProject"
-	IAMService_MoveProjectToOrg_FullMethodName = "/gyoza.iam.v1.IAMService/MoveProjectToOrg"
-	IAMService_SetOrgLocked_FullMethodName     = "/gyoza.iam.v1.IAMService/SetOrgLocked"
-	IAMService_ShareProject_FullMethodName     = "/gyoza.iam.v1.IAMService/ShareProject"
-	IAMService_ListShares_FullMethodName       = "/gyoza.iam.v1.IAMService/ListShares"
-	IAMService_Unshare_FullMethodName          = "/gyoza.iam.v1.IAMService/Unshare"
-	IAMService_DeleteProject_FullMethodName    = "/gyoza.iam.v1.IAMService/DeleteProject"
-	IAMService_CreateTemplate_FullMethodName   = "/gyoza.iam.v1.IAMService/CreateTemplate"
-	IAMService_DeleteTemplate_FullMethodName   = "/gyoza.iam.v1.IAMService/DeleteTemplate"
+	IAMService_SignIn_FullMethodName             = "/gyoza.iam.v1.IAMService/SignIn"
+	IAMService_GetMe_FullMethodName              = "/gyoza.iam.v1.IAMService/GetMe"
+	IAMService_DeleteAccount_FullMethodName      = "/gyoza.iam.v1.IAMService/DeleteAccount"
+	IAMService_CreateOrg_FullMethodName          = "/gyoza.iam.v1.IAMService/CreateOrg"
+	IAMService_GetOrg_FullMethodName             = "/gyoza.iam.v1.IAMService/GetOrg"
+	IAMService_RenameOrg_FullMethodName          = "/gyoza.iam.v1.IAMService/RenameOrg"
+	IAMService_ListMembers_FullMethodName        = "/gyoza.iam.v1.IAMService/ListMembers"
+	IAMService_SetRole_FullMethodName            = "/gyoza.iam.v1.IAMService/SetRole"
+	IAMService_RemoveMember_FullMethodName       = "/gyoza.iam.v1.IAMService/RemoveMember"
+	IAMService_LeaveOrg_FullMethodName           = "/gyoza.iam.v1.IAMService/LeaveOrg"
+	IAMService_DeleteOrg_FullMethodName          = "/gyoza.iam.v1.IAMService/DeleteOrg"
+	IAMService_InviteMember_FullMethodName       = "/gyoza.iam.v1.IAMService/InviteMember"
+	IAMService_ListOrgInvites_FullMethodName     = "/gyoza.iam.v1.IAMService/ListOrgInvites"
+	IAMService_RevokeInvite_FullMethodName       = "/gyoza.iam.v1.IAMService/RevokeInvite"
+	IAMService_ListMyInvites_FullMethodName      = "/gyoza.iam.v1.IAMService/ListMyInvites"
+	IAMService_AcceptInvite_FullMethodName       = "/gyoza.iam.v1.IAMService/AcceptInvite"
+	IAMService_DeclineInvite_FullMethodName      = "/gyoza.iam.v1.IAMService/DeclineInvite"
+	IAMService_CreateProject_FullMethodName      = "/gyoza.iam.v1.IAMService/CreateProject"
+	IAMService_CloneProject_FullMethodName       = "/gyoza.iam.v1.IAMService/CloneProject"
+	IAMService_GetProject_FullMethodName         = "/gyoza.iam.v1.IAMService/GetProject"
+	IAMService_ListMyProjects_FullMethodName     = "/gyoza.iam.v1.IAMService/ListMyProjects"
+	IAMService_ListTemplates_FullMethodName      = "/gyoza.iam.v1.IAMService/ListTemplates"
+	IAMService_RenameProject_FullMethodName      = "/gyoza.iam.v1.IAMService/RenameProject"
+	IAMService_MoveProjectToOrg_FullMethodName   = "/gyoza.iam.v1.IAMService/MoveProjectToOrg"
+	IAMService_SetOrgLocked_FullMethodName       = "/gyoza.iam.v1.IAMService/SetOrgLocked"
+	IAMService_ShareProject_FullMethodName       = "/gyoza.iam.v1.IAMService/ShareProject"
+	IAMService_ListShares_FullMethodName         = "/gyoza.iam.v1.IAMService/ListShares"
+	IAMService_Unshare_FullMethodName            = "/gyoza.iam.v1.IAMService/Unshare"
+	IAMService_RevokePendingShare_FullMethodName = "/gyoza.iam.v1.IAMService/RevokePendingShare"
+	IAMService_DeleteProject_FullMethodName      = "/gyoza.iam.v1.IAMService/DeleteProject"
+	IAMService_CreateTemplate_FullMethodName     = "/gyoza.iam.v1.IAMService/CreateTemplate"
+	IAMService_DeleteTemplate_FullMethodName     = "/gyoza.iam.v1.IAMService/DeleteTemplate"
 )
 
 // IAMServiceClient is the client API for IAMService service.
@@ -105,6 +106,7 @@ type IAMServiceClient interface {
 	ShareProject(ctx context.Context, in *ShareProjectRequest, opts ...grpc.CallOption) (*ShareProjectResponse, error)
 	ListShares(ctx context.Context, in *ListSharesRequest, opts ...grpc.CallOption) (*ListSharesResponse, error)
 	Unshare(ctx context.Context, in *UnshareRequest, opts ...grpc.CallOption) (*UnshareResponse, error)
+	RevokePendingShare(ctx context.Context, in *RevokePendingShareRequest, opts ...grpc.CallOption) (*RevokePendingShareResponse, error)
 	DeleteProject(ctx context.Context, in *DeleteProjectRequest, opts ...grpc.CallOption) (*DeleteProjectResponse, error)
 	// Gyoza templates: service to service only (tooling); never exposed to browsers.
 	CreateTemplate(ctx context.Context, in *CreateTemplateRequest, opts ...grpc.CallOption) (*CreateTemplateResponse, error)
@@ -399,6 +401,16 @@ func (c *iAMServiceClient) Unshare(ctx context.Context, in *UnshareRequest, opts
 	return out, nil
 }
 
+func (c *iAMServiceClient) RevokePendingShare(ctx context.Context, in *RevokePendingShareRequest, opts ...grpc.CallOption) (*RevokePendingShareResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RevokePendingShareResponse)
+	err := c.cc.Invoke(ctx, IAMService_RevokePendingShare_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *iAMServiceClient) DeleteProject(ctx context.Context, in *DeleteProjectRequest, opts ...grpc.CallOption) (*DeleteProjectResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DeleteProjectResponse)
@@ -470,6 +482,7 @@ type IAMServiceServer interface {
 	ShareProject(context.Context, *ShareProjectRequest) (*ShareProjectResponse, error)
 	ListShares(context.Context, *ListSharesRequest) (*ListSharesResponse, error)
 	Unshare(context.Context, *UnshareRequest) (*UnshareResponse, error)
+	RevokePendingShare(context.Context, *RevokePendingShareRequest) (*RevokePendingShareResponse, error)
 	DeleteProject(context.Context, *DeleteProjectRequest) (*DeleteProjectResponse, error)
 	// Gyoza templates: service to service only (tooling); never exposed to browsers.
 	CreateTemplate(context.Context, *CreateTemplateRequest) (*CreateTemplateResponse, error)
@@ -567,6 +580,9 @@ func (UnimplementedIAMServiceServer) ListShares(context.Context, *ListSharesRequ
 }
 func (UnimplementedIAMServiceServer) Unshare(context.Context, *UnshareRequest) (*UnshareResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Unshare not implemented")
+}
+func (UnimplementedIAMServiceServer) RevokePendingShare(context.Context, *RevokePendingShareRequest) (*RevokePendingShareResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RevokePendingShare not implemented")
 }
 func (UnimplementedIAMServiceServer) DeleteProject(context.Context, *DeleteProjectRequest) (*DeleteProjectResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteProject not implemented")
@@ -1102,6 +1118,24 @@ func _IAMService_Unshare_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _IAMService_RevokePendingShare_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RevokePendingShareRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(IAMServiceServer).RevokePendingShare(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: IAMService_RevokePendingShare_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(IAMServiceServer).RevokePendingShare(ctx, req.(*RevokePendingShareRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _IAMService_DeleteProject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DeleteProjectRequest)
 	if err := dec(in); err != nil {
@@ -1274,6 +1308,10 @@ var IAMService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Unshare",
 			Handler:    _IAMService_Unshare_Handler,
+		},
+		{
+			MethodName: "RevokePendingShare",
+			Handler:    _IAMService_RevokePendingShare_Handler,
 		},
 		{
 			MethodName: "DeleteProject",

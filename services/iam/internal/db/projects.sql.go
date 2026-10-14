@@ -10,6 +10,23 @@ import (
 	"time"
 )
 
+const deletePendingShare = `-- name: DeletePendingShare :execrows
+DELETE FROM iam.pending_shares WHERE project_id = $1 AND email = $2
+`
+
+type DeletePendingShareParams struct {
+	ProjectID string
+	Email     string
+}
+
+func (q *Queries) DeletePendingShare(ctx context.Context, arg DeletePendingShareParams) (int64, error) {
+	result, err := q.db.Exec(ctx, deletePendingShare, arg.ProjectID, arg.Email)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const deleteShare = `-- name: DeleteShare :exec
 DELETE FROM iam.project_shares WHERE project_id = $1 AND user_id = $2
 `
@@ -207,6 +224,76 @@ func (q *Queries) ListCloningProjects(ctx context.Context, arg ListCloningProjec
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletingAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPendingShares = `-- name: ListPendingShares :many
+SELECT project_id, email, access, shared_by, created_at, updated_at, expires_at FROM iam.pending_shares WHERE project_id = $1 ORDER BY created_at, email
+`
+
+func (q *Queries) ListPendingShares(ctx context.Context, projectID string) ([]IamPendingShare, error) {
+	rows, err := q.db.Query(ctx, listPendingShares, projectID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []IamPendingShare
+	for rows.Next() {
+		var i IamPendingShare
+		if err := rows.Scan(
+			&i.ProjectID,
+			&i.Email,
+			&i.Access,
+			&i.SharedBy,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.ExpiresAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPendingSharesTo = `-- name: ListPendingSharesTo :many
+SELECT project_id, email, access, shared_by, created_at, updated_at, expires_at FROM iam.pending_shares WHERE email = $1 AND expires_at > $2 ORDER BY project_id
+`
+
+type ListPendingSharesToParams struct {
+	Email     string
+	ExpiresAt time.Time
+}
+
+// The unexpired pending shares to an address, in lock order (by project).
+func (q *Queries) ListPendingSharesTo(ctx context.Context, arg ListPendingSharesToParams) ([]IamPendingShare, error) {
+	rows, err := q.db.Query(ctx, listPendingSharesTo, arg.Email, arg.ExpiresAt)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []IamPendingShare
+	for rows.Next() {
+		var i IamPendingShare
+		if err := rows.Scan(
+			&i.ProjectID,
+			&i.Email,
+			&i.Access,
+			&i.SharedBy,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.ExpiresAt,
 		); err != nil {
 			return nil, err
 		}
@@ -427,4 +514,45 @@ func (q *Queries) UpdateShare(ctx context.Context, arg UpdateShareParams) error 
 		arg.UpdatedAt,
 	)
 	return err
+}
+
+const upsertPendingShare = `-- name: UpsertPendingShare :one
+INSERT INTO iam.pending_shares (project_id, email, access, shared_by, created_at, updated_at, expires_at)
+VALUES ($1, $2, $3, $4, $5, $5, $6)
+ON CONFLICT (project_id, email) DO UPDATE
+SET access = excluded.access, shared_by = excluded.shared_by, updated_at = excluded.updated_at, expires_at = excluded.expires_at
+RETURNING project_id, email, access, shared_by, created_at, updated_at, expires_at
+`
+
+type UpsertPendingShareParams struct {
+	ProjectID string
+	Email     string
+	Access    string
+	SharedBy  string
+	At        time.Time
+	ExpiresAt time.Time
+}
+
+// Sharing with the same address again refreshes the pending share (access,
+// sharer, expiry), keeping its creation time.
+func (q *Queries) UpsertPendingShare(ctx context.Context, arg UpsertPendingShareParams) (IamPendingShare, error) {
+	row := q.db.QueryRow(ctx, upsertPendingShare,
+		arg.ProjectID,
+		arg.Email,
+		arg.Access,
+		arg.SharedBy,
+		arg.At,
+		arg.ExpiresAt,
+	)
+	var i IamPendingShare
+	err := row.Scan(
+		&i.ProjectID,
+		&i.Email,
+		&i.Access,
+		&i.SharedBy,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.ExpiresAt,
+	)
+	return i, err
 }

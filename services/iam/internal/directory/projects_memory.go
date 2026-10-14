@@ -257,3 +257,86 @@ func (m *MemoryStore) ListCloningProjects(ctx context.Context, before time.Time,
 	slices.SortFunc(out, func(a, b Project) int { return cmp.Or(a.CreatedAt.Compare(b.CreatedAt), cmp.Compare(a.ID, b.ID)) })
 	return out[:min(limit, len(out))], nil
 }
+
+func (m *MemoryStore) SharePending(ctx context.Context, s Share) (Share, error) {
+	s, err := s.normalizePending()
+	if err != nil {
+		return Share{}, err
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	p, ok := m.projects[s.ProjectID]
+	if !ok || p.DeletingAt != nil {
+		return Share{}, ErrProjectNotFound
+	}
+	if err := checkShareable(p); err != nil {
+		return Share{}, err
+	}
+	if !shareActive(p, "") {
+		return Share{}, fmt.Errorf("%w: the project is locked to its org", ErrInvalidShare)
+	}
+	key := pendingKey{s.ProjectID, s.Email}
+	s.UpdatedAt = now()
+	s.CreatedAt = s.UpdatedAt
+	if existing, ok := m.pending[key]; ok {
+		s.CreatedAt = existing.CreatedAt
+	}
+	m.pending[key] = s
+	return s, nil
+}
+
+func (m *MemoryStore) ListPendingShares(ctx context.Context, projectID string) ([]Share, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if _, ok := m.projects[projectID]; !ok {
+		return nil, ErrProjectNotFound
+	}
+	var out []Share
+	for key, s := range m.pending {
+		if key.projectID == projectID {
+			out = append(out, s)
+		}
+	}
+	sortPendingShares(out)
+	return out, nil
+}
+
+func (m *MemoryStore) DeletePendingShare(ctx context.Context, projectID, email string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	delete(m.pending, pendingKey{projectID, emailKey(email)}) // missing is fine: safe to retry
+	return nil
+}
+
+func (m *MemoryStore) ClaimPendingShares(ctx context.Context, userID, email string, at time.Time) (int, error) {
+	email = emailKey(email)
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if !m.liveUser(userID) {
+		return 0, ErrUserNotFound
+	}
+	n := 0
+	for key, ps := range m.pending {
+		if key.email != email || ps.expired(at) {
+			continue
+		}
+		p, ok := m.projects[key.projectID]
+		if !ok || p.DeletingAt != nil || !shareActive(p, m.orgOf(userID)) {
+			continue // can't apply yet: stays pending
+		}
+		delete(m.pending, key)
+		n++
+		sk := shareKey{key.projectID, userID}
+		existing, had := m.shares[sk]
+		if had && existing.Access.AtLeast(ps.Access) {
+			continue
+		}
+		s := Share{ProjectID: key.projectID, UserID: userID, Access: ps.Access, SharedBy: ps.SharedBy, CreatedAt: now()}
+		s.UpdatedAt = s.CreatedAt
+		if had {
+			s.CreatedAt = existing.CreatedAt
+		}
+		m.shares[sk] = s
+	}
+	return n, nil
+}

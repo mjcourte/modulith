@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"gyoza/platform/telemetry"
 	"gyoza/services/iam"
 )
 
@@ -29,7 +30,7 @@ type CoreIdentityProvider struct {
 var _ iam.IdentityProvider = (*CoreIdentityProvider)(nil)
 
 func NewCoreIdentityProvider(url, apiKey string) *CoreIdentityProvider {
-	return &CoreIdentityProvider{URL: strings.TrimRight(url, "/"), APIKey: apiKey, Client: &http.Client{Timeout: 10 * time.Second}}
+	return &CoreIdentityProvider{URL: strings.TrimRight(url, "/"), APIKey: apiKey, Client: &http.Client{Timeout: 10 * time.Second, Transport: telemetry.HTTPTransport(nil)}}
 }
 
 // DeleteUser removes the account with its sessions. The core answers OK for

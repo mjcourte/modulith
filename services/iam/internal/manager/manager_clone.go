@@ -16,6 +16,10 @@ import (
 	"fmt"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
+
+	"gyoza/platform/telemetry"
 	"gyoza/services/iam/internal/directory"
 	"gyoza/services/storage"
 )
@@ -60,7 +64,9 @@ func (m *Manager) CloneProject(ctx context.Context, actorID, sourceID string, ta
 }
 
 // finishClone runs a clone's remaining steps; each can be repeated.
-func (m *Manager) finishClone(ctx context.Context, clone directory.Project) (directory.Project, error) {
+func (m *Manager) finishClone(ctx context.Context, clone directory.Project) (_ directory.Project, err error) {
+	ctx, span := tracer.Start(ctx, "iam.finish_clone", trace.WithAttributes(attribute.String("gyoza.project_id", clone.ID), attribute.String("gyoza.cloned_from", clone.ClonedFrom)))
+	defer telemetry.End(span, &err)
 	if _, err := m.storage.CopyProjectFiles(ctx, clone.CreatedBy, clone.ClonedFrom, clone.ID); err != nil {
 		return clone, fmt.Errorf("copy files of %s into clone %s: %w", clone.ClonedFrom, clone.ID, err)
 	}
