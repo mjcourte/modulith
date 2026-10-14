@@ -3,6 +3,9 @@
     - assets/DAM, upload/download/link/unlink/share
     - projects, crud/share, listing, open a project (the canvas is a no go until engine probably?)
 
+    - project listing page + empty
+    - DAM/library page + empty
+
 - breakpoint
     - common assets: font lib?
     - ugh that means a font service domain

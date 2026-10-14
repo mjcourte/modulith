@@ -70,27 +70,52 @@ full-screen now, the project page (later the canvas) as a side panel.
   roles, remove members, and invite by email, list or revoke invites ("no email is
   sent"). Controls follow the role; a 403 shows as a toast.
 
-### Step 2.2: library (after storage's shelf and shares)
+### Step 2.2: projects (detailed 2026-10-14; built before the library)
 
-- `<FileBrowser>` scoped by the workspace: breadcrumb (`/folders/{id}/path`) and
-  contents (`/folders`) as a grid or list; new folder, rename, and move (folder picker).
-- Upload: drop zone → `POST /uploads` → `XMLHttpRequest` PUT to the presigned URL (for
-  progress) → `/complete`. A queue panel; handle 410 expired.
-- Download via `/assets/{id}/download` and `<a download>`.
-- Asset drawer: metadata, versions and revert, delete, share (by email), copy, and add
-  to project (offer a fork on `FORK_REQUIRED`).
-- Deleting a non-empty folder: confirm with the 409 counts, then `?tree=true`.
-- `/shared`: what is shared with me, read-only, with "make my own copy".
-- `/trash`: restore, the time left before the purge, and the usage count.
+API facts: `GET /projects` returns everything the user can reach (their own, their
+org's, shared with them; oldest first, paged), each with its `owner`, so the page
+filters on the client. `GET /templates` lists templates.
 
-### Step 2.3: projects
+1. **List:** `src/api/projects.ts` (types, `useInfiniteQuery`, "Load more"). Tabs:
+   **Workspace** (owner = `useWorkspace().owner`; switching filters without a refetch),
+   **Shared with me** (owner is neither the user nor their org), **Templates**
+   (read-only, "Use template" clones into the workspace). Cards: a preview placeholder
+   (until the engine renders one), name, updated date, owner badge, a lock if
+   `orgLocked`. A click opens `/projects/$id`.
+2. **Create and basic actions:** a "New project" dialog (name; owner = the workspace;
+   for an org, an org-lock switch, on by default). A "⋯" menu on each card: rename, delete
+   (confirm).
+3. **More actions:** clone (target owner; a locked project offers only its org), move to
+   org (personal projects, with an org), org lock (org admins), and the share dialog
+   ("Sharing" below; pending shares revocable with
+   `DELETE /projects/{id}/pending-shares/{email}`).
+- `/projects/$id`: a placeholder for opening a project. It shows the header and the
+  document's metadata (headers of `GET /projects/{id}/document`), and later the shelf in
+  a `<FileBrowser>` panel (unlink, "update available"). No canvas or WebSocket yet.
 
-- `/projects`: the workspace's projects, and a Templates tab (read-only, clone).
-- Create dialog, project menu, share dialog: see "Projects" and "Sharing" below.
-  Pending shares can be revoked (`DELETE /projects/{id}/pending-shares/{email}`).
-- `/projects/$id`: a placeholder for opening a project. It shows the header, the
-  document's metadata (headers of `GET /projects/{id}/document`) and the shelf in a
-  `<FileBrowser>` panel (unlink, "update available"). No canvas or WebSocket yet.
+### Step 2.3: library (detailed 2026-10-14)
+
+Browsing and files need nothing new from the backend; share, copy and link wait for
+[storage/PLAN.md](../../services/storage/PLAN.md). `GET /folders` returns one folder's
+whole view: `path` (breadcrumbs), `folders`, and `assets` (paged).
+
+1. **Browse:** `<FileBrowser>` scoped to the workspace's owner, folder in the URL
+   (`/library?folder=<id>`, so back and links work). A top bar with breadcrumbs, New
+   folder, Upload, and a grid/list toggle. Folders first, then assets, as cards with a
+   **category icon** (image, vector, video, audio, font, pdf, json, text, other). There
+   are no thumbnails: a real preview needs a presigned download per asset, so previews
+   wait for a backend thumbnail (an Open entry for storage's OPTIMIZATIONS.md). Empty
+   state: "Drop files here or click Upload".
+2. **Files:** upload by a whole-body drop zone or the button: `POST /uploads` →
+   `XMLHttpRequest` PUT to the presigned URL (for progress) → `/complete`, with a queue
+   panel; handle 410 expired. Download via `/assets/{id}/download` and `<a download>`.
+   An asset drawer (double-click or "Open"): name, description, tags, type and size,
+   versions with revert, replace (a new version), download.
+3. **Organise:** rename and move (folder picker) for folders and assets, delete
+   (non-empty folder: confirm with the 409 counts, then `?tree=true`), `/trash`
+   (restore, time left before the purge, usage count).
+4. **After storage's steps:** share (by email), copy ("make my own copy"), add to
+   project (offer a fork on `FORK_REQUIRED`), ownership badges, `/shared`.
 
 ### Verification
 
