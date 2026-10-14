@@ -1,7 +1,7 @@
 # Plan notes: web app (`apps/web`)
 
-Step 1 (the sign-in shell) is done: see [README.md](README.md). The sections below are
-UI details the backend plans rely on (2026-10-11), to build one at a time. Related:
+Built so far: [README.md](README.md). Part 2 below is in progress; the sections after it
+are UI details the backend plans rely on (2026-10-11). Related:
 [gateway/PLAN.md](../../services/gateway/PLAN.md),
 [iam/PLAN.md](../../services/iam/PLAN.md).
 
@@ -43,21 +43,22 @@ full-screen now, the project page (later the canvas) as a side panel.
 - Shared items are read-only: edit actions explain "make your own copy to edit". The
   copy is fully the user's, free to share back or not.
 
-### Step 2.0: groundwork
+### Where we are (2026-10-14)
 
-- Fix `src/api/client.ts`: the header is `'ontent-Type'`, so every mutating request
-  fails the gateway's CSRF check.
-- App shell: a pathless layout route `src/routes/_app.tsx` holding the session guard
-  (moved from `index.tsx`) and a sidebar: workspace switcher, Projects, Library, Shared
-  with me, Trash, Org, and a user menu (profile, sign out).
-- `useWorkspace()`: the active owner from `useMe()` ("Workspace switcher" below), the
-  last choice in localStorage (wrapped in try/catch).
-- API layer: one file per area (`orgs.ts`, `invites.ts`, `projects.ts`, `assets.ts`,
-  `folders.ts`, `uploads.ts`, `shares.ts`) following `me.ts`. Mutations invalidate by
-  query key; paged lists use `useInfiniteQuery` on `pageToken`/`nextPageToken`. One
-  `<ErrorMessage>` maps `ApiError.code` to text.
-- shadcn components: sidebar, dialog, alert-dialog, dropdown-menu, input, label, select,
-  switch, table, sonner.
+- **2.0 groundwork: done** (`client.ts` fix, the `_app` shell and sidebar, the workspace
+  switcher; see the README). Added as each step needs them: the API files `invites.ts`,
+  `assets.ts`, `folders.ts`, `uploads.ts`, `shares.ts` (mutations invalidate by query
+  key; paged lists use `useInfiniteQuery`); one `<ErrorMessage>` mapping
+  `ApiError.code` to text; shadcn dialog, alert-dialog, label, select, switch, table,
+  sonner.
+- **2.1:** only `CreateOrgForm` (on Home for now). `/profile` and `/org` are stubs.
+- **2.2.1: in progress.** `api/projects.ts` (`useProjects`, `useTemplates`) and
+  `/projects` as a plain list of every reachable `ready` project with "Load more". Next:
+  shadcn tabs, card, badge; the Workspace and Shared with me filters (`useWorkspace()`);
+  a `TemplatesTab`; a `ProjectCard`; the `/projects/$projectId` route; grid and empty
+  states.
+- **Home cleanup:** remove the workspace test buttons, the `<pre>` and the sign-out
+  button (the sidebar has them now); move `CreateOrgForm` to `/org`.
 
 ### Step 2.1: profile and orgs
 
@@ -124,73 +125,6 @@ whole view: `path` (breadcrumbs), `folders`, and `assets` (paged).
 restore; share a folder and check the other account can download but not rename, and
 can copy; link and unlink; create, share, clone and delete a project.
 
-## Step 1: kickstart (planned 2026-10-13)
-
-Goal: a shell that signs in with Google through the gateway and shows "hello <name>"
-from `GET /api/me`. Nothing else; later sections come one at a time after it.
-
-**Prerequisite:** Node 22 LTS or newer (not installed as of 2026-10-13).
-
-**Stack:** React + TypeScript + Vite, Tailwind v4 (`@tailwindcss/vite`), shadcn/ui
-(components added only as needed), TanStack Query, TanStack Router (file-based, via
-its Vite plugin), `supertokens-auth-react` (ThirdParty with Google, Session). npm as
-the package manager (ships with Node; revisit pnpm workspaces only if more `apps/*`
-need shared packages). Router and npm recommended, to confirm.
-
-**Dev origin and the proxy.** The gateway has no CORS, uses SameSite cookies, requires
-`application/json` on changing requests, and the WebSocket is same-origin only. So the
-browser must see one origin:
-
-- Vite serves on `http://localhost:3000` and proxies `/api` (with `ws: true` for
-  `/api/ws`) and `/auth` to the gateway on `localhost:8080`.
-- `GYOZA_PUBLIC_URL=http://localhost:3000` while developing the web app (it sets the
-  gateway's SuperTokens `WebsiteDomain`/`APIDomain`). Note it in `.env.example`.
-- Port 3000 and `/auth/callback/google` are what the SuperTokens demo Google client is
-  believed to allow (gateway/PLAN.md); verify on first sign-in. If the gateway's dev
-  pages break under the new public URL, keep them reachable via the proxy too.
-- Production: the gateway (or whatever fronts it) serves the built `dist/` on the same
-  origin. Not part of this step.
-
-**Layout:**
-
-```
-apps/web/
-  package.json, package-lock.json, vite.config.ts, tsconfig*.json, index.html
-  components.json                 shadcn config
-  src/
-    main.tsx                      SuperTokens.init, QueryClientProvider, RouterProvider
-    auth.ts                       SuperTokens config (apiBasePath/websiteBasePath /auth)
-    index.css                     Tailwind
-    api/client.ts                 fetch wrapper: same-origin credentials, JSON, parses
-                                  {"error": {"code", "message"}} into an ApiError
-    api/me.ts                     useMe() over GET /api/me
-    routes/__root.tsx             layout
-    routes/index.tsx              home: requires a session, shows the user
-    routes/auth/...               SuperTokens' prebuilt sign-in UI and Google callback
-    components/ui/                shadcn components
-```
-
-**Steps:**
-
-1. Scaffold with `npm create vite@latest` (react-ts) into `apps/web`; strip the demo.
-2. Add Tailwind v4 and `shadcn init` (path alias `@/` in tsconfig and Vite).
-3. Vite config: port 3000 (`strictPort`), the proxy above.
-4. TanStack Router (plugin + generated route tree) and TanStack Query.
-5. SuperTokens: init, the `/auth` routes, a session guard on the home route,
-   sign-out button.
-6. `api/client.ts` + `useMe()`; home shows name/email/avatar from `GetMe`.
-7. `scripts/web.sh` like `scripts/admin.sh` (finds Node, `npm install` if needed,
-   `npm run dev`); `.gitignore` for `node_modules/` and `dist/`.
-8. Smoke test: `scripts/gyoza.sh` with `GYOZA_PUBLIC_URL=http://localhost:3000`, then
-   `scripts/web.sh`; sign in with Google, see the home page, reload (session cookie
-   survives), sign out.
-9. Docs: README records the stack, commands and dev origin; CLAUDE.md gets the Node
-   commands next to the Go ones.
-
-**Deliberately not now:** tests (add Vitest when there is logic worth testing), API type
-generation (hand-written wire types until they hurt), ESLint beyond Vite's default,
-the WebSocket, the WASM engine, the workspace switcher.
-
 ## Sign-in and orgs
 
 - All data calls go to the gateway's REST/JSON API (see gateway/PLAN.md); files go
@@ -203,15 +137,8 @@ the WebSocket, the WASM engine, the workspace switcher.
 
 ## Workspace switcher
 
-- A selector for the active workspace: "Personal" (the user) or their org (a user has at
-  most one, so at most two entries; `GetMe` returns the org). It scopes what the app
-  shows (library, folders, trash, projects) and is the default owner for new projects
-  and uploads (the create-project widget starts on it).
-- It changes the owner the UI passes to the APIs, never who is acting: `actor_id` is
-  always the signed-in user, so permissions, `CreatedBy` and sharing stay personal
-  (recommended 2026-10-11, to confirm). The backend needs nothing new: every owner-scoped call already
-  takes the owner explicitly and checks the user may act for it.
-- Remember the last choice per browser.
+Built (README). Still to apply: it scopes the library, folders, trash and projects, and
+is the default owner for new projects and uploads.
 
 ## Projects
 
