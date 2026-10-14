@@ -8,3 +8,6 @@ CLAUDE.md
 # SigNoz: rendered by foundryctl from deploy/observability/casting.yaml
 deploy/observability/pours/
 deploy/observability/casting.yaml.lock
+
+# go build outputs in windows
+*.exe
