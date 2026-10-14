@@ -7,13 +7,21 @@ package manager
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"time"
+
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
+
+	"gyoza/platform/telemetry"
 )
 
 // CleanupReport says what one Cleanup run did.
 type CleanupReport struct {
 	ExpiredInvites int
+	ExpiredShares  int // pending shares unclaimed in time
 	// Deletions finished (or found already done) this run.
 	Users, Orgs, Projects int
 	// Clones cut off part-way: finished, or abandoned (deleted) because their
@@ -32,6 +40,16 @@ func (m *Manager) Cleanup(ctx context.Context) (CleanupReport, error) {
 	for {
 		n, err := m.store.DeleteExpiredInvites(ctx, m.now(), cascadeBatch)
 		r.ExpiredInvites += n
+		if err != nil {
+			errs = append(errs, err)
+		}
+		if err != nil || n < cascadeBatch {
+			break
+		}
+	}
+	for {
+		n, err := m.store.DeleteExpiredPendingShares(ctx, m.now(), cascadeBatch)
+		r.ExpiredShares += n
 		if err != nil {
 			errs = append(errs, err)
 		}
@@ -81,21 +99,29 @@ func (m *Manager) Cleanup(ctx context.Context) (CleanupReport, error) {
 	return r, errors.Join(errs...)
 }
 
+var tracer = otel.Tracer("gyoza/services/iam/internal/manager")
+
 // RunCleanup runs Cleanup now and then every interval until ctx is done,
 // logging what each run did. Run it in its own goroutine.
 func (m *Manager) RunCleanup(ctx context.Context, interval time.Duration) {
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 	for {
-		r, err := m.Cleanup(ctx)
+		// Each run is a trace of its own: its queries and calls to storage
+		// are only traced inside one.
+		rctx, span := tracer.Start(ctx, "iam.cleanup", trace.WithNewRoot())
+		r, err := m.Cleanup(rctx)
+		span.SetAttributes(attribute.String("gyoza.done", fmt.Sprintf("%+v", r)))
 		switch {
 		case ctx.Err() != nil:
+			span.End()
 			return // shutting down: an error now is just the cancellation
 		case err != nil:
-			slog.Error("iam: cleanup failed", "err", err, "done", r)
+			slog.ErrorContext(rctx, "iam: cleanup failed", "err", err, "done", r)
 		case r != CleanupReport{}:
-			slog.Info("iam: cleanup", "done", r)
+			slog.InfoContext(rctx, "iam: cleanup", "done", r)
 		}
+		telemetry.End(span, &err)
 		select {
 		case <-ctx.Done():
 			return

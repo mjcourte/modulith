@@ -255,6 +255,13 @@ func (s *Server) Unshare(ctx context.Context, req *pb.UnshareRequest) (*pb.Unsha
 	return &pb.UnshareResponse{}, nil
 }
 
+func (s *Server) RevokePendingShare(ctx context.Context, req *pb.RevokePendingShareRequest) (*pb.RevokePendingShareResponse, error) {
+	if err := s.svc.RevokePendingShare(ctx, req.GetActorId(), req.GetProjectId(), req.GetEmail()); err != nil {
+		return nil, errStatus(err)
+	}
+	return &pb.RevokePendingShareResponse{}, nil
+}
+
 func (s *Server) DeleteProject(ctx context.Context, req *pb.DeleteProjectRequest) (*pb.DeleteProjectResponse, error) {
 	if err := s.svc.DeleteProject(ctx, req.GetActorId(), req.GetProjectId()); err != nil {
 		return nil, errStatus(err)

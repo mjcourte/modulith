@@ -81,6 +81,7 @@ func (q *queries) counts(ctx context.Context) ([]Count, error) {
 		UNION ALL SELECT 'iam.invites', count(*) FROM iam.invites
 		UNION ALL SELECT 'iam.projects', count(*) FROM iam.projects
 		UNION ALL SELECT 'iam.project_shares', count(*) FROM iam.project_shares
+		UNION ALL SELECT 'iam.pending_shares', count(*) FROM iam.pending_shares
 		UNION ALL SELECT 'storage.objects', count(*) FROM storage.objects
 		UNION ALL SELECT 'storage.folders', count(*) FROM storage.folders
 		UNION ALL SELECT 'storage.assets', count(*) FROM storage.assets
@@ -239,6 +240,25 @@ func (q *queries) shares(ctx context.Context, projectID, userID string) ([]Share
 		JOIN iam.users u ON u.id = s.user_id
 		WHERE ($1 = '' OR s.project_id::text = $1) AND ($2 = '' OR s.user_id = $2)
 		ORDER BY s.created_at DESC LIMIT $3`, projectID, userID, listLimit)
+}
+
+type PendingShareRow struct {
+	Email     string
+	Access    string
+	SharedBy  string
+	CreatedAt time.Time
+	ExpiresAt time.Time
+	Expired   bool
+}
+
+// pendingShares lists a project's shares to addresses with no verified
+// account yet, expired ones included (the cleanup loop removes those).
+func (q *queries) pendingShares(ctx context.Context, projectID string) ([]PendingShareRow, error) {
+	return collect[PendingShareRow](ctx, q, `
+		SELECT email, access, shared_by, created_at, expires_at, expires_at <= now() AS expired
+		FROM iam.pending_shares
+		WHERE project_id::text = $1
+		ORDER BY created_at DESC LIMIT $2`, projectID, listLimit)
 }
 
 // --- assets ---

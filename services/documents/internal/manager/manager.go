@@ -7,7 +7,13 @@ import (
 	"log/slog"
 	"sync"
 
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/trace"
+
 	"gyoza/internal/engine"
+	"gyoza/platform/telemetry"
 	"gyoza/services/documents/internal/live"
 	"gyoza/services/documents/internal/snapshots"
 	"gyoza/services/documents/internal/wal"
@@ -43,7 +49,14 @@ type Manager struct {
 
 	usesMu      sync.Mutex
 	projectUses map[string]*projectUses
+
+	metrics metric.Registration // the loaded-documents gauge; nil if it failed
 }
+
+var (
+	tracer = otel.Tracer("gyoza/services/documents/internal/manager")
+	meter  = otel.Meter("gyoza/services/documents/internal/manager")
+)
 
 func New(eng engine.Engine, store snapshots.Store, authz Authorizer, uses AssetUses, cfg Config) *Manager {
 	m := &Manager{
@@ -51,18 +64,33 @@ func New(eng engine.Engine, store snapshots.Store, authz Authorizer, uses AssetU
 		projectUses: map[string]*projectUses{},
 	}
 	m.docs = live.New(m.load, m.save, cfg.Live)
+	loaded, err := meter.Int64ObservableGauge("gyoza.documents.loaded",
+		metric.WithDescription("Documents open in this replica."), metric.WithUnit("{document}"))
+	if err == nil { // only a malformed name fails, which a test would catch
+		m.metrics, _ = meter.RegisterCallback(func(_ context.Context, o metric.Observer) error {
+			o.ObserveInt64(loaded, int64(m.docs.Len()))
+			return nil
+		}, loaded)
+	}
 	return m
 }
 
 // Close saves every open document with unsaved changes and closes them.
 func (m *Manager) Close(ctx context.Context) error {
+	if m.metrics != nil {
+		m.metrics.Unregister()
+	}
 	return m.docs.Close(ctx)
 }
 
 // load is the registry's Loader (README "LoadOrInit"): the latest snapshot,
 // or a new empty document stored at once as version 1, then the deltas the
 // stream holds after it.
-func (m *Manager) load(ctx context.Context, projectID string) (engine.Document, uint64, error) {
+func (m *Manager) load(ctx context.Context, projectID string) (_ engine.Document, _ uint64, err error) {
+	// Restoring the snapshot and replaying the stream: CPU the I/O spans
+	// under it don't show.
+	ctx, span := tracer.Start(ctx, "document.load", trace.WithAttributes(attribute.String("gyoza.project_id", projectID)))
+	defer telemetry.End(span, &err)
 	doc, seq, err := m.restore(ctx, projectID)
 	if err != nil {
 		return nil, 0, err
@@ -121,14 +149,17 @@ func (m *Manager) replay(ctx context.Context, projectID string, doc engine.Docum
 	if m.cfg.WAL == nil {
 		return seq, nil
 	}
+	replayed := 0
+	defer func() { trace.SpanFromContext(ctx).SetAttributes(attribute.Int("gyoza.deltas_replayed", replayed)) }()
 	err := m.cfg.WAL.DeltasAfter(ctx, projectID, seq, func(d wal.Delta) error {
 		if _, err := doc.Edit(ctx, streamInput(d)); err != nil {
-			slog.Error("documents: skipping a delta that can't be applied", "project", projectID, "seq", d.Seq, "err", err)
+			slog.ErrorContext(ctx, "documents: skipping a delta that can't be applied", "project", projectID, "seq", d.Seq, "err", err)
 		}
 		seq = d.Seq
+		replayed++
 		return nil
 	}, func(err error) {
-		slog.Error("documents: skipping a delta that can't be read", "project", projectID, "err", err)
+		slog.ErrorContext(ctx, "documents: skipping a delta that can't be read", "project", projectID, "err", err)
 	})
 	if err != nil {
 		return 0, fmt.Errorf("replay deltas of %s: %w", projectID, err)
@@ -154,7 +185,13 @@ const staleRetries = 3
 //
 // A failure is retried by the registry; a retry after a failed announcement
 // stores the snapshot again (one extra version, harmless).
-func (m *Manager) save(ctx context.Context, projectID string, doc engine.Document, snap engine.Snapshot, seq uint64, last live.Edit) (uint64, error) {
+func (m *Manager) save(ctx context.Context, projectID string, doc engine.Document, snap engine.Snapshot, seq uint64, last live.Edit) (_ uint64, err error) {
+	// Usually the debounce timer's call, with no trace to join: a trace of
+	// its own (always kept: one per document per debounce, and a failed save
+	// is worth seeing).
+	ctx, span := tracer.Start(ctx, "document.save", trace.WithAttributes(attribute.String("gyoza.project_id", projectID),
+		attribute.Int64("gyoza.seq", int64(seq)), attribute.Int("gyoza.snapshot_bytes", len(snap.Payload))))
+	defer telemetry.End(span, &err)
 	edit := snapshots.Edit{By: last.By, At: last.At}
 	ref, err := m.store.Put(ctx, projectID, snap, seq, edit)
 	for i := 0; errors.Is(err, snapshots.ErrStale) && i < staleRetries; i++ {

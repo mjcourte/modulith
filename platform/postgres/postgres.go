@@ -5,8 +5,10 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
+	"github.com/exaring/otelpgx"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -27,6 +29,9 @@ func Connect(ctx context.Context, url, appName string) (*pgxpool.Pool, error) {
 	// real values each time costs microseconds. See
 	// services/storage/OPTIMIZATIONS.md.
 	params["plan_cache_mode"] = "force_custom_plan"
+	// One span per query (a no-op until telemetry is set up). The SQL is kept
+	// as an attribute with its $1 placeholders, never the values.
+	cfg.ConnConfig.Tracer = otelpgx.NewTracer(otelpgx.WithSpanNameFunc(spanName))
 
 	pool, err := pgxpool.NewWithConfig(ctx, cfg)
 	if err != nil {
@@ -41,4 +46,20 @@ func Connect(ctx context.Context, url, appName string) (*pgxpool.Pool, error) {
 		return nil, fmt.Errorf("ping database: %w", err)
 	}
 	return pool, nil
+}
+
+// spanName names a query's span after sqlc's "-- name: GetShare :one"
+// comment, or else its first word (SELECT, BEGIN, ...): the SQL itself is
+// too long and varied to name spans by.
+func spanName(sql string) string {
+	sql = strings.TrimSpace(sql)
+	if rest, ok := strings.CutPrefix(sql, "-- name: "); ok {
+		if name, _, ok := strings.Cut(rest, " "); ok && name != "" {
+			return name
+		}
+	}
+	if fields := strings.Fields(sql); len(fields) > 0 {
+		return strings.ToUpper(fields[0])
+	}
+	return "query"
 }

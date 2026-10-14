@@ -30,6 +30,7 @@ type world struct {
 	t   *testing.T
 	iam *iam.Manager
 	bus *memBus
+	hub *ws.Hub
 	srv *httptest.Server
 }
 
@@ -85,7 +86,7 @@ func newWorldWith(t *testing.T, wrap func(documents.Service) documents.Service) 
 		}
 		srv.Close()
 	})
-	return &world{t: t, iam: m, bus: bus, srv: srv}
+	return &world{t: t, iam: m, bus: bus, hub: hub, srv: srv}
 }
 
 // memTransfer moves snapshot bytes through storage.Memory's fake S3.

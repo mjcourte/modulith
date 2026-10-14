@@ -65,15 +65,23 @@ const (
 	AccessEditor Access = "editor" // change the document and the project's files
 )
 
-// Share gives one user access to a project they don't otherwise reach.
+// Share gives one user access to a project they don't otherwise reach. A
+// pending share is addressed to an email instead (Email set, UserID ""): one
+// with no verified account yet. Signing in with that address turns it into a
+// share (ClaimPendingShares); unclaimed by ExpiresAt, it's dropped.
 type Share struct {
 	ProjectID string
-	UserID    string
+	UserID    string // "" on a pending share
+	Email     string // pending shares only, lowercased
 	Access    Access // viewer or editor
 	SharedBy  string // user ID of whoever shared it
 	CreatedAt time.Time
 	UpdatedAt time.Time // last change of Access
+	ExpiresAt time.Time // pending shares only
 }
+
+// Pending reports whether s is addressed to an email, not yet a user.
+func (s Share) Pending() bool { return s.UserID == "" }
 
 // ProjectQuery selects projects within exactly one scope. Listings never
 // include projects still cloning.
@@ -149,4 +157,23 @@ type ProjectStore interface {
 	// Unshare removes a user's share. Removing a missing share is not an
 	// error, so it's safe to retry.
 	Unshare(ctx context.Context, projectID, userID string) error
+
+	// SharePending shares a project with an email address (s.Email, no
+	// UserID), or refreshes the pending share to it: access, sharer and
+	// expiry change, CreatedAt is kept. The project rules are ShareProject's;
+	// a locked project takes none (the address can't be in its org yet).
+	SharePending(ctx context.Context, s Share) (Share, error)
+	// ListPendingShares returns a project's pending shares, expired ones
+	// included (so they can be shared again), oldest first.
+	ListPendingShares(ctx context.Context, projectID string) ([]Share, error)
+	// DeletePendingShare removes the pending share to an email (any letter
+	// case). Removing a missing one is not an error.
+	DeletePendingShare(ctx context.Context, projectID, email string) error
+	// ClaimPendingShares turns the pending shares to email that are unexpired
+	// at the given time into shares for userID, and returns how many it used
+	// up. A share the user already has keeps the greater access. Those it
+	// can't apply yet stay pending: a project being deleted, or one locked to
+	// an org the user isn't in. Whether email is the user's verified address
+	// is the Manager's check.
+	ClaimPendingShares(ctx context.Context, userID, email string, at time.Time) (int, error)
 }

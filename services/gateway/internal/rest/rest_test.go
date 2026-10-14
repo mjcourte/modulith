@@ -90,6 +90,19 @@ func TestRESTProjectsAndShares(t *testing.T) {
 		t.Errorf("clone = %s", clone.raw)
 	}
 
+	// An address with no account: a pending share, listed with its email.
+	pending := w.must(http.StatusOK, ann, "POST", "/projects/"+id+"/shares", map[string]any{"email": "dan@example.com", "access": "editor"})
+	if str(pending.body, "userId") != "" || str(pending.body, "email") != "dan@example.com" || str(pending.body, "expiresAt") == "" {
+		t.Errorf("pending share = %s", pending.raw)
+	}
+	if shares := w.must(http.StatusOK, ann, "GET", "/projects/"+id+"/shares", nil); !strings.Contains(string(shares.raw), `"email":"dan@example.com"`) {
+		t.Errorf("GET shares = %s; want dan's pending share", shares.raw)
+	}
+	w.must(http.StatusNoContent, ann, "DELETE", "/projects/"+id+"/pending-shares/dan@example.com", nil)
+	if shares := w.must(http.StatusOK, ann, "GET", "/projects/"+id+"/shares", nil); strings.Contains(string(shares.raw), "dan@example.com") {
+		t.Errorf("GET shares after revoking = %s", shares.raw)
+	}
+
 	w.must(http.StatusNoContent, ann, "DELETE", "/projects/"+id+"/shares/"+bob, nil)
 	w.must(http.StatusNoContent, ann, "DELETE", "/projects/"+id, nil)
 	if r := w.call(ann, "GET", "/projects/"+id, nil); r.status < 400 {

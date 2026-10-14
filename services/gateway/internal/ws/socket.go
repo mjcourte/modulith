@@ -11,9 +11,14 @@ import (
 	"time"
 
 	"github.com/coder/websocket"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 
 	"gyoza/internal/engine"
 	gnats "gyoza/platform/nats"
+	"gyoza/platform/telemetry"
 	"gyoza/services/gateway/internal/rest"
 	"gyoza/services/storage"
 )
@@ -158,11 +163,11 @@ func (s *socket) readLoop() {
 		}
 		var in inMsg
 		if typ != websocket.MessageText {
-			s.fail(in, rest.BadRequest("messages must be JSON text frames"))
+			s.fail(s.ctx, in, rest.BadRequest("messages must be JSON text frames"))
 			continue
 		}
 		if err := json.Unmarshal(data, &in); err != nil {
-			s.fail(in, rest.BadRequest("message is not JSON: %v", err))
+			s.fail(s.ctx, in, rest.BadRequest("message is not JSON: %v", err))
 			continue
 		}
 		s.handle(in)
@@ -170,27 +175,63 @@ func (s *socket) readLoop() {
 }
 
 func (s *socket) handle(in inMsg) {
+	countMessage(s.ctx, in.Type)
+	ctx, span := s.startSpan(in)
+	defer span.End()
 	var err error
 	switch in.Type {
 	case "join":
-		err = s.join(in.ProjectID)
+		err = s.join(ctx, in.ProjectID)
 	case "leave":
 		s.leave(in.ProjectID)
 	case "edit":
-		err = s.edit(in)
+		err = s.edit(ctx, in)
 	case "userstate":
 		err = s.userState(in)
 	default:
 		err = rest.BadRequest("unknown message type %q", in.Type)
 	}
 	if err != nil {
-		s.fail(in, err)
+		code, failed := s.fail(ctx, in, err)
+		endSpan(span, err, code, failed)
 	}
 }
 
-// fail reports err to the client with the same codes as REST. Unmapped
+var tracer = otel.Tracer("gyoza/services/gateway/internal/ws")
+
+// startSpan starts a message's span, the root of a new trace (the socket
+// isn't part of one). Joins are always traced; edits are a hot path
+// (telemetry.Hot). Presence and leaves get none: presence is the busiest
+// message and its traces would say nothing; a leave does no I/O.
+func (s *socket) startSpan(in inMsg) (context.Context, trace.Span) {
+	opts := []trace.SpanStartOption{trace.WithNewRoot(), trace.WithSpanKind(trace.SpanKindServer),
+		trace.WithAttributes(attribute.String("enduser.id", s.actor), attribute.String("gyoza.project_id", in.ProjectID))}
+	switch in.Type {
+	case "join":
+	case "edit":
+		opts = append(opts, telemetry.Hot)
+	default:
+		return s.ctx, trace.SpanFromContext(s.ctx) // a no-op span
+	}
+	return tracer.Start(s.ctx, "ws."+in.Type, opts...)
+}
+
+// endSpan records a message's error: a failure (an internal error) marks
+// the span failed; a refusal (forbidden, not joined, ...) is an expected
+// outcome, kept as an attribute so refusals don't look like an outage.
+func endSpan(span trace.Span, err error, code string, failed bool) {
+	if failed {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, code)
+		return
+	}
+	span.SetAttributes(attribute.String("gyoza.refused", code))
+}
+
+// fail reports err to the client with the same codes as REST, and returns
+// the code and whether it was a failure rather than a refusal. Unmapped
 // errors are logged, not shown: their text may hold internals.
-func (s *socket) fail(in inMsg, err error) {
+func (s *socket) fail(ctx context.Context, in inMsg, err error) (code string, failed bool) {
 	msg := errorMsg{Type: "error", ID: in.ID, ProjectID: in.ProjectID, Message: err.Error()}
 	for _, e := range wsErrors {
 		if errors.Is(err, e.err) {
@@ -201,11 +242,13 @@ func (s *socket) fail(in inMsg, err error) {
 		var status int
 		status, msg.Code = rest.Code(err)
 		if status == http.StatusInternalServerError {
-			slog.Error("ws: message failed", "type", in.Type, "project", in.ProjectID, "err", err)
+			slog.ErrorContext(ctx, "ws: message failed", "type", in.Type, "project", in.ProjectID, "err", err)
 			msg.Message = "internal error"
+			failed = true
 		}
 	}
 	s.send(msg)
+	return msg.Code, failed
 }
 
 func (s *socket) isJoined(projectID string) bool {
@@ -220,7 +263,7 @@ func (s *socket) isJoined(projectID string) bool {
 // the document unless the document already covers it. GetDocument checks
 // read access; until it has, the buffer is never sent. Joining again resends
 // the document (a resync).
-func (s *socket) join(projectID string) error {
+func (s *socket) join(ctx context.Context, projectID string) error {
 	if projectID == "" {
 		return rest.BadRequest("projectId is required")
 	}
@@ -229,7 +272,7 @@ func (s *socket) join(projectID string) error {
 	s.mu.Unlock()
 	s.hub.add(projectID, s)
 
-	doc, err := s.hub.docs.GetDocument(s.ctx, s.actor, projectID)
+	doc, err := s.hub.docs.GetDocument(ctx, s.actor, projectID)
 	if err != nil {
 		s.leave(projectID)
 		return err
@@ -263,10 +306,58 @@ func (s *socket) leave(projectID string) {
 	s.hub.remove(projectID, s)
 }
 
+// recheckLoop re-checks read access to the joined projects every interval
+// until the socket closes. Joining checked it once; without this, a user
+// unshared or removed from the org would keep receiving the project's
+// traffic until their session expired.
+func (s *socket) recheckLoop(interval time.Duration) {
+	t := time.NewTicker(interval)
+	defer t.Stop()
+	for {
+		select {
+		case <-s.ctx.Done():
+			return
+		case <-t.C:
+			s.recheck()
+		}
+	}
+}
+
+// recheck leaves every live project the actor may no longer read, telling
+// the client with a FORBIDDEN error naming it. Projects still joining are
+// skipped: their GetDocument is checking. Any other failure (iam
+// unreachable) keeps the project: the next check retries.
+func (s *socket) recheck() {
+	// Once a minute on every socket: a hot path.
+	ctx, span := tracer.Start(s.ctx, "ws.recheck", trace.WithNewRoot(), telemetry.Hot,
+		trace.WithAttributes(attribute.String("enduser.id", s.actor)))
+	defer span.End()
+	s.mu.Lock()
+	var live []string
+	for p, pend := range s.joined {
+		if pend == nil {
+			live = append(live, p)
+		}
+	}
+	s.mu.Unlock()
+	for _, p := range live {
+		err := s.hub.authz.CanRead(ctx, s.actor, storage.Owner{Kind: storage.OwnerProject, ID: p}, p)
+		switch {
+		case err == nil:
+		case errors.Is(err, storage.ErrForbidden):
+			s.leave(p)
+			code, _ := s.fail(ctx, inMsg{ProjectID: p}, err)
+			span.AddEvent("left", trace.WithAttributes(attribute.String("gyoza.project_id", p), attribute.String("gyoza.refused", code)))
+		case s.ctx.Err() == nil:
+			slog.WarnContext(ctx, "ws: access re-check failed", "project", p, "err", err)
+		}
+	}
+}
+
 // edit publishes a browser's delta for documents (and every other client)
 // to apply. The gateway never sets the delta's origin: documents bounds the
 // stamps of deltas without one (engine/PLAN.md row 2).
-func (s *socket) edit(in inMsg) error {
+func (s *socket) edit(ctx context.Context, in inMsg) error {
 	if !s.isJoined(in.ProjectID) {
 		return ErrNotJoined
 	}
@@ -274,7 +365,7 @@ func (s *socket) edit(in inMsg) error {
 		return rest.BadRequest("id is required, at most %d characters", maxEditID)
 	}
 	project := storage.Owner{Kind: storage.OwnerProject, ID: in.ProjectID}
-	if err := s.hub.authz.CanWrite(s.ctx, s.actor, project, in.ProjectID); err != nil {
+	if err := s.hub.authz.CanWrite(ctx, s.actor, project, in.ProjectID); err != nil {
 		return err
 	}
 	lamport, replica, err := engine.StampOf(engine.DeltaInput{Format: engine.WireFormat(in.Format), Version: in.Version, Payload: in.Payload})
@@ -284,7 +375,7 @@ func (s *socket) edit(in inMsg) error {
 	if lamport == 0 || replica != s.replica {
 		return ErrWrongReplica
 	}
-	seq, err := s.hub.bus.PublishDelta(s.ctx, gnats.Delta{ProjectID: in.ProjectID, ID: in.ID, ActorID: s.actor,
+	seq, err := s.hub.bus.PublishDelta(ctx, gnats.Delta{ProjectID: in.ProjectID, ID: in.ID, ActorID: s.actor,
 		Format: in.Format, Version: in.Version, Payload: in.Payload})
 	if err != nil {
 		return err

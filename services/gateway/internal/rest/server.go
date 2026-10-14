@@ -15,6 +15,7 @@ import (
 	"mime"
 	"net/http"
 
+	"gyoza/platform/telemetry"
 	"gyoza/services/documents"
 	"gyoza/services/gateway/internal/session"
 	"gyoza/services/iam"
@@ -47,7 +48,16 @@ func (s *Server) Handler() http.Handler {
 	s.routesAssets(mux)
 	s.routesFolders(mux)
 	s.routesDocuments(mux)
-	return jsonOnly(mux)
+	return jsonOnly(namedSpans(mux))
+}
+
+// namedSpans names each request's span after its route, once mux has
+// matched one (it sets r.Pattern). Mounted under /api.
+func namedSpans(mux *http.ServeMux) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mux.ServeHTTP(w, r)
+		telemetry.SetRoute(r, "/api")
+	})
 }
 
 // call is what most handlers are: the actor and the request in, a value to

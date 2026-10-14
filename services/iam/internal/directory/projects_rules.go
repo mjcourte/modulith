@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"slices"
+	"time"
 
 	"gyoza/services/storage"
 )
@@ -113,6 +114,41 @@ func (s Share) normalize() (Share, error) {
 		return s, fmt.Errorf("%w: sharer is required", ErrInvalidShare)
 	}
 	return s, nil
+}
+
+// normalizePending validates a pending share for SharePending, lowercasing
+// its email.
+func (s Share) normalizePending() (Share, error) {
+	if !s.Access.valid() {
+		return s, fmt.Errorf("%w: access must be viewer or editor, got %q", ErrInvalidShare, s.Access)
+	}
+	var err error
+	if s.Email, err = normalizeEmail(s.Email, ErrInvalidShare); err != nil {
+		return s, err
+	}
+	switch {
+	case s.UserID != "":
+		return s, fmt.Errorf("%w: a pending share names an email, not a user", ErrInvalidShare)
+	case s.SharedBy == "":
+		return s, fmt.Errorf("%w: sharer is required", ErrInvalidShare)
+	case s.ExpiresAt.IsZero():
+		return s, fmt.Errorf("%w: expiry is required", ErrInvalidShare)
+	}
+	return s, nil
+}
+
+// expired reports whether a pending share can no longer be claimed at the
+// given time.
+func (s Share) expired(at time.Time) bool { return !at.Before(s.ExpiresAt) }
+
+// sortPendingShares puts pending shares oldest first, ties by email.
+func sortPendingShares(shares []Share) {
+	slices.SortFunc(shares, func(a, b Share) int {
+		if c := a.CreatedAt.Compare(b.CreatedAt); c != 0 {
+			return c
+		}
+		return cmp.Compare(a.Email, b.Email)
+	})
 }
 
 // checkShareable refuses shares on gyoza templates: every signed-in user can

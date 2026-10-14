@@ -186,7 +186,7 @@ one owner with 20k objects.
   little to clean.
 - **When to act:** cleanup load shows up in S3 request costs or database load.
 - **Fix:** a Postgres advisory lock (`pg_try_advisory_lock`) so one replica
-  runs each round, or move the job to `platform/jobs` once it exists.
+  runs each round, or a shared job queue on JetStream + Postgres if one is built.
 
 ## Snapshots (`storage.snapshots`)
 

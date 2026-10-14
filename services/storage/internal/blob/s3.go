@@ -16,6 +16,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/aws/aws-sdk-go-v2/otelaws"
 )
 
 // S3Config says how to reach an S3-compatible service.
@@ -63,6 +64,9 @@ func NewS3(cfg S3Config) (*S3, error) {
 	if cfg.Endpoint != "" {
 		opts.BaseEndpoint = aws.String(cfg.Endpoint)
 	}
+	// One span per S3 call (a no-op until telemetry is set up). Presigned
+	// URLs aren't traced: the browser uses them, not this client.
+	otelaws.AppendMiddlewares(&opts.APIOptions)
 	client := s3.New(opts)
 	return &S3{client: client, presign: s3.NewPresignClient(client)}, nil
 }

@@ -212,3 +212,10 @@ func (r *Registry) Close(ctx context.Context) error {
 	r.cancel()
 	return errors.Join(errs...)
 }
+
+// Len returns how many documents are loaded.
+func (r *Registry) Len() int {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return len(r.docs)
+}

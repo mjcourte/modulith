@@ -6,6 +6,7 @@ import (
 	"gyoza/services/iam/internal/manager"
 	"slices"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -233,12 +234,86 @@ func TestManagerSharing(t *testing.T) {
 		t.Errorf("viewer leaves: %v", err)
 	}
 
-	if _, err := w.m.ShareProject(ctx, w.ann.ID, p.ID, "nobody@example.com", directory.AccessViewer); !errors.Is(err, directory.ErrUserNotFound) {
-		t.Errorf("sharing with an address nobody signed up with = %v, want ErrUserNotFound", err)
-	}
 	tmpl, _ := w.m.CreateTemplate(ctx, "T")
 	if _, err := w.m.ShareProject(ctx, w.ann.ID, tmpl.ID, w.bob.Email, directory.AccessViewer); !isForbidden(err) {
 		t.Errorf("sharing a template = %v, want ErrForbidden (nobody edits templates)", err)
+	}
+}
+
+// Sharing with an address that has no verified account answers the same
+// way (no error saying so) and waits for a verified sign-in with it, until
+// it expires.
+func TestManagerPendingShares(t *testing.T) {
+	ctx := t.Context()
+	m, _ := newManager(t)
+	at := time.Date(2026, 10, 11, 12, 0, 0, 0, time.UTC)
+	manager.SetClock(m, func() time.Time { return at })
+	ann, vic := signIn(t, m, "ann"), signIn(t, m, "vic")
+	p, err := m.CreateProject(ctx, ann.ID, userOwner(ann.ID), "Poster", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := m.ShareProject(ctx, ann.ID, p.ID, vic.Email, directory.AccessViewer); err != nil {
+		t.Fatal(err)
+	}
+
+	sh, err := m.ShareProject(ctx, ann.ID, p.ID, "Dan@example.com", directory.AccessEditor)
+	if err != nil || !sh.Pending() || sh.Email != "dan@example.com" || !sh.ExpiresAt.Equal(at.Add(manager.DefaultShareTTL)) {
+		t.Fatalf("sharing with an unknown address = %+v, %v; want pending to dan, expiring after the TTL", sh, err)
+	}
+	// An account whose address isn't verified gets nothing yet: anyone could
+	// claim an address.
+	if _, err := m.SignIn(ctx, directory.Identity{UserID: "eve", Email: "eve@example.com", Name: "eve"}); err != nil {
+		t.Fatal(err)
+	}
+	if sh, err := m.ShareProject(ctx, ann.ID, p.ID, "eve@example.com", directory.AccessViewer); err != nil || !sh.Pending() {
+		t.Errorf("sharing with an unverified account = %+v, %v; want pending", sh, err)
+	}
+	if _, err := m.GetProject(ctx, "eve", p.ID); !isForbidden(err) {
+		t.Errorf("unverified eve sees the project: %v", err)
+	}
+	if shares, err := m.ListShares(ctx, ann.ID, p.ID); err != nil || len(shares) != 3 || shares[0].UserID != vic.ID || shares[1].Email == "" || shares[2].Email == "" {
+		t.Errorf("ListShares = %+v, %v; want vic's share then the two pending ones", shares, err)
+	}
+
+	// Viewers can't revoke pending shares; editors can.
+	if err := m.RevokePendingShare(ctx, vic.ID, p.ID, "eve@example.com"); !isForbidden(err) {
+		t.Errorf("viewer revokes = %v, want ErrForbidden", err)
+	}
+	if err := m.RevokePendingShare(ctx, ann.ID, p.ID, "EVE@example.com"); err != nil {
+		t.Errorf("owner revokes: %v", err)
+	}
+
+	// Dan signs up: the share is his.
+	dan := signIn(t, m, "dan")
+	if v, err := m.GetProject(ctx, dan.ID, p.ID); err != nil || v.Access != directory.AccessEditor {
+		t.Errorf("dan after signing up = %+v, %v; want editor", v, err)
+	}
+	shares, _ := m.ListShares(ctx, ann.ID, p.ID)
+	got := sharedWith(shares)
+	slices.Sort(got)
+	if !slices.Equal(got, []string{dan.ID, vic.ID}) {
+		t.Errorf("shares after dan's sign-up = %+v; want vic's and dan's, none pending", shares)
+	}
+	// Eve verifies her address: the revoked share isn't there to claim.
+	if _, err := m.SignIn(ctx, directory.Identity{UserID: "eve", Email: "eve@example.com", EmailVerified: true, Name: "eve"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := m.GetProject(ctx, "eve", p.ID); !isForbidden(err) {
+		t.Errorf("eve claimed a revoked share: %v", err)
+	}
+
+	// Unclaimed past the TTL: signing up claims nothing, and cleanup removes it.
+	if _, err := m.ShareProject(ctx, ann.ID, p.ID, "fay@example.com", directory.AccessViewer); err != nil {
+		t.Fatal(err)
+	}
+	manager.SetClock(m, func() time.Time { return at.Add(manager.DefaultShareTTL) })
+	fay := signIn(t, m, "fay")
+	if _, err := m.GetProject(ctx, fay.ID, p.ID); !isForbidden(err) {
+		t.Errorf("fay claimed an expired share: %v", err)
+	}
+	if r, err := m.Cleanup(ctx); err != nil || r.ExpiredShares != 1 {
+		t.Errorf("Cleanup = %+v, %v; want 1 expired share", r, err)
 	}
 }
 

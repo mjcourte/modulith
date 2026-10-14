@@ -64,6 +64,7 @@ const (
 	ProjectCloning = directory.ProjectCloning
 
 	DefaultInviteTTL = manager.DefaultInviteTTL
+	DefaultShareTTL  = manager.DefaultShareTTL
 )
 
 // Errors callers can test for with errors.Is.

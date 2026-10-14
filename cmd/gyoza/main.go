@@ -18,6 +18,7 @@ import (
 	gnats "gyoza/platform/nats"
 	"gyoza/platform/postgres"
 	"gyoza/platform/shutdown"
+	"gyoza/platform/telemetry"
 	"gyoza/services/documents"
 	"gyoza/services/gateway"
 	"gyoza/services/iam"
@@ -43,6 +44,7 @@ func run() error {
 	dbURL := env.Required("GYOZA_DATABASE_URL")
 	logLevel := slog.LevelInfo
 	env.Text("GYOZA_LOG_LEVEL", &logLevel)
+	telemetrySettings := telemetry.SettingsFromEnv(env)
 	shutdownTimeout := env.Duration("GYOZA_SHUTDOWN_TIMEOUT", 20*time.Second)
 	grpcAddr := env.String("GYOZA_GRPC_ADDR", "localhost:9090")
 	storageSettings := storage.SettingsFromEnv(env)
@@ -53,7 +55,15 @@ func run() error {
 	if err := env.Err(); err != nil {
 		return err
 	}
-	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: logLevel})))
+	tel, err := telemetry.Setup(ctx, "gyoza", telemetrySettings)
+	if err != nil {
+		return err
+	}
+	slog.SetDefault(slog.New(tel.LogHandler(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: logLevel}), logLevel)))
+	stopDebug, err := telemetry.StartDebug(telemetrySettings.DebugAddr)
+	if err != nil {
+		return fmt.Errorf("debug listener: %w", err)
+	}
 
 	// One pool shared by every service; each still only touches its own schema.
 	pool, err := postgres.Connect(ctx, dbURL, "gyoza")
@@ -120,7 +130,7 @@ func run() error {
 		slog.Warn("media probing off: ffprobe not found", "err", err) // prober is nil
 	}
 
-	server := grpc.NewServer()
+	server := grpc.NewServer(telemetry.ServerOption())
 	storage.RegisterGRPC(server, manager)
 	iam.RegisterGRPC(server, iamManager, authz)
 	documents.RegisterGRPC(server, docs)
@@ -205,6 +215,13 @@ func run() error {
 	if err := shutdown.Within(shutdownCtx, pool.Close); err != nil {
 		return err
 	}
+	if err := stopDebug(shutdownCtx); err != nil {
+		slog.Warn("debug listener shutdown", "err", err)
+	}
 	slog.Info("stopped cleanly")
+	// Last: flush the spans and logs of everything above.
+	if err := tel.Shutdown(shutdownCtx); err != nil {
+		slog.Warn("telemetry flush failed", "err", err)
+	}
 	return nil
 }

@@ -223,6 +223,7 @@ func (s *server) listProjects(w http.ResponseWriter, r *http.Request) {
 type projectPage struct {
 	Project ProjectRow
 	Shares  []ShareRow
+	Pending []PendingShareRow
 	Uses    []UseRow
 	Assets  []AssetRow
 	Clones  []ProjectRow
@@ -243,6 +244,9 @@ func (s *server) showProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if p.Shares, err = s.q.shares(ctx, id, ""); err == nil {
+		p.Pending, err = s.q.pendingShares(ctx, id)
+	}
+	if err == nil {
 		if p.Uses, err = s.q.uses(ctx, id, ""); err == nil {
 			if p.Assets, err = s.q.assets(ctx, "project", id, "", "", true); err == nil {
 				if p.Usable, err = s.q.usableAssets(ctx, id); err == nil {
@@ -346,6 +350,12 @@ func (s *server) shareProject(w http.ResponseWriter, r *http.Request) {
 func (s *server) unshareProject(w http.ResponseWriter, r *http.Request) {
 	withActor(w, r, "share removed", func(a string) error {
 		return s.iam.Unshare(r.Context(), a, r.PathValue("id"), r.PathValue("user"))
+	})
+}
+
+func (s *server) revokePendingShare(w http.ResponseWriter, r *http.Request) {
+	withActor(w, r, "pending share revoked", func(a string) error {
+		return s.iam.RevokePendingShare(r.Context(), a, r.PathValue("id"), r.FormValue("email"))
 	})
 }
 

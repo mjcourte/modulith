@@ -97,6 +97,32 @@ func TestJoinRefusedForStranger(t *testing.T) {
 	c.sync()
 }
 
+// Access is re-checked while joined: an unshared user stops receiving the
+// project's traffic (and is told), while those who keep access don't notice.
+func TestRevokedAccessLeaves(t *testing.T) {
+	w := newWorld(t)
+	w.hub.SetRecheck(20 * time.Millisecond)
+	alice, bob := w.signIn("alice"), w.signIn("bob")
+	p := w.project(alice, map[string]iam.Access{bob: iam.AccessViewer})
+	a, b := w.connect(alice, nil), w.connect(bob, nil)
+	a.join(p)
+	b.join(p)
+
+	if err := w.iam.Unshare(context.Background(), alice, p, bob); err != nil {
+		t.Fatal(err)
+	}
+	if e := b.expectError("FORBIDDEN"); e["projectId"] != p {
+		t.Errorf("error: %v", e)
+	}
+	w.bus.inject(p, 1, "secret")
+	b.sync()
+	if d := a.expect("delta"); d["payload"] != b64("secret") {
+		t.Errorf("owner's delta: %v", d)
+	}
+	b.send(map[string]any{"type": "userstate", "projectId": p, "kind": "viewing"})
+	b.expectError("NOT_JOINED")
+}
+
 func TestLeaveStopsTraffic(t *testing.T) {
 	w := newWorld(t)
 	alice := w.signIn("alice")

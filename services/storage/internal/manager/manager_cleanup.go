@@ -13,6 +13,12 @@ import (
 	"log/slog"
 	"time"
 
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
+
+	"gyoza/platform/telemetry"
+
 	"gyoza/services/storage/internal/ledger"
 	"gyoza/services/storage/internal/snapshots"
 )
@@ -225,21 +231,29 @@ func (m *Manager) restorable(deletedAt *time.Time) bool {
 	return deletedAt == nil || m.now().Sub(*deletedAt) < m.cfg.TrashRetention-clockSkew
 }
 
+var tracer = otel.Tracer("gyoza/services/storage/internal/manager")
+
 // RunCleanup runs Cleanup now and then every interval until ctx is done,
 // logging what each run did. Run it in its own goroutine.
 func (m *Manager) RunCleanup(ctx context.Context, interval time.Duration) {
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 	for {
-		r, err := m.Cleanup(ctx, m.now())
+		// Each run is a trace of its own: its queries and S3 calls are only
+		// traced inside one.
+		rctx, span := tracer.Start(ctx, "storage.cleanup", trace.WithNewRoot())
+		r, err := m.Cleanup(rctx, m.now())
+		span.SetAttributes(attribute.String("gyoza.done", fmt.Sprintf("%+v", r)))
 		switch {
 		case ctx.Err() != nil:
+			span.End()
 			return // shutting down: an error now is just the cancellation
 		case err != nil:
-			slog.Error("storage: cleanup failed", "err", err, "done", r)
+			slog.ErrorContext(rctx, "storage: cleanup failed", "err", err, "done", r)
 		case r != CleanupReport{}:
-			slog.Info("storage: cleanup", "done", r)
+			slog.InfoContext(rctx, "storage: cleanup", "done", r)
 		}
+		telemetry.End(span, &err)
 		select {
 		case <-ctx.Done():
 			return

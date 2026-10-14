@@ -1,9 +1,14 @@
-- basic frontend with login, projects, settings, orgs, etc. set up the stack
-
 - breakpoint
     - security audit - permissions leaks, forgeability etc
     - tracing / otel / signoz
     - performance profiling in tracing
+
+- feature flag self host provider? LD does not allow self host
+
+- frontend part 2:
+    - user profile, orgs
+    - assets/DAM, upload/download/link/unlink/share
+    - projects, crud/share, listing, open a project (the canvas is a no go until engine probably?)
 
 - breakpoint
     - common assets: font lib?
@@ -12,8 +17,9 @@
     - and font upload -> already have Asset CategoryFont
 
 - real engine?
-    - Can we use Yrs as a graph CRDT?W
-    - I don't think Bevy ECS is particularly avoidable if to repr 3D gfx.
+    - Can we use Yrs as a graph CRDT?
+    - I don't think Rust/Bevy ECS is particularly avoidable if to repr 3D gfx.
+
 - frontend canvas
 - exporter
 - mcp

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"gyoza/internal/engine"
+	"gyoza/platform/telemetry"
 	"gyoza/services/storage"
 )
 
@@ -128,7 +129,7 @@ type HTTPTransfer struct {
 // NewHTTPTransfer returns a transfer with a timeout fit for snapshots up to
 // storage's cap (32 MiB by default).
 func NewHTTPTransfer(maxBytes int64) *HTTPTransfer {
-	return &HTTPTransfer{Client: &http.Client{Timeout: 2 * time.Minute}, MaxBytes: maxBytes}
+	return &HTTPTransfer{Client: &http.Client{Timeout: 2 * time.Minute, Transport: telemetry.HTTPTransport(nil)}, MaxBytes: maxBytes}
 }
 
 func (t *HTTPTransfer) Put(ctx context.Context, url string, headers map[string]string, data []byte) error {

@@ -13,12 +13,22 @@ name: gyoza-distributed
 include:
   - ../monolith/compose.yaml
 
+# Telemetry for every service: SigNoz (deploy/observability) runs in WSL's
+# Docker, so containers reach its OTLP port through the host, where WSL
+# forwards it. GYOZA_CONTAINER_OTLP_ENDPOINT= (empty) turns it off.
+x-telemetry: &telemetry
+  GYOZA_OTLP_ENDPOINT: ${GYOZA_CONTAINER_OTLP_ENDPOINT-http://host.docker.internal:4317}
+x-host: &host
+  - host.docker.internal:host-gateway # Docker Desktop has it; Linux engines need this
+
 services:
   storage:
     build:
       context: ../..
       target: storage
+    extra_hosts: *host
     environment:
+      <<: *telemetry
       GYOZA_DATABASE_URL: postgres://gyoza:gyoza@postgres:5432/gyoza
       GYOZA_S3_ENDPOINT: http://s3:9000
       GYOZA_S3_ACCESS_KEY: gyoza
@@ -42,7 +52,9 @@ services:
     build:
       context: ../..
       target: iam
+    extra_hosts: *host
     environment:
+      <<: *telemetry
       GYOZA_DATABASE_URL: postgres://gyoza:gyoza@postgres:5432/gyoza
       GYOZA_STORAGE_ADDR: storage:9090
       GYOZA_DOCUMENTS_ADDR: documents:9090
@@ -59,7 +71,9 @@ services:
     build:
       context: ../..
       target: gateway
+    extra_hosts: *host
     environment:
+      <<: *telemetry
       GYOZA_IAM_ADDR: iam:9090
       GYOZA_STORAGE_ADDR: storage:9090
       GYOZA_DOCUMENTS_ADDR: documents:9090
@@ -87,7 +101,9 @@ services:
     build:
       context: ../..
       target: documents
+    extra_hosts: *host
     environment:
+      <<: *telemetry
       GYOZA_STORAGE_ADDR: storage:9090
       GYOZA_IAM_ADDR: iam:9090
       GYOZA_NATS_URL: nats://nats-1:4222,nats-2:4222,nats-3:4222
@@ -101,9 +117,12 @@ services:
       # fail and retry; the deltas stay in the stream meanwhile.
 
   # Runs ffprobe on untrusted files, so it gets no secrets: no database, no
-  # S3 credentials. It reads files only through the presigned URLs storage
-  # sends, and isn't published to the host.
+  # S3 credentials, only where to send telemetry. It reads files only through
+  # the presigned URLs storage sends, and isn't published to the host.
   mediaprocessor:
     build:
       context: ../..
       target: mediaprocessor
+    extra_hosts: *host
+    environment:
+      <<: *telemetry

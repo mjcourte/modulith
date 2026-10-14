@@ -1,0 +1,34 @@
+# SigNoz (traces, metrics, logs) for local development, rendered by Foundry
+# (foundryctl) into Compose files under pours/, which git ignores: change this
+# file, never pours/. Runs on Docker Engine inside WSL 2, not Docker Desktop
+# (ClickHouse Keeper crashes there). scripts/signoz.sh runs it; see README.md.
+apiVersion: v1alpha1
+kind: Installation
+metadata:
+  name: signoz
+spec:
+  deployment:
+    flavor: compose
+    mode: docker
+  # Pinned: Foundry defaults the collector to :latest, which may not match
+  # the SigNoz release. Upgrade both together (SigNoz's upgrade notes say
+  # which collector a release needs).
+  signoz:
+    spec:
+      image: signoz/signoz:v0.145.0
+  ingester:
+    spec:
+      image: signoz/signoz-otel-collector:v0.144.13
+  # JSON Patch on the rendered compose file (run forge without patches to see
+  # its shape). Everything is published on loopback only.
+  patches:
+    - target: deployment/compose.yaml
+      operations:
+        # The UI on 3301: 8080 is the gateway's.
+        - op: replace
+          path: /services/signoz-signoz-0/ports
+          value: ["127.0.0.1:3301:8080"]
+        # OTLP: gRPC on 4317, HTTP on 4318.
+        - op: replace
+          path: /services/ingester/ports
+          value: ["127.0.0.1:4317:4317", "127.0.0.1:4318:4318"]

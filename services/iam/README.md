@@ -26,7 +26,10 @@ than users.
 
 - identity comes from SuperTokens (Google sign-in) through the gateway; iam never talks
   to SuperTokens. Users are keyed by the SuperTokens ID; orgs, projects and invites by UUIDv7
-- sharing only with users who already signed up (looked up by email). Anyone with editor
+- sharing by email. An address with no verified account gets a pending share (the same
+  answer, so sharing doesn't say who has an account; the share list still shows it, as in
+  Google Docs), claimed at the first verified sign-in with it (`SignIn`) or dropped after
+  `GYOZA_SHARE_EXPIRY_DAYS` (30). Anyone with editor
   access shares (as viewer or editor) and changes or removes others' shares; viewers
   don't; anyone can remove their own share. Sharing can raise access, never lower it
 - managing a project (rename, move, delete): the owning user, or an admin of the owning org
@@ -67,7 +70,7 @@ The sections below name files in `internal/directory` (Store, Access, Deletion s
   counts on an org-locked project, paging)
 - `MemoryStore` (`memory.go`, `*_memory.go`): one mutex per call, so the invariants (one
   org per user, an admin in every org with members) hold under concurrent calls
-- the shared suite `runStoreTests` (`store_test.go`, `store_*_test.go`, 29 cases) and the
+- the shared suite `runStoreTests` (`store_test.go`, `store_*_test.go`, 44 cases) and the
   internal rules tests (`rules_test.go`, `projects_rules_test.go`)
 
 ## Access (step 3)
@@ -104,7 +107,8 @@ The sections below name files in `internal/directory` (Store, Access, Deletion s
 - `manager_projects.go`: create (for yourself, or for your org by any member, choosing
   the org-lock), get (with your access level) and list mine / templates; rename and move
   to my org (the owner, or admins of the owning org; templates never); share, change
-  and remove shares (anyone with editor access), leave a project shared with you;
+  and remove shares and pending shares (anyone with editor access), leave a project
+  shared with you;
   org-lock (admins of the owning org). `CreateTemplate` is service to service only
 - `service.go`: `Service`, what the gateway calls; `*Manager` implements it
 
@@ -113,8 +117,9 @@ The sections below name files in `internal/directory` (Store, Access, Deletion s
 - `deletions.go`: `DeletionStore` (embedded in `Store`): mark a user (with the org their
   things move to, fixed at the first mark), an org (with all its projects, in one
   step) or a project as deleting; list what's deleting (for resuming); list an owner's
-  projects; move a user's projects to an org; forget a user (shares and invites to them
-  deleted; creator, sharer and inviter cleared); hard deletes that refuse unmarked rows
+  projects; move a user's projects to an org; forget a user (shares to them, invites and
+  pending shares to their email deleted; creator, sharer and inviter cleared); hard
+  deletes that refuse unmarked rows
   (`ErrNotDeleting`) and unfinished cascades (an org or user still owning projects, a
   user still in an org); delete expired invites
 - a row being deleted takes no new references: no sign-in, org, project, share, invite
@@ -175,7 +180,9 @@ and what's actively shared with them, each once, never clones in progress.
   iam's `Manager` (which calls storage, and documents when cloning), and serves all of
   them. `cmd/iam` (`localhost:9093`) calls storage at `GYOZA_STORAGE_ADDR` and documents
   at `GYOZA_DOCUMENTS_ADDR`; `cmd/storage` asks iam at `GYOZA_IAM_ADDR`
-- settings: `GYOZA_INVITE_TTL` (default 14 days), `GYOZA_IAM_CLEANUP_INTERVAL` (10m)
+- settings: `GYOZA_INVITE_TTL` (default 14 days), `GYOZA_SHARE_EXPIRY_DAYS` (pending
+  shares, whole days, default 30), `GYOZA_IAM_CLEANUP_INTERVAL` (10m; also removes expired
+  invites and pending shares)
 
 ## Cloning (step 7)
 

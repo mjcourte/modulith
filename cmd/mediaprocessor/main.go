@@ -14,6 +14,7 @@ import (
 
 	"gyoza/platform/config"
 	"gyoza/platform/shutdown"
+	"gyoza/platform/telemetry"
 	"gyoza/services/mediaprocessor"
 )
 
@@ -40,10 +41,19 @@ func run() error {
 	// deployments set ":9090". Differs from the other binaries' defaults so
 	// they can all run on one machine.
 	grpcAddr := env.String("GYOZA_GRPC_ADDR", "localhost:9092")
+	telemetrySettings := telemetry.SettingsFromEnv(env)
 	if err := env.Err(); err != nil {
 		return err
 	}
-	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: logLevel})))
+	tel, err := telemetry.Setup(ctx, "mediaprocessor", telemetrySettings)
+	if err != nil {
+		return err
+	}
+	slog.SetDefault(slog.New(tel.LogHandler(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: logLevel}), logLevel)))
+	stopDebug, err := telemetry.StartDebug(telemetrySettings.DebugAddr)
+	if err != nil {
+		return fmt.Errorf("debug listener: %w", err)
+	}
 
 	// Probing is this binary's only job, so a missing ffprobe is fatal here
 	// (the monolith only warns).
@@ -56,7 +66,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	server := grpc.NewServer()
+	server := grpc.NewServer(telemetry.ServerOption())
 	mediaprocessor.RegisterGRPC(server, prober)
 	serveErr := make(chan error, 1)
 	go func() { serveErr <- server.Serve(lis) }()
@@ -77,6 +87,13 @@ func run() error {
 		server.Stop()
 		slog.Warn("grpc calls cut off at shutdown deadline")
 	}
+	if err := stopDebug(shutdownCtx); err != nil {
+		slog.Warn("debug listener shutdown", "err", err)
+	}
 	slog.Info("stopped cleanly")
+	// Last: flush the spans and logs of everything above.
+	if err := tel.Shutdown(shutdownCtx); err != nil {
+		slog.Warn("telemetry flush failed", "err", err)
+	}
 	return nil
 }

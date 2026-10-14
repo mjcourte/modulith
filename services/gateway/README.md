@@ -43,7 +43,9 @@ one session layer). Design and next steps: [PLAN.md](PLAN.md).
   one socket per browser tab, each its own engine replica (`hello` names it, with the
   server time). Joining a project (read access, through `GetDocument`) sends the document,
   then its deltas, snapshot pointers and user state; traffic arriving during the join is
-  held until the document is sent, minus what it covers. Edits need write access and the
+  held until the document is sent, minus what it covers. Read access is re-checked every
+  minute while joined: a user who lost it leaves the project with a `FORBIDDEN` error
+  naming it. Edits need write access and the
   socket's replica in their stamp (`engine.StampOf`), and are published as the session's
   user, never with `Gyoza-Origin`. User state is always the session's user. Same-origin
   only; closes with 4001 when the access token expires and 4008 when the tab falls 256

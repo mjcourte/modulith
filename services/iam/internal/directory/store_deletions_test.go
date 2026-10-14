@@ -53,6 +53,7 @@ func testDeleteProject(t *testing.T, s directory.Store) {
 	ann, bob := mustUser(t, s, "ann"), mustUser(t, s, "bob")
 	p := mustProject(t, s, directory.Project{Owner: userOwner(ann.ID), Name: "Doomed"})
 	mustShare(t, s, p.ID, bob.ID, directory.AccessViewer)
+	mustSharePending(t, s, p.ID, "dan@example.com", directory.AccessViewer, time.Hour)
 
 	if err := s.DeleteProject(ctx, p.ID); !errors.Is(err, directory.ErrNotDeleting) {
 		t.Fatalf("deleting an unmarked project = %v, want ErrNotDeleting", err)
@@ -68,6 +69,11 @@ func testDeleteProject(t *testing.T, s directory.Store) {
 	}
 	if _, err := s.GetShare(ctx, p.ID, bob.ID); !errors.Is(err, directory.ErrShareNotFound) {
 		t.Errorf("its share = %v, want ErrShareNotFound", err)
+	}
+	// Its pending share is gone too: dan signing in claims nothing.
+	dan := mustUser(t, s, "dan")
+	if n, err := s.ClaimPendingShares(ctx, dan.ID, dan.Email, time.Now()); err != nil || n != 0 {
+		t.Errorf("claim after the project's deletion = %d, %v; want 0", n, err)
 	}
 	if err := s.DeleteProject(ctx, p.ID); err != nil {
 		t.Errorf("deleting again = %v, want nil (safe to retry)", err)
@@ -289,6 +295,10 @@ func testForgetUser(t *testing.T, s directory.Store) {
 	if err != nil {
 		t.Fatalf("CreateInvite: %v", err) // by bob: kept, inviter cleared
 	}
+	mustSharePending(t, s, annP.ID, bob.Email, directory.AccessViewer, time.Hour) // to bob: deleted
+	if _, err := s.SharePending(ctx, directory.Share{ProjectID: annP.ID, Email: "dan@example.com", Access: directory.AccessViewer, SharedBy: bob.ID, ExpiresAt: time.Now().Add(time.Hour)}); err != nil {
+		t.Fatalf("SharePending: %v", err) // by bob: kept, sharer cleared
+	}
 
 	if _, err := s.ForgetUser(ctx, bob.ID); !errors.Is(err, directory.ErrNotDeleting) {
 		t.Fatalf("forgetting an unmarked user = %v, want ErrNotDeleting", err)
@@ -297,8 +307,11 @@ func testForgetUser(t *testing.T, s directory.Store) {
 		t.Fatalf("MarkUserDeleting: %v", err)
 	}
 	n, err := s.ForgetUser(ctx, bob.ID)
-	if err != nil || n != 5 {
-		t.Errorf("ForgetUser = %d, %v; want 5 changes", n, err)
+	if err != nil || n != 7 {
+		t.Errorf("ForgetUser = %d, %v; want 7 changes", n, err)
+	}
+	if pending, _ := s.ListPendingShares(ctx, annP.ID); len(pending) != 1 || pending[0].Email != "dan@example.com" || pending[0].SharedBy != "" {
+		t.Errorf("pending shares = %+v; want only dan's, without bob as sharer", pending)
 	}
 	if _, err := s.GetShare(ctx, annP.ID, bob.ID); !errors.Is(err, directory.ErrShareNotFound) {
 		t.Errorf("share to bob = %v, want gone", err)

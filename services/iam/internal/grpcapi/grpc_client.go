@@ -264,6 +264,11 @@ func (c *Client) Unshare(ctx context.Context, actorID, projectID, userID string)
 	return errFromOrNil(err)
 }
 
+func (c *Client) RevokePendingShare(ctx context.Context, actorID, projectID, email string) error {
+	_, err := c.c.RevokePendingShare(ctx, &pb.RevokePendingShareRequest{ActorId: actorID, ProjectId: projectID, Email: email})
+	return errFromOrNil(err)
+}
+
 func (c *Client) DeleteProject(ctx context.Context, actorID, projectID string) error {
 	_, err := c.c.DeleteProject(ctx, &pb.DeleteProjectRequest{ActorId: actorID, ProjectId: projectID})
 	return errFromOrNil(err)

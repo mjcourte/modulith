@@ -138,7 +138,14 @@ func TestServiceOverGRPC(t *testing.T) {
 	if share.Access != directory.AccessViewer {
 		t.Errorf("ShareProject = %+v, want viewer", share)
 	}
-	same(t, "ListShares", must[[]directory.Share](t, "ListShares")(c.ListShares(ctx, "ann", annP.ID)), []directory.Share{share})
+	pending := must[directory.Share](t, "ShareProject pending")(c.ShareProject(ctx, "ann", annP.ID, "dan@example.com", directory.AccessEditor))
+	if !pending.Pending() || pending.Email != "dan@example.com" || pending.ExpiresAt.IsZero() {
+		t.Errorf("ShareProject to an unknown address = %+v, want pending with its email and expiry", pending)
+	}
+	same(t, "ListShares", must[[]directory.Share](t, "ListShares")(c.ListShares(ctx, "ann", annP.ID)), []directory.Share{share, pending})
+	if err := c.RevokePendingShare(ctx, "ann", annP.ID, "dan@example.com"); err != nil {
+		t.Errorf("RevokePendingShare: %v", err)
+	}
 	page := must[directory.ProjectPage](t, "ListMyProjects")(c.ListMyProjects(ctx, "cat", 0, ""))
 	same(t, "ListMyProjects", page, must[directory.ProjectPage](t, "ListMyProjects")(m.ListMyProjects(ctx, "cat", 0, "")))
 	if err := c.Unshare(ctx, "cat", annP.ID, "cat"); err != nil {

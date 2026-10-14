@@ -37,6 +37,12 @@ services:
       GYOZA_GOOGLE_CLIENT_ID: 1060725074195-kmeum4crr01uirfl2op9kd5acmi9jutn.apps.googleusercontent.com
       GYOZA_GOOGLE_CLIENT_SECRET: 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
       GYOZA_GATEWAY_DEV_PAGES: "true"
+      # SigNoz (deploy/observability) runs in WSL's Docker: reached through the
+      # host, where WSL forwards its OTLP port. GYOZA_CONTAINER_OTLP_ENDPOINT=
+      # (empty) turns telemetry off.
+      GYOZA_OTLP_ENDPOINT: ${GYOZA_CONTAINER_OTLP_ENDPOINT-http://host.docker.internal:4317}
+    extra_hosts:
+      - host.docker.internal:host-gateway # Docker Desktop has it; Linux engines need this
     ports:
       - "127.0.0.1:9090:9090" # gRPC, as go run ./cmd/gyoza serves it
       - "127.0.0.1:8080:8080" # the gateway (HTTP)

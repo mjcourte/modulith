@@ -193,6 +193,17 @@ func (m *MemoryStore) ForgetUser(ctx context.Context, userID string) (int, error
 			n++
 		}
 	}
+	for key, s := range m.pending {
+		switch {
+		case key.email == u.Email:
+			delete(m.pending, key)
+			n++
+		case s.SharedBy == userID:
+			s.SharedBy = ""
+			m.pending[key] = s
+			n++
+		}
+	}
 	for id, p := range m.projects {
 		if p.CreatedBy == userID {
 			p.CreatedBy = ""
@@ -216,6 +227,11 @@ func (m *MemoryStore) DeleteProject(ctx context.Context, projectID string) error
 	for key := range m.shares {
 		if key.projectID == projectID {
 			delete(m.shares, key)
+		}
+	}
+	for key := range m.pending {
+		if key.projectID == projectID {
+			delete(m.pending, key)
 		}
 	}
 	delete(m.projects, projectID)
@@ -297,6 +313,26 @@ func (m *MemoryStore) DeleteExpiredInvites(ctx context.Context, before time.Time
 	due = due[:min(limit, len(due))]
 	for _, inv := range due {
 		delete(m.invites, inv.ID)
+	}
+	return len(due), nil
+}
+
+func (m *MemoryStore) DeleteExpiredPendingShares(ctx context.Context, before time.Time, limit int) (int, error) {
+	if err := checkLimit(limit); err != nil {
+		return 0, err
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var due []pendingKey
+	for key, s := range m.pending {
+		if s.expired(before) {
+			due = append(due, key)
+		}
+	}
+	slices.SortFunc(due, func(a, b pendingKey) int { return m.pending[a].ExpiresAt.Compare(m.pending[b].ExpiresAt) })
+	due = due[:min(limit, len(due))]
+	for _, key := range due {
+		delete(m.pending, key)
 	}
 	return len(due), nil
 }
