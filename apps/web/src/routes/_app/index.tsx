@@ -1,15 +1,11 @@
 import { useMe } from '@/api/me'
+import { CreateOrgForm } from '@/components/CreateOrgForm'
 import { Button } from '@/components/ui/button'
 import { UserAvatar } from '@/components/UserAvatar'
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import Session from 'supertokens-auth-react/recipe/session'
 
-export const Route = createFileRoute('/')({
-    beforeLoad: async () => {
-        if (!(await Session.doesSessionExist())) {
-            throw redirect({ to: '/login' })
-        }
-    },
+export const Route = createFileRoute('/_app/')({
     component: Home,
 })
 
@@ -36,6 +32,8 @@ function Home() {
                     window.location.assign('/login')
                 }}>Sign out</Button>
             </div>
+            {/* TODO: moves to /org in step 2.1 */}
+            {!org && <CreateOrgForm />}
         </div>
     )
 }

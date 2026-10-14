@@ -158,16 +158,14 @@ func (s *server) renameOrg(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// deleteOrg always returns to the list: a delete that failed partway may
+// already have removed the org's page.
 func (s *server) deleteOrg(w http.ResponseWriter, r *http.Request) {
 	a, err := actor(r)
 	if err == nil {
 		err = s.iam.DeleteOrg(r.Context(), a, r.PathValue("id"))
 	}
-	if err != nil {
-		done(w, r, "", err, "")
-		return
-	}
-	done(w, r, "/orgs", nil, "org deleted")
+	done(w, r, "/orgs", err, "org deleted")
 }
 
 func (s *server) inviteMember(w http.ResponseWriter, r *http.Request) {
@@ -184,11 +182,19 @@ func (s *server) setRole(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// removeMember returns to the list when the last member left, which
+// deletes the org.
 func (s *server) removeMember(w http.ResponseWriter, r *http.Request) {
-	withActor(w, r, "member removed", func(a string) error {
-		_, err := s.iam.RemoveMember(r.Context(), a, r.PathValue("id"), r.PathValue("user"))
-		return err
-	})
+	a, err := actor(r)
+	remaining := -1
+	if err == nil {
+		remaining, err = s.iam.RemoveMember(r.Context(), a, r.PathValue("id"), r.PathValue("user"))
+	}
+	if err == nil && remaining == 0 {
+		done(w, r, "/orgs", nil, "last member removed; org deleted")
+		return
+	}
+	done(w, r, "", err, "member removed")
 }
 
 // inviteAction accepts, declines (as the invitee) or revokes (as an admin).

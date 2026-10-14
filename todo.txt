@@ -1,10 +1,3 @@
-- breakpoint
-    - security audit - permissions leaks, forgeability etc
-    - tracing / otel / signoz
-    - performance profiling in tracing
-
-- feature flag self host provider? LD does not allow self host
-
 - frontend part 2:
     - user profile, orgs
     - assets/DAM, upload/download/link/unlink/share
@@ -20,7 +13,8 @@
     - Can we use Yrs as a graph CRDT?
     - I don't think Rust/Bevy ECS is particularly avoidable if to repr 3D gfx.
 
-- frontend canvas
+- feature flag self host provider? LD does not allow self host
+- frontend pt3 canvas and interactions
 - exporter
 - mcp
     - im not sure how much can be done with mock engine API, i guess we can make a minimal graphQL schema

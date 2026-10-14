@@ -18,6 +18,87 @@ UI details the backend plans rely on (2026-10-11), to build one at a time. Relat
 - **Deliberately not yet:** tests (Vitest once there is logic worth testing), API type
   generation (hand-written wire types until they hurt), a formatter check in CI.
 
+## Part 2: profile, orgs, library, projects (planned 2026-10-14)
+
+Everything up to the canvas (part 3). The REST API already covers most of it; the
+backend additions (project shelf, read-only shares, copies) are in
+[storage/PLAN.md](../../services/storage/PLAN.md). Profile stays read-only (name and
+avatar come from Google at each sign-in; no RPC to edit them).
+
+**Vision (2026-10-14):** the finished app has a canvas *and* a DAM file browser next to
+it. So the library is one reusable `<FileBrowser>` component: `/library` hosts it
+full-screen now, the project page (later the canvas) as a side panel.
+
+- Commands (toolbar, context menu, multi-select where sensible): open/download, upload,
+  replace (new version: `POST /uploads` with `assetId`), rename, move, delete, share,
+  clone, link to project, versions/revert.
+- Ownership badges: self, org, project, Gyoza, shared with me, other (read through a
+  project). Computed from the item's `owner` against `useMe()`, plus the `shared` flag
+  storage adds.
+- Clone anything readable (own, org, project, shared) to an owner the user can write:
+  `CopyAsset`, and `CopyFolder` for folders.
+- Links: explicit shelf links, and link-on-use (dropping an asset on the canvas adds a
+  document ref; documents records that use). The panel shows both; only shelf links can
+  be unlinked there.
+- Shared items are read-only: edit actions explain "make your own copy to edit". The
+  copy is fully the user's, free to share back or not.
+
+### Step 2.0: groundwork
+
+- Fix `src/api/client.ts`: the header is `'ontent-Type'`, so every mutating request
+  fails the gateway's CSRF check.
+- App shell: a pathless layout route `src/routes/_app.tsx` holding the session guard
+  (moved from `index.tsx`) and a sidebar: workspace switcher, Projects, Library, Shared
+  with me, Trash, Org, and a user menu (profile, sign out).
+- `useWorkspace()`: the active owner from `useMe()` ("Workspace switcher" below), the
+  last choice in localStorage (wrapped in try/catch).
+- API layer: one file per area (`orgs.ts`, `invites.ts`, `projects.ts`, `assets.ts`,
+  `folders.ts`, `uploads.ts`, `shares.ts`) following `me.ts`. Mutations invalidate by
+  query key; paged lists use `useInfiniteQuery` on `pageToken`/`nextPageToken`. One
+  `<ErrorMessage>` maps `ApiError.code` to text.
+- shadcn components: sidebar, dialog, alert-dialog, dropdown-menu, input, label, select,
+  switch, table, sonner.
+
+### Step 2.1: profile and orgs
+
+- `/profile`: name, email and avatar, read-only. Leave org (`DELETE /me/org`; explain
+  `LAST_ADMIN`). Delete account (`DELETE /me`, confirmed by typing the email).
+- Pending invites (`GET /me/invites`): a dialog after sign-in to accept or decline.
+- `/org` is always in the sidebar (decided 2026-10-14). Without an org, the page offers
+  to create one or join one: their pending invites (`GET /me/invites`) with accept and
+  decline. With one, admins can rename and delete it, change
+  roles, remove members, and invite by email, list or revoke invites ("no email is
+  sent"). Controls follow the role; a 403 shows as a toast.
+
+### Step 2.2: library (after storage's shelf and shares)
+
+- `<FileBrowser>` scoped by the workspace: breadcrumb (`/folders/{id}/path`) and
+  contents (`/folders`) as a grid or list; new folder, rename, and move (folder picker).
+- Upload: drop zone → `POST /uploads` → `XMLHttpRequest` PUT to the presigned URL (for
+  progress) → `/complete`. A queue panel; handle 410 expired.
+- Download via `/assets/{id}/download` and `<a download>`.
+- Asset drawer: metadata, versions and revert, delete, share (by email), copy, and add
+  to project (offer a fork on `FORK_REQUIRED`).
+- Deleting a non-empty folder: confirm with the 409 counts, then `?tree=true`.
+- `/shared`: what is shared with me, read-only, with "make my own copy".
+- `/trash`: restore, the time left before the purge, and the usage count.
+
+### Step 2.3: projects
+
+- `/projects`: the workspace's projects, and a Templates tab (read-only, clone).
+- Create dialog, project menu, share dialog: see "Projects" and "Sharing" below.
+  Pending shares can be revoked (`DELETE /projects/{id}/pending-shares/{email}`).
+- `/projects/$id`: a placeholder for opening a project. It shows the header, the
+  document's metadata (headers of `GET /projects/{id}/document`) and the shelf in a
+  `<FileBrowser>` panel (unlink, "update available"). No canvas or WebSocket yet.
+
+### Verification
+
+`npm run build` and `npm run lint`. Then by hand, with two Google accounts on
+`scripts/gyoza.sh` + `scripts/web.sh`: org invite and accept; upload, download, trash,
+restore; share a folder and check the other account can download but not rename, and
+can copy; link and unlink; create, share, clone and delete a project.
+
 ## Step 1: kickstart (planned 2026-10-13)
 
 Goal: a shell that signs in with Google through the gateway and shows "hello <name>"

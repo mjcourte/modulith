@@ -9,14 +9,55 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppRouteImport } from './routes/_app'
+import { Route as AppIndexRouteImport } from './routes/_app/index'
+import { Route as AppLibraryRouteImport } from './routes/_app/library'
+import { Route as AppOrgRouteImport } from './routes/_app/org'
+import { Route as AppProfileRouteImport } from './routes/_app/profile'
+import { Route as AppProjectsRouteImport } from './routes/_app/projects'
+import { Route as AppSharedRouteImport } from './routes/_app/shared'
+import { Route as AppTrashRouteImport } from './routes/_app/trash'
 import { Route as LoginIndexRouteImport } from './routes/login.index'
 import { Route as LoginCallbackGoogleRouteImport } from './routes/login.callback.google'
 
-const IndexRoute = IndexRouteImport.update({
+const AppRoute = AppRouteImport.update({
+  id: '/_app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AppRoute,
+} as any)
+const AppLibraryRoute = AppLibraryRouteImport.update({
+  id: '/library',
+  path: '/library',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppOrgRoute = AppOrgRouteImport.update({
+  id: '/org',
+  path: '/org',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppProfileRoute = AppProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppProjectsRoute = AppProjectsRouteImport.update({
+  id: '/projects',
+  path: '/projects',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSharedRoute = AppSharedRouteImport.update({
+  id: '/shared',
+  path: '/shared',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppTrashRoute = AppTrashRouteImport.update({
+  id: '/trash',
+  path: '/trash',
+  getParentRoute: () => AppRoute,
 } as any)
 const LoginIndexRoute = LoginIndexRouteImport.update({
   id: '/login/',
@@ -30,43 +71,140 @@ const LoginCallbackGoogleRoute = LoginCallbackGoogleRouteImport.update({
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
+  '/': typeof AppIndexRoute
+  '/library': typeof AppLibraryRoute
+  '/org': typeof AppOrgRoute
+  '/profile': typeof AppProfileRoute
+  '/projects': typeof AppProjectsRoute
+  '/shared': typeof AppSharedRoute
+  '/trash': typeof AppTrashRoute
   '/login/': typeof LoginIndexRoute
   '/login/callback/google': typeof LoginCallbackGoogleRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
+  '/library': typeof AppLibraryRoute
+  '/org': typeof AppOrgRoute
+  '/profile': typeof AppProfileRoute
+  '/projects': typeof AppProjectsRoute
+  '/shared': typeof AppSharedRoute
+  '/trash': typeof AppTrashRoute
+  '/': typeof AppIndexRoute
   '/login': typeof LoginIndexRoute
   '/login/callback/google': typeof LoginCallbackGoogleRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
+  '/_app': typeof AppRouteWithChildren
+  '/_app/library': typeof AppLibraryRoute
+  '/_app/org': typeof AppOrgRoute
+  '/_app/profile': typeof AppProfileRoute
+  '/_app/projects': typeof AppProjectsRoute
+  '/_app/shared': typeof AppSharedRoute
+  '/_app/trash': typeof AppTrashRoute
+  '/_app/': typeof AppIndexRoute
   '/login/': typeof LoginIndexRoute
   '/login/callback/google': typeof LoginCallbackGoogleRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login/' | '/login/callback/google'
+  fullPaths:
+    | '/'
+    | '/library'
+    | '/org'
+    | '/profile'
+    | '/projects'
+    | '/shared'
+    | '/trash'
+    | '/login/'
+    | '/login/callback/google'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/login/callback/google'
-  id: '__root__' | '/' | '/login/' | '/login/callback/google'
+  to:
+    | '/library'
+    | '/org'
+    | '/profile'
+    | '/projects'
+    | '/shared'
+    | '/trash'
+    | '/'
+    | '/login'
+    | '/login/callback/google'
+  id:
+    | '__root__'
+    | '/_app'
+    | '/_app/library'
+    | '/_app/org'
+    | '/_app/profile'
+    | '/_app/projects'
+    | '/_app/shared'
+    | '/_app/trash'
+    | '/_app/'
+    | '/login/'
+    | '/login/callback/google'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
+  AppRoute: typeof AppRouteWithChildren
   LoginIndexRoute: typeof LoginIndexRoute
   LoginCallbackGoogleRoute: typeof LoginCallbackGoogleRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
+    '/_app': {
+      id: '/_app'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_app/': {
+      id: '/_app/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/library': {
+      id: '/_app/library'
+      path: '/library'
+      fullPath: '/library'
+      preLoaderRoute: typeof AppLibraryRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/org': {
+      id: '/_app/org'
+      path: '/org'
+      fullPath: '/org'
+      preLoaderRoute: typeof AppOrgRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/profile': {
+      id: '/_app/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof AppProfileRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/projects': {
+      id: '/_app/projects'
+      path: '/projects'
+      fullPath: '/projects'
+      preLoaderRoute: typeof AppProjectsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/shared': {
+      id: '/_app/shared'
+      path: '/shared'
+      fullPath: '/shared'
+      preLoaderRoute: typeof AppSharedRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/trash': {
+      id: '/_app/trash'
+      path: '/trash'
+      fullPath: '/trash'
+      preLoaderRoute: typeof AppTrashRouteImport
+      parentRoute: typeof AppRoute
     }
     '/login/': {
       id: '/login/'
@@ -85,8 +223,30 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AppRouteChildren {
+  AppLibraryRoute: typeof AppLibraryRoute
+  AppOrgRoute: typeof AppOrgRoute
+  AppProfileRoute: typeof AppProfileRoute
+  AppProjectsRoute: typeof AppProjectsRoute
+  AppSharedRoute: typeof AppSharedRoute
+  AppTrashRoute: typeof AppTrashRoute
+  AppIndexRoute: typeof AppIndexRoute
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppLibraryRoute: AppLibraryRoute,
+  AppOrgRoute: AppOrgRoute,
+  AppProfileRoute: AppProfileRoute,
+  AppProjectsRoute: AppProjectsRoute,
+  AppSharedRoute: AppSharedRoute,
+  AppTrashRoute: AppTrashRoute,
+  AppIndexRoute: AppIndexRoute,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
+  AppRoute: AppRouteWithChildren,
   LoginIndexRoute: LoginIndexRoute,
   LoginCallbackGoogleRoute: LoginCallbackGoogleRoute,
 }

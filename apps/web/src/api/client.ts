@@ -14,7 +14,7 @@ type ApiInit = Omit<RequestInit, 'body'> & { json?: unknown }
 
 export async function api<T>(path: string, { json, ...init }: ApiInit = {}): Promise<T> {
     const headers = new Headers(init.headers)
-    if (json !== undefined) headers.set('ontent-Type', 'application/json')
+    if (json !== undefined) headers.set('Content-Type', 'application/json')
 
     const res = await fetch(path, {
         ...init,
