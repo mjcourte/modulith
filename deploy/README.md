@@ -26,13 +26,18 @@ docker compose -f deploy/monolith/compose.yaml down -v        # stop, delete dat
 
 ## Running the binaries in containers
 
+Both need `--env-file .env`: the Google OAuth client is not inlined in the compose
+files (GitHub's secret scanner reads SuperTokens' demo values as live credentials), so
+it is interpolated from `.env` instead. Without it the containers start but sign-in
+fails. The dependencies-only path above needs no such flag.
+
 ```sh
 # The monolith, on localhost:9090:
-docker compose -f deploy/monolith/compose.yaml --profile app up -d --build --wait
+docker compose -f deploy/monolith/compose.yaml --env-file .env --profile app up -d --build --wait
 
 # Distributed: storage on localhost:9091, iam on localhost:9093, documents on
 # localhost:9094, mediaprocessor reachable only by storage.
-docker compose -f deploy/distributed/compose.yaml up -d --build --wait
+docker compose -f deploy/distributed/compose.yaml --env-file .env up -d --build --wait
 ```
 
 - Inside containers, presigned URLs name `http://s3:9000`, which the host can't resolve. Services probe each other's URLs fine; to upload by hand from the host, run the binary on the host instead (or PUT from inside a container).

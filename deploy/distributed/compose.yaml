@@ -80,9 +80,12 @@ services:
       MODULITH_NATS_URL: nats://nats-1:4222,nats-2:4222,nats-3:4222
       MODULITH_SUPERTOKENS_URL: http://supertokens:3567
       MODULITH_PUBLIC_URL: http://localhost:8080
-      # SuperTokens' public demo Google client: localhost only (see .env.example).
-      MODULITH_GOOGLE_CLIENT_ID: 1060725074195-kmeum4crr01uirfl2op9kd5acmi9jutn.apps.googleusercontent.com
-      MODULITH_GOOGLE_CLIENT_SECRET: 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
+      # Google OAuth client (see .env.example). Not inlined here: the SuperTokens demo
+      # values trip GitHub's secret scanner. Pass them in --
+      # docker compose -f deploy/distributed/compose.yaml --env-file .env up --build
+      # -- or sign-in fails at runtime.
+      MODULITH_GOOGLE_CLIENT_ID: ${MODULITH_GOOGLE_CLIENT_ID-}
+      MODULITH_GOOGLE_CLIENT_SECRET: ${MODULITH_GOOGLE_CLIENT_SECRET-}
       MODULITH_GATEWAY_DEV_PAGES: "true"
     ports:
       - "127.0.0.1:8080:8080" # as go run ./cmd/gateway serves it
