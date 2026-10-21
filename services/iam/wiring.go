@@ -1,6 +1,6 @@
 package iam
 
-// Setup shared by the binaries hosting iam (cmd/gyoza, cmd/iam), so they
+// Setup shared by the binaries hosting iam (cmd/modulith, cmd/iam), so they
 // can't drift apart.
 
 import (
@@ -9,7 +9,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"gyoza/platform/config"
+	"github.com/mjcourte/modulith/platform/config"
 )
 
 // Settings is everything iam reads from the environment.
@@ -23,10 +23,10 @@ type Settings struct {
 func SettingsFromEnv(env *config.Env) Settings {
 	return Settings{
 		Manager: Config{
-			InviteTTL: env.Duration("GYOZA_INVITE_TTL", DefaultInviteTTL),
-			ShareTTL:  time.Duration(env.PositiveInt("GYOZA_SHARE_EXPIRY_DAYS", int64(DefaultShareTTL/(24*time.Hour)))) * 24 * time.Hour,
+			InviteTTL: env.Duration("MODULITH_INVITE_TTL", DefaultInviteTTL),
+			ShareTTL:  time.Duration(env.PositiveInt("MODULITH_SHARE_EXPIRY_DAYS", int64(DefaultShareTTL/(24*time.Hour)))) * 24 * time.Hour,
 		},
-		CleanupInterval: env.Duration("GYOZA_IAM_CLEANUP_INTERVAL", 10*time.Minute),
+		CleanupInterval: env.Duration("MODULITH_IAM_CLEANUP_INTERVAL", 10*time.Minute),
 	}
 }
 

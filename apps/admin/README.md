@@ -7,8 +7,8 @@ stored snapshots, with a button to revert to any of them (administrative un-stic
 one fresh edit, see services/documents/PLAN.md "Reverting").
 
 ```sh
-go run ./cmd/gyoza                    # in one terminal (needs compose's RustFS)
-GYOZA_ADMIN=1 go run ./cmd/admin      # in another; open http://localhost:8081
+go run ./cmd/modulith                    # in one terminal (needs compose's RustFS)
+MODULITH_ADMIN=1 go run ./cmd/admin      # in another; open http://localhost:8081
 ```
 
 ## How it works (decided 2026-10-12)
@@ -29,9 +29,9 @@ GYOZA_ADMIN=1 go run ./cmd/admin      # in another; open http://localhost:8081
   to the presigned URL.
 - Go `html/template` + vendored htmx 2.0.4 (`static/`, only for the live search boxes),
   embedded in the binary. No Node build.
-- Refuses to start without `GYOZA_ADMIN=1`, listens on `localhost:8081`
-  (`GYOZA_ADMIN_ADDR`), and calls iam and storage on `localhost:9090`
-  (`GYOZA_ADMIN_IAM_ADDR`, `GYOZA_ADMIN_STORAGE_ADDR`, `GYOZA_ADMIN_DOCUMENTS_ADDR`;
+- Refuses to start without `MODULITH_ADMIN=1`, listens on `localhost:8081`
+  (`MODULITH_ADMIN_ADDR`), and calls iam and storage on `localhost:9090`
+  (`MODULITH_ADMIN_IAM_ADDR`, `MODULITH_ADMIN_STORAGE_ADDR`, `MODULITH_ADMIN_DOCUMENTS_ADDR`;
   point them at 9093/9091/9094 for the distributed binaries). Never deploy it.
 - No authentication, so other sites are kept out instead (`guard`): requests must be
   addressed to `localhost` or a loopback IP (against DNS rebinding), and changes must be

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"sync"
 
-	"gyoza/services/storage/internal/ledger"
+	"github.com/mjcourte/modulith/services/storage/internal/ledger"
 )
 
 // ErrForbidden means the acting user may not do what they asked. Manager
@@ -29,7 +29,7 @@ var ErrForkRequired = errors.New("storage: fork required")
 type Authorizer interface {
 	CanRead(ctx context.Context, actorID string, owner ledger.Owner, projectID string) error
 	CanWrite(ctx context.Context, actorID string, owner ledger.Owner, projectID string) error
-	// ProjectOwner returns who owns a project (a user, an org or gyoza). An
+	// ProjectOwner returns who owns a project (a user, an org or modulith). An
 	// unknown project, or one being deleted, is an error wrapping ErrForbidden.
 	ProjectOwner(ctx context.Context, projectID string) (ledger.Owner, error)
 }

@@ -3,8 +3,8 @@ package manager
 import (
 	"context"
 
-	"gyoza/services/iam/internal/directory"
-	"gyoza/services/storage"
+	"github.com/mjcourte/modulith/services/iam/internal/directory"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 // Service is what other components call: the gateway, for a signed-in user

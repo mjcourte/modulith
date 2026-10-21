@@ -6,8 +6,8 @@ CREATE TABLE storage.objects (
     -- COLLATE "C" compares bytes, matching Go's string ordering, so keyset
     -- pagination on (created_at, id) agrees with the in-memory implementation.
     id           text COLLATE "C" PRIMARY KEY,
-    owner_kind   text        NOT NULL CHECK (owner_kind IN ('project', 'user', 'org', 'gyoza')),
-    -- '' (not NULL) for gyoza-owned objects, so the owner query can use = and
+    owner_kind   text        NOT NULL CHECK (owner_kind IN ('project', 'user', 'org', 'modulith')),
+    -- '' (not NULL) for modulith-owned objects, so the owner query can use = and
     -- its index; IS NOT DISTINCT FROM can't use one.
     owner_id     text        NOT NULL,
     created_by   text,                 -- NULL for platform-created objects, or once the creator is deleted
@@ -20,7 +20,7 @@ CREATE TABLE storage.objects (
     created_at   timestamptz NOT NULL DEFAULT now(),
     deleted_at   timestamptz,
 
-    CONSTRAINT objects_owner_id_check CHECK ((owner_kind = 'gyoza') = (owner_id = '')),
+    CONSTRAINT objects_owner_id_check CHECK ((owner_kind = 'modulith') = (owner_id = '')),
     CHECK (owner_kind <> 'project' OR project_id = owner_id)
 );
 
@@ -39,8 +39,8 @@ CREATE INDEX objects_deleted      ON storage.objects (deleted_at, id) WHERE dele
 
 CREATE TABLE storage.folders (
     id          uuid PRIMARY KEY,
-    owner_kind  text        NOT NULL CHECK (owner_kind IN ('project', 'user', 'org', 'gyoza')),
-    owner_id    text        NOT NULL, -- '' for gyoza, as in objects
+    owner_kind  text        NOT NULL CHECK (owner_kind IN ('project', 'user', 'org', 'modulith')),
+    owner_id    text        NOT NULL, -- '' for modulith, as in objects
     parent_id   uuid REFERENCES storage.folders (id),
     name        text        NOT NULL,
     name_key    text        NOT NULL, -- folderNameKey(name), computed in Go
@@ -63,7 +63,7 @@ CREATE INDEX folders_trashed  ON storage.folders (deleted_at, id) WHERE deleted_
 
 CREATE TABLE storage.assets (
     id              uuid PRIMARY KEY,
-    owner_kind      text        NOT NULL CHECK (owner_kind IN ('project', 'user', 'org', 'gyoza')),
+    owner_kind      text        NOT NULL CHECK (owner_kind IN ('project', 'user', 'org', 'modulith')),
     owner_id        text        NOT NULL,
     project_id      text        NOT NULL DEFAULT '',
     folder_id       uuid REFERENCES storage.folders (id),

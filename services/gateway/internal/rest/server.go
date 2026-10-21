@@ -15,11 +15,11 @@ import (
 	"mime"
 	"net/http"
 
-	"gyoza/platform/telemetry"
-	"gyoza/services/documents"
-	"gyoza/services/gateway/internal/session"
-	"gyoza/services/iam"
-	"gyoza/services/storage"
+	"github.com/mjcourte/modulith/platform/telemetry"
+	"github.com/mjcourte/modulith/services/documents"
+	"github.com/mjcourte/modulith/services/gateway/internal/session"
+	"github.com/mjcourte/modulith/services/iam"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 // Server answers /api routes by calling the services, which may be in

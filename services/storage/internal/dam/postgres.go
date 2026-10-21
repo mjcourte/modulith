@@ -15,8 +15,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 
-	"gyoza/services/storage/internal/db"
-	"gyoza/services/storage/internal/ledger"
+	"github.com/mjcourte/modulith/services/storage/internal/db"
+	"github.com/mjcourte/modulith/services/storage/internal/ledger"
 )
 
 // DB is the connection Postgres runs on: *pgxpool.Pool in production, a

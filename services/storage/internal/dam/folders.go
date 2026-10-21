@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"gyoza/services/storage/internal/ledger"
+	"github.com/mjcourte/modulith/services/storage/internal/ledger"
 )
 
 // Folder errors returned by every Store (see FolderStore).

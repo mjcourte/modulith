@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"gyoza/internal/engine"
+	"github.com/mjcourte/modulith/internal/engine"
 )
 
 func TestRESTMeAndOrgs(t *testing.T) {
@@ -108,9 +108,9 @@ func TestRESTProjectsAndShares(t *testing.T) {
 	if r := w.call(ann, "GET", "/projects/"+id, nil); r.status < 400 {
 		t.Errorf("GET after delete = %d", r.status)
 	}
-	// Browsers can't name the gyoza owner (templates are service-to-service).
-	if r := w.call(ann, "POST", "/projects", map[string]any{"owner": map[string]any{"kind": "gyoza"}, "name": "T"}); r.status != http.StatusBadRequest {
-		t.Errorf("gyoza-owned project = %d %s, want 400", r.status, r.raw)
+	// Browsers can't name the modulith owner (templates are service-to-service).
+	if r := w.call(ann, "POST", "/projects", map[string]any{"owner": map[string]any{"kind": "modulith"}, "name": "T"}); r.status != http.StatusBadRequest {
+		t.Errorf("modulith-owned project = %d %s, want 400", r.status, r.raw)
 	}
 }
 
@@ -201,8 +201,8 @@ func TestRESTDocuments(t *testing.T) {
 	pid := str(p.body, "id")
 
 	doc := w.must(http.StatusOK, ann, "GET", "/projects/"+pid+"/document", nil)
-	if doc.header.Get("Content-Type") != "application/octet-stream" || doc.header.Get("Gyoza-Format") == "" ||
-		doc.header.Get("Gyoza-Seq") == "" || len(doc.raw) == 0 {
+	if doc.header.Get("Content-Type") != "application/octet-stream" || doc.header.Get("Modulith-Format") == "" ||
+		doc.header.Get("Modulith-Seq") == "" || len(doc.raw) == 0 {
 		t.Errorf("GET document: headers %v, %d bytes", doc.header, len(doc.raw))
 	}
 	if r := w.call(eve, "GET", "/projects/"+pid+"/document", nil); r.status != http.StatusForbidden {

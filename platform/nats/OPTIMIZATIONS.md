@@ -7,7 +7,7 @@ evidence (a measurement or a plan), so the reasoning survives.
 ## Rules the design depends on
 
 - Consumers are per service instance, never per project, client or request
-  (README "Rule: few consumers"). The previous version of Gyoza scaled to
+  (README "Rule: few consumers"). The previous version of Modulith scaled to
   about 3N consumers per active project. Per-project reads use Direct Get.
 - `Compact` runs after every stored snapshot, so a project's deltas in the
   stream are only the ones since its last snapshot. Replays depend on that tail

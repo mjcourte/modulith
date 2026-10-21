@@ -11,25 +11,25 @@ import (
 
 	"github.com/nats-io/nats.go/jetstream"
 
-	"gyoza/platform/nats"
+	"github.com/mjcourte/modulith/platform/nats"
 )
 
 // connect runs against a real cluster (Replicas: 3 needs three servers):
 //
 //	docker compose -f deploy/monolith/compose.yaml up -d --wait nats-1 nats-2 nats-3
-//	GYOZA_TEST_NATS_URL=nats://localhost:4222
+//	MODULITH_TEST_NATS_URL=nats://localhost:4222
 //
 // Streams are shared with anything else using the cluster, so each test uses
 // fresh project IDs.
 func connect(t *testing.T) (context.Context, *nats.Client) {
 	t.Helper()
-	url := os.Getenv("GYOZA_TEST_NATS_URL")
+	url := os.Getenv("MODULITH_TEST_NATS_URL")
 	if url == "" {
-		t.Skip("set GYOZA_TEST_NATS_URL to run against NATS")
+		t.Skip("set MODULITH_TEST_NATS_URL to run against NATS")
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	t.Cleanup(cancel)
-	c, err := nats.Connect(ctx, url, "gyoza-test")
+	c, err := nats.Connect(ctx, url, "modulith-test")
 	if err != nil {
 		t.Fatal(err)
 	}

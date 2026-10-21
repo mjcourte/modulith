@@ -8,9 +8,9 @@ package mediaprocessor
 import (
 	"google.golang.org/grpc"
 
-	pb "gyoza/contracts/gen/go/gyoza/mediaprocessor/v1"
-	"gyoza/services/mediaprocessor/internal/grpcapi"
-	"gyoza/services/mediaprocessor/internal/probe"
+	pb "github.com/mjcourte/modulith/contracts/gen/go/modulith/mediaprocessor/v1"
+	"github.com/mjcourte/modulith/services/mediaprocessor/internal/grpcapi"
+	"github.com/mjcourte/modulith/services/mediaprocessor/internal/probe"
 )
 
 type (

@@ -15,11 +15,11 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
 
-	pb "gyoza/contracts/gen/go/gyoza/iam/v1"
-	"gyoza/services/iam/internal/directory"
-	"gyoza/services/iam/internal/grpcapi"
-	"gyoza/services/iam/internal/manager"
-	"gyoza/services/storage"
+	pb "github.com/mjcourte/modulith/contracts/gen/go/modulith/iam/v1"
+	"github.com/mjcourte/modulith/services/iam/internal/directory"
+	"github.com/mjcourte/modulith/services/iam/internal/grpcapi"
+	"github.com/mjcourte/modulith/services/iam/internal/manager"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 // dial serves register's services over an in-memory connection and returns a
@@ -50,7 +50,7 @@ func (noDocs) CloneDocument(ctx context.Context, actorID, from, to string) error
 func newManager(t *testing.T) (*manager.Manager, *directory.MemoryStore) {
 	t.Helper()
 	s := directory.NewMemoryStore()
-	files, err := storage.NewMemory(manager.NewStorageAuthorizer(s), storage.Config{Bucket: "gyoza-test"})
+	files, err := storage.NewMemory(manager.NewStorageAuthorizer(s), storage.Config{Bucket: "modulith-test"})
 	if err != nil {
 		t.Fatalf("storage.NewMemory: %v", err)
 	}

@@ -5,17 +5,17 @@
 
 ## Go package
 
-`gyoza/platform/nats`: `client.go` (`Connect`, `Close`), `streams.go` (the stream config, `EnsureStreams`, `Compact`), `documents.go` (consumer-free reads: `LatestSnapshot`, `DeltasAfter`), `subjects.go` (subject patterns and builders). The client library is imported as `natsgo`, so it doesn't read as this package.
+`modulith/platform/nats`: `client.go` (`Connect`, `Close`), `streams.go` (the stream config, `EnsureStreams`, `Compact`), `documents.go` (consumer-free reads: `LatestSnapshot`, `DeltasAfter`), `subjects.go` (subject patterns and builders). The client library is imported as `natsgo`, so it doesn't read as this package.
 
 Always build subjects with the builders (`DocumentDelta(projectID)`, ...): they reject IDs that are empty or contain `.`, `*`, `>` or whitespace, which would otherwise add a subject level or act as a wildcard.
 
 ## Rule: few consumers
 
-Consumers are per service instance, never per project, per client or per request. Per-project reads (the latest snapshot pointer, catching up on deltas) use Direct Get, and fan-out to clients happens inside a service, after its one consumer. (The previous version of Gyoza scaled to about 3N consumers per active project, which is not how NATS is meant to be used.)
+Consumers are per service instance, never per project, per client or per request. Per-project reads (the latest snapshot pointer, catching up on deltas) use Direct Get, and fan-out to clients happens inside a service, after its one consumer. (The previous version of Modulith scaled to about 3N consumers per active project, which is not how NATS is meant to be used.)
 
 ## Topology: one code path
 
-Monolith and distributed mode both connect to an external cluster through `GYOZA_NATS_URL` (the compose file runs three members; host clients reach `nats-1` on `localhost:4222`). Even when gateway and documents share one process they talk over NATS, because several instances need the fan-out anyway. `cmd/gyoza` and `cmd/documents` connect (documents' consumer); gateway will too.
+Monolith and distributed mode both connect to an external cluster through `MODULITH_NATS_URL` (the compose file runs three members; host clients reach `nats-1` on `localhost:4222`). Even when gateway and documents share one process they talk over NATS, because several instances need the fan-out anyway. `cmd/modulith` and `cmd/documents` connect (documents' consumer); gateway will too.
 
 ## Document WAL design
 
@@ -57,5 +57,5 @@ Subject tests always run. The stream tests need the cluster (`Replicas: 3`):
 
 ```sh
 docker compose -f deploy/monolith/compose.yaml up -d --wait nats-1 nats-2 nats-3
-GYOZA_TEST_NATS_URL=nats://localhost:4222 go test ./platform/nats -v
+MODULITH_TEST_NATS_URL=nats://localhost:4222 go test ./platform/nats -v
 ```

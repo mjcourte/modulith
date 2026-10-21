@@ -14,7 +14,7 @@ Google sign-in through the gateway, a session-guarded home page showing the user
 | `src/routes/` | file-based routes; `routeTree.gen.ts` is generated from them (committed, never edited) |
 | `src/api/` | `client.ts` (`api<T>()` and `ApiError`), one file per area with wire types and hooks (`me.ts`) |
 | `src/routes/_app.tsx` | pathless layout: session guard, `useMe`, `WorkspaceProvider`, the sidebar around an `Outlet`; signed-in pages live under `_app/` |
-| `src/lib/workspace*.ts(x)` | `useWorkspace()`: the active owner (user or org); its kind is kept in localStorage (`gyoza.workspace`) |
+| `src/lib/workspace*.ts(x)` | `useWorkspace()`: the active owner (user or org); its kind is kept in localStorage (`modulith.workspace`) |
 | `src/components/` | app components (`AppSidebar`, `WorkspaceSwitcher`, `UserNav`, `CreateOrgForm`, `UserAvatar`, `SuperTokensRoutes`); `ui/` is shadcn's |
 
 - **Stack:** React 19 + TypeScript, Vite, Tailwind v4, shadcn/ui on Base UI (style
@@ -23,7 +23,7 @@ Google sign-in through the gateway, a session-guarded home page showing the user
 - **One origin.** The gateway has no CORS, uses SameSite cookies and same-origin
   WebSockets, so the browser only talks to `http://localhost:3000`: Vite proxies `/api`
   (with WebSockets) and `/auth` to the gateway on `:8080`. The gateway needs
-  `GYOZA_PUBLIC_URL=http://localhost:3000` (its SuperTokens website and API domain).
+  `MODULITH_PUBLIC_URL=http://localhost:3000` (its SuperTokens website and API domain).
   In production the gateway (or whatever fronts it) serves `dist/` on the same origin.
 - **Sign-in.** SuperTokens' prebuilt UI at `/login`, the Google callback at
   `/login/callback/google` (`components/SuperTokensRoutes.tsx` renders whichever
@@ -64,7 +64,7 @@ npm run lint       # oxlint
 npx shadcn@latest add <component>   # copies it into src/components/ui
 ```
 
-Full stack: `GYOZA_PUBLIC_URL=http://localhost:3000` in `.env`, then `scripts/gyoza.sh`
+Full stack: `MODULITH_PUBLIC_URL=http://localhost:3000` in `.env`, then `scripts/modulith.sh`
 and `scripts/web.sh`.
 
 ## Wishlist

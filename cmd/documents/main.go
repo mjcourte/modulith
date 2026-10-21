@@ -13,13 +13,13 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"gyoza/platform/config"
-	gnats "gyoza/platform/nats"
-	"gyoza/platform/shutdown"
-	"gyoza/platform/telemetry"
-	"gyoza/services/documents"
-	"gyoza/services/iam"
-	"gyoza/services/storage"
+	"github.com/mjcourte/modulith/platform/config"
+	gnats "github.com/mjcourte/modulith/platform/nats"
+	"github.com/mjcourte/modulith/platform/shutdown"
+	"github.com/mjcourte/modulith/platform/telemetry"
+	"github.com/mjcourte/modulith/services/documents"
+	"github.com/mjcourte/modulith/services/iam"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 func main() {
@@ -37,18 +37,18 @@ func run() error {
 
 	env := config.FromEnv()
 	logLevel := slog.LevelInfo
-	env.Text("GYOZA_LOG_LEVEL", &logLevel)
+	env.Text("MODULITH_LOG_LEVEL", &logLevel)
 	telemetrySettings := telemetry.SettingsFromEnv(env)
-	shutdownTimeout := env.Duration("GYOZA_SHUTDOWN_TIMEOUT", 20*time.Second)
+	shutdownTimeout := env.Duration("MODULITH_SHUTDOWN_TIMEOUT", 20*time.Second)
 	// localhost by default so local runs don't listen on the network;
 	// deployments set ":9090". Differs from the other binaries' defaults so
 	// all can run on one machine.
-	grpcAddr := env.String("GYOZA_GRPC_ADDR", "localhost:9094")
+	grpcAddr := env.String("MODULITH_GRPC_ADDR", "localhost:9094")
 	// cmd/storage's and cmd/iam's local defaults. Storage keeps the snapshots
 	// and asset uses; iam answers every permission check, so while it's
 	// unreachable user calls fail (never allowed by default).
-	storageAddr := env.String("GYOZA_STORAGE_ADDR", "localhost:9091")
-	iamAddr := env.String("GYOZA_IAM_ADDR", "localhost:9093")
+	storageAddr := env.String("MODULITH_STORAGE_ADDR", "localhost:9091")
+	iamAddr := env.String("MODULITH_IAM_ADDR", "localhost:9093")
 	settings := documents.SettingsFromEnv(env)
 	if err := env.Err(); err != nil {
 		return err

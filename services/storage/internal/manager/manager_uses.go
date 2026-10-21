@@ -9,15 +9,15 @@ import (
 	"context"
 	"fmt"
 
-	"gyoza/services/storage/internal/dam"
-	"gyoza/services/storage/internal/ledger"
+	"github.com/mjcourte/modulith/services/storage/internal/dam"
+	"github.com/mjcourte/modulith/services/storage/internal/ledger"
 )
 
 // RecordAssetUse records that projectID's document uses ref. The actor must
 // be able to write the project and read the asset.
 //
 // A project only uses its own files in place: assets it owns, or that its
-// owner (a user, an org, gyoza) owns, plus gyoza's shared files, which any
+// owner (a user, an org, modulith) owns, plus modulith's shared files, which any
 // project may use. Anything else, such as a file of a
 // project shared with the actor, returns ErrForkRequired (with
 // ErrForbidden): the client forks it into a copy the project owns. So a
@@ -32,9 +32,9 @@ func (m *Manager) RecordAssetUse(ctx context.Context, actorID, projectID string,
 	if err != nil {
 		return err
 	}
-	// gyoza's shared files can be used in place anywhere: no user can trash
+	// modulith's shared files can be used in place anywhere: no user can trash
 	// or purge them, so nobody's project can break.
-	if a.Owner.Kind != ledger.OwnerGyoza && a.Owner != (ledger.Owner{Kind: ledger.OwnerProject, ID: projectID}) {
+	if a.Owner.Kind != ledger.OwnerModulith && a.Owner != (ledger.Owner{Kind: ledger.OwnerProject, ID: projectID}) {
 		projectOwner, err := m.authz.ProjectOwner(ctx, projectID)
 		if err != nil {
 			return err

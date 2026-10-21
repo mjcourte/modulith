@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	ledger "gyoza/services/storage/internal/ledger"
+	ledger "github.com/mjcourte/modulith/services/storage/internal/ledger"
 )
 
 // letTimePass makes sure the next write gets a later timestamp: stores keep

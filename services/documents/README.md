@@ -3,11 +3,11 @@
 - transacts/log rolls snapshots to RustFS/S3
 - recieves deltas from any entry point, and uses engine go api to update
 - never touches S3 directly: snapshot reads and writes go through the storage service over gRPC (`StorageService` snapshot calls, see the storage README "Document snapshots"; the bytes go to S3 by presigned URL)
-- snapshot convention (agreed with storage): storage records every snapshot in its ledger with `Kind=snapshot`, a vendor MIME type (e.g. `application/vnd.gyoza.app+flatbuffers`), and an S3 key under `projects/{projectID}/snapshot/{id}` (see the storage README "S3 key layout"). Snapshots are not DAM assets
+- snapshot convention (agreed with storage): storage records every snapshot in its ledger with `Kind=snapshot`, a vendor MIME type (e.g. `application/vnd.modulith.app+flatbuffers`), and an S3 key under `projects/{projectID}/snapshot/{id}` (see the storage README "S3 key layout"). Snapshots are not DAM assets
 
 ## Status (2026-10-12)
 
-Built and running in `cmd/gyoza` and `cmd/documents` (gRPC `DocumentsService`, port 9094 standalone). Layout, one `doc.go` per package:
+Built and running in `cmd/modulith` and `cmd/documents` (gRPC `DocumentsService`, port 9094 standalone). Layout, one `doc.go` per package:
 
 | Path | What |
 | --- | --- |

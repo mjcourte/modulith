@@ -9,7 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 
-	"gyoza/services/storage/internal/db"
+	"github.com/mjcourte/modulith/services/storage/internal/db"
 )
 
 // DB is the connection Postgres runs on: *pgxpool.Pool in production, a

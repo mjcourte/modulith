@@ -13,12 +13,12 @@ import (
 
 	"github.com/nats-io/nats.go/jetstream"
 
-	"gyoza/internal/engine"
-	gnats "gyoza/platform/nats"
-	"gyoza/services/documents/internal/live"
-	"gyoza/services/documents/internal/manager"
-	"gyoza/services/documents/internal/snapshots"
-	"gyoza/services/documents/internal/wal"
+	"github.com/mjcourte/modulith/internal/engine"
+	gnats "github.com/mjcourte/modulith/platform/nats"
+	"github.com/mjcourte/modulith/services/documents/internal/live"
+	"github.com/mjcourte/modulith/services/documents/internal/manager"
+	"github.com/mjcourte/modulith/services/documents/internal/snapshots"
+	"github.com/mjcourte/modulith/services/documents/internal/wal"
 )
 
 // natsWorld is several documents replicas sharing one snapshot store, one
@@ -41,9 +41,9 @@ type natsWorld struct {
 }
 
 func newNATSWorld(t *testing.T) *natsWorld {
-	url := os.Getenv("GYOZA_TEST_NATS_URL")
+	url := os.Getenv("MODULITH_TEST_NATS_URL")
 	if url == "" {
-		t.Skip("set GYOZA_TEST_NATS_URL to run against NATS")
+		t.Skip("set MODULITH_TEST_NATS_URL to run against NATS")
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	t.Cleanup(cancel)

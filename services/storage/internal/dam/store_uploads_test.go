@@ -4,7 +4,7 @@ package dam_test
 
 import (
 	"errors"
-	"gyoza/services/storage/internal/dam"
+	"github.com/mjcourte/modulith/services/storage/internal/dam"
 	"slices"
 	"testing"
 	"time"
@@ -17,7 +17,7 @@ func newAssetUpload() dam.Upload {
 	return dam.Upload{
 		Owner: acme, CreatedBy: "alice",
 		Name: "Logo", Tags: []string{"Brand"},
-		Bucket: "gyoza", Key: "library/asset/" + uuid.NewString(),
+		Bucket: "modulith", Key: "library/asset/" + uuid.NewString(),
 		ContentType: "image/png", SizeBytes: 2048,
 		ExpiresAt: time.Now().Add(time.Hour),
 	}
@@ -27,7 +27,7 @@ func newAssetUpload() dam.Upload {
 func versionUpload(a dam.Asset, contentType string) dam.Upload {
 	return dam.Upload{
 		Owner: a.Owner, CreatedBy: "alice", AssetID: a.ID,
-		Bucket: "gyoza", Key: "library/asset/" + uuid.NewString(),
+		Bucket: "modulith", Key: "library/asset/" + uuid.NewString(),
 		ContentType: contentType, SizeBytes: 4096,
 		ExpiresAt: time.Now().Add(time.Hour),
 	}

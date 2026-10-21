@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"testing"
 
-	"gyoza/services/iam"
+	"github.com/mjcourte/modulith/services/iam"
 )
 
 // The admin UI has no authentication, so other sites must not reach it:

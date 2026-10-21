@@ -15,7 +15,7 @@ import (
 	"sync"
 	"time"
 
-	"gyoza/internal/engine/fbs"
+	"github.com/mjcourte/modulith/internal/engine/fbs"
 )
 
 // Mock is an Engine: an in-memory stand-in for the native engine. It

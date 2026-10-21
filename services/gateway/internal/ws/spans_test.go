@@ -11,7 +11,7 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 
-	"gyoza/services/iam"
+	"github.com/mjcourte/modulith/services/iam"
 )
 
 // spans is the process's span recorder. OTel's global tracer provider binds
@@ -49,7 +49,7 @@ func TestMessageSpans(t *testing.T) {
 	for _, s := range rec.Ended()[before:] {
 		got[s.Name()] = append(got[s.Name()], s)
 	}
-	hot := attribute.Bool("gyoza.hot", true)
+	hot := attribute.Bool("modulith.hot", true)
 	has := func(s sdktrace.ReadOnlySpan, kv attribute.KeyValue) bool {
 		for _, a := range s.Attributes() {
 			if a == kv {
@@ -78,7 +78,7 @@ func TestMessageSpans(t *testing.T) {
 	}
 	refused := 0
 	for _, j := range joins {
-		if has(j, attribute.String("gyoza.refused", "FORBIDDEN")) {
+		if has(j, attribute.String("modulith.refused", "FORBIDDEN")) {
 			refused++
 		}
 	}

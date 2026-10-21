@@ -8,7 +8,7 @@ import (
 	"slices"
 	"strings"
 
-	"gyoza/services/storage/internal/ledger"
+	"github.com/mjcourte/modulith/services/storage/internal/ledger"
 )
 
 func (m *MemoryStore) TransferOwner(ctx context.Context, from, to ledger.Owner) (OwnerTransfer, error) {

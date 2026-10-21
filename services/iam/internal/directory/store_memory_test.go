@@ -1,7 +1,7 @@
 package directory_test
 
 import (
-	"gyoza/services/iam/internal/directory"
+	"github.com/mjcourte/modulith/services/iam/internal/directory"
 	"testing"
 )
 

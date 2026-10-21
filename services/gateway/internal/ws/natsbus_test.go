@@ -9,8 +9,8 @@ import (
 
 	"github.com/google/uuid"
 
-	gnats "gyoza/platform/nats"
-	"gyoza/services/gateway/internal/ws"
+	gnats "github.com/mjcourte/modulith/platform/nats"
+	"github.com/mjcourte/modulith/services/gateway/internal/ws"
 )
 
 // recFeed records what a Bus delivers, for one project.
@@ -54,11 +54,11 @@ func recv[T any](t *testing.T, ch chan T) T {
 // documents publishes them) and user state reach the feed, and the gateway's
 // own deltas go out without an origin.
 //
-//	GYOZA_TEST_NATS_URL=nats://localhost:4222
+//	MODULITH_TEST_NATS_URL=nats://localhost:4222
 func TestNATSBus(t *testing.T) {
-	url := os.Getenv("GYOZA_TEST_NATS_URL")
+	url := os.Getenv("MODULITH_TEST_NATS_URL")
 	if url == "" {
-		t.Skip("set GYOZA_TEST_NATS_URL to run against NATS")
+		t.Skip("set MODULITH_TEST_NATS_URL to run against NATS")
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()

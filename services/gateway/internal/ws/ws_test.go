@@ -10,10 +10,10 @@ import (
 
 	"github.com/coder/websocket"
 
-	gnats "gyoza/platform/nats"
-	"gyoza/services/documents"
-	"gyoza/services/gateway/internal/ws"
-	"gyoza/services/iam"
+	gnats "github.com/mjcourte/modulith/platform/nats"
+	"github.com/mjcourte/modulith/services/documents"
+	"github.com/mjcourte/modulith/services/gateway/internal/ws"
+	"github.com/mjcourte/modulith/services/iam"
 )
 
 func b64(s string) string { return base64.StdEncoding.EncodeToString([]byte(s)) }

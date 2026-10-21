@@ -15,7 +15,7 @@ import (
 // root's decision, in this process and every other the trace reaches.
 var Hot = trace.WithAttributes(hotAttr)
 
-var hotAttr = attribute.Bool("gyoza.hot", true)
+var hotAttr = attribute.Bool("modulith.hot", true)
 
 // sampler keeps every root except Hot ones, which it keeps at rate; a child
 // span follows its parent, so a trace is kept or dropped whole.

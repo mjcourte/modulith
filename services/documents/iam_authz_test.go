@@ -5,9 +5,9 @@ import (
 	"errors"
 	"testing"
 
-	"gyoza/services/documents"
-	"gyoza/services/iam"
-	"gyoza/services/storage"
+	"github.com/mjcourte/modulith/services/documents"
+	"github.com/mjcourte/modulith/services/iam"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 // iamWorld is iam's real authorizer over its memory store, holding:

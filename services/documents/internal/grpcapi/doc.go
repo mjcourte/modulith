@@ -1,5 +1,5 @@
 // Package grpcapi serves documents over gRPC (DocumentsService in
-// contracts/proto/gyoza/documents/v1).
+// contracts/proto/modulith/documents/v1).
 //
 //   - server.go: Server wraps any manager.Service.
 //   - client.go: Client is a manager.Service over the wire, with the same

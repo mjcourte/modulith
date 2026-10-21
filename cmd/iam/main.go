@@ -13,14 +13,14 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"gyoza/platform/config"
-	"gyoza/platform/postgres"
-	"gyoza/platform/shutdown"
-	"gyoza/platform/telemetry"
-	"gyoza/services/documents"
-	"gyoza/services/gateway"
-	"gyoza/services/iam"
-	"gyoza/services/storage"
+	"github.com/mjcourte/modulith/platform/config"
+	"github.com/mjcourte/modulith/platform/postgres"
+	"github.com/mjcourte/modulith/platform/shutdown"
+	"github.com/mjcourte/modulith/platform/telemetry"
+	"github.com/mjcourte/modulith/services/documents"
+	"github.com/mjcourte/modulith/services/gateway"
+	"github.com/mjcourte/modulith/services/iam"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 func main() {
@@ -37,21 +37,21 @@ func run() error {
 	defer stop()
 
 	env := config.FromEnv()
-	dbURL := env.Required("GYOZA_DATABASE_URL")
+	dbURL := env.Required("MODULITH_DATABASE_URL")
 	logLevel := slog.LevelInfo
-	env.Text("GYOZA_LOG_LEVEL", &logLevel)
+	env.Text("MODULITH_LOG_LEVEL", &logLevel)
 	telemetrySettings := telemetry.SettingsFromEnv(env)
-	shutdownTimeout := env.Duration("GYOZA_SHUTDOWN_TIMEOUT", 20*time.Second)
+	shutdownTimeout := env.Duration("MODULITH_SHUTDOWN_TIMEOUT", 20*time.Second)
 	// localhost by default so local runs don't listen on the network;
 	// deployments set ":9090". Differs from the other binaries' defaults so
 	// they can all run on one machine.
-	grpcAddr := env.String("GYOZA_GRPC_ADDR", "localhost:9093")
+	grpcAddr := env.String("MODULITH_GRPC_ADDR", "localhost:9093")
 	// cmd/storage's local default. The deletion cascades call it; while it's
 	// unreachable they stop part-way and the cleanup loop finishes them later.
-	storageAddr := env.String("GYOZA_STORAGE_ADDR", "localhost:9091")
+	storageAddr := env.String("MODULITH_STORAGE_ADDR", "localhost:9091")
 	// cmd/documents' local default. Clones call it; while it's unreachable they
 	// stay hidden and the cleanup loop finishes them later.
-	documentsAddr := env.String("GYOZA_DOCUMENTS_ADDR", "localhost:9094")
+	documentsAddr := env.String("MODULITH_DOCUMENTS_ADDR", "localhost:9094")
 	settings := iam.SettingsFromEnv(env)
 	// Deleting an account also deletes its sign-in account (SuperTokens core).
 	idp := gateway.IdentityProviderFromEnv(env)

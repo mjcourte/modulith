@@ -10,32 +10,32 @@ import (
 	"testing"
 	"time"
 
-	"gyoza/services/storage/internal/blob"
-	"gyoza/services/storage/internal/blob/blobtest"
+	"github.com/mjcourte/modulith/services/storage/internal/blob"
+	"github.com/mjcourte/modulith/services/storage/internal/blob/blobtest"
 )
 
 // TestS3 runs the shared suite against a real S3-compatible server, e.g. the
 // RustFS in deploy/monolith/compose.yaml:
 //
-//	GYOZA_TEST_S3_ENDPOINT=http://localhost:9000
+//	MODULITH_TEST_S3_ENDPOINT=http://localhost:9000
 //
 // Credentials default to the compose file's; override with
-// GYOZA_TEST_S3_ACCESS_KEY / GYOZA_TEST_S3_SECRET_KEY.
+// MODULITH_TEST_S3_ACCESS_KEY / MODULITH_TEST_S3_SECRET_KEY.
 func TestS3(t *testing.T) {
-	endpoint := os.Getenv("GYOZA_TEST_S3_ENDPOINT")
+	endpoint := os.Getenv("MODULITH_TEST_S3_ENDPOINT")
 	if endpoint == "" {
-		t.Skip("set GYOZA_TEST_S3_ENDPOINT to run against S3")
+		t.Skip("set MODULITH_TEST_S3_ENDPOINT to run against S3")
 	}
 	store, err := blob.NewS3(blob.S3Config{
 		Endpoint:  endpoint,
-		AccessKey: envOr("GYOZA_TEST_S3_ACCESS_KEY", "gyoza"),
-		SecretKey: envOr("GYOZA_TEST_S3_SECRET_KEY", "gyoza-dev-secret"),
+		AccessKey: envOr("MODULITH_TEST_S3_ACCESS_KEY", "modulith"),
+		SecretKey: envOr("MODULITH_TEST_S3_SECRET_KEY", "modulith-dev-secret"),
 		PathStyle: true,
 	})
 	if err != nil {
 		t.Fatalf("NewS3: %v", err)
 	}
-	const bucket = "gyoza-test"
+	const bucket = "modulith-test"
 	if err := store.EnsureBucket(t.Context(), bucket); err != nil {
 		t.Fatalf("EnsureBucket: %v", err)
 	}

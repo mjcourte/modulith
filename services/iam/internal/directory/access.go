@@ -9,7 +9,7 @@ import (
 	"context"
 	"errors"
 
-	"gyoza/services/storage"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 // rank orders access levels, so the greatest of several can be picked.
@@ -37,7 +37,7 @@ func greatest(a, b Access) Access {
 // projectAccess decides actorID's access to p. A user can reach a project
 // through several routes at once; they get the greatest:
 //   - owning user, or member of the owning org: editor
-//   - gyoza template: viewer for every signed-in user
+//   - modulith template: viewer for every signed-in user
 //   - a share: its level, unless the project is org-locked and they're not in
 //     its org (then the share is suspended)
 //
@@ -58,7 +58,7 @@ func projectAccess(p Project, actorID, actorOrg string, share Access) Access {
 		if actorOrg != "" && p.Owner.ID == actorOrg {
 			access = AccessEditor
 		}
-	case storage.OwnerGyoza:
+	case storage.OwnerModulith:
 		access = AccessViewer
 	}
 	if shareActive(p, actorOrg) {

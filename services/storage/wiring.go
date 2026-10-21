@@ -1,6 +1,6 @@
 package storage
 
-// Setup shared by the binaries hosting storage (cmd/gyoza, cmd/storage), so
+// Setup shared by the binaries hosting storage (cmd/modulith, cmd/storage), so
 // they can't drift apart.
 
 import (
@@ -10,13 +10,13 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"gyoza/platform/config"
-	"gyoza/services/mediaprocessor"
-	"gyoza/services/storage/internal/blob"
-	"gyoza/services/storage/internal/dam"
-	"gyoza/services/storage/internal/ledger"
-	"gyoza/services/storage/internal/manager"
-	"gyoza/services/storage/internal/snapshots"
+	"github.com/mjcourte/modulith/platform/config"
+	"github.com/mjcourte/modulith/services/mediaprocessor"
+	"github.com/mjcourte/modulith/services/storage/internal/blob"
+	"github.com/mjcourte/modulith/services/storage/internal/dam"
+	"github.com/mjcourte/modulith/services/storage/internal/ledger"
+	"github.com/mjcourte/modulith/services/storage/internal/manager"
+	"github.com/mjcourte/modulith/services/storage/internal/snapshots"
 )
 
 // Settings is everything storage reads from the environment.
@@ -33,23 +33,23 @@ type Settings struct {
 func SettingsFromEnv(env *config.Env) Settings {
 	return Settings{
 		S3: blob.S3Config{
-			Endpoint:  env.String("GYOZA_S3_ENDPOINT", ""), // empty: AWS itself
-			Region:    env.String("GYOZA_S3_REGION", "us-east-1"),
-			AccessKey: env.Required("GYOZA_S3_ACCESS_KEY"),
-			SecretKey: env.Required("GYOZA_S3_SECRET_KEY"),
-			PathStyle: env.Bool("GYOZA_S3_PATH_STYLE", false),
+			Endpoint:  env.String("MODULITH_S3_ENDPOINT", ""), // empty: AWS itself
+			Region:    env.String("MODULITH_S3_REGION", "us-east-1"),
+			AccessKey: env.Required("MODULITH_S3_ACCESS_KEY"),
+			SecretKey: env.Required("MODULITH_S3_SECRET_KEY"),
+			PathStyle: env.Bool("MODULITH_S3_PATH_STYLE", false),
 		},
-		CreateBucket: env.Bool("GYOZA_S3_CREATE_BUCKET", false),
+		CreateBucket: env.Bool("MODULITH_S3_CREATE_BUCKET", false),
 		Manager: Config{
-			Bucket:           env.Required("GYOZA_S3_BUCKET"),
-			UploadURLTTL:     env.Duration("GYOZA_UPLOAD_URL_TTL", DefaultUploadURLTTL),
-			DownloadURLTTL:   env.Duration("GYOZA_DOWNLOAD_URL_TTL", DefaultDownloadURLTTL),
-			TrashRetention:   env.Duration("GYOZA_TRASH_RETENTION", DefaultTrashRetention),
-			SnapshotKeep:     int(env.PositiveInt("GYOZA_SNAPSHOT_KEEP", DefaultSnapshotKeep)),
-			MaxSnapshotBytes: env.PositiveInt("GYOZA_SNAPSHOT_MAX_BYTES", DefaultMaxSnapshotBytes),
+			Bucket:           env.Required("MODULITH_S3_BUCKET"),
+			UploadURLTTL:     env.Duration("MODULITH_UPLOAD_URL_TTL", DefaultUploadURLTTL),
+			DownloadURLTTL:   env.Duration("MODULITH_DOWNLOAD_URL_TTL", DefaultDownloadURLTTL),
+			TrashRetention:   env.Duration("MODULITH_TRASH_RETENTION", DefaultTrashRetention),
+			SnapshotKeep:     int(env.PositiveInt("MODULITH_SNAPSHOT_KEEP", DefaultSnapshotKeep)),
+			MaxSnapshotBytes: env.PositiveInt("MODULITH_SNAPSHOT_MAX_BYTES", DefaultMaxSnapshotBytes),
 		},
-		CleanupInterval: env.Duration("GYOZA_CLEANUP_INTERVAL", 10*time.Minute),
-		ProbeInterval:   env.Duration("GYOZA_PROBE_INTERVAL", 10*time.Second),
+		CleanupInterval: env.Duration("MODULITH_CLEANUP_INTERVAL", 10*time.Minute),
+		ProbeInterval:   env.Duration("MODULITH_PROBE_INTERVAL", 10*time.Second),
 	}
 }
 

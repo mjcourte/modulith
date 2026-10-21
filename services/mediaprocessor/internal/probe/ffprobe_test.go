@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"gyoza/services/mediaprocessor/internal/probe"
+	"github.com/mjcourte/modulith/services/mediaprocessor/internal/probe"
 )
 
 // newFFprobe returns the real prober, or skips the test without ffprobe on PATH.

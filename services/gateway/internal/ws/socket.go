@@ -16,11 +16,11 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 
-	"gyoza/internal/engine"
-	gnats "gyoza/platform/nats"
-	"gyoza/platform/telemetry"
-	"gyoza/services/gateway/internal/rest"
-	"gyoza/services/storage"
+	"github.com/mjcourte/modulith/internal/engine"
+	gnats "github.com/mjcourte/modulith/platform/nats"
+	"github.com/mjcourte/modulith/platform/telemetry"
+	"github.com/mjcourte/modulith/services/gateway/internal/rest"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 // The WebSocket's own errors, next to REST's codes (rest.Code).
@@ -197,7 +197,7 @@ func (s *socket) handle(in inMsg) {
 	}
 }
 
-var tracer = otel.Tracer("gyoza/services/gateway/internal/ws")
+var tracer = otel.Tracer("modulith/services/gateway/internal/ws")
 
 // startSpan starts a message's span, the root of a new trace (the socket
 // isn't part of one). Joins are always traced; edits are a hot path
@@ -205,7 +205,7 @@ var tracer = otel.Tracer("gyoza/services/gateway/internal/ws")
 // message and its traces would say nothing; a leave does no I/O.
 func (s *socket) startSpan(in inMsg) (context.Context, trace.Span) {
 	opts := []trace.SpanStartOption{trace.WithNewRoot(), trace.WithSpanKind(trace.SpanKindServer),
-		trace.WithAttributes(attribute.String("enduser.id", s.actor), attribute.String("gyoza.project_id", in.ProjectID))}
+		trace.WithAttributes(attribute.String("enduser.id", s.actor), attribute.String("modulith.project_id", in.ProjectID))}
 	switch in.Type {
 	case "join":
 	case "edit":
@@ -225,7 +225,7 @@ func endSpan(span trace.Span, err error, code string, failed bool) {
 		span.SetStatus(codes.Error, code)
 		return
 	}
-	span.SetAttributes(attribute.String("gyoza.refused", code))
+	span.SetAttributes(attribute.String("modulith.refused", code))
 }
 
 // fail reports err to the client with the same codes as REST, and returns
@@ -347,7 +347,7 @@ func (s *socket) recheck() {
 		case errors.Is(err, storage.ErrForbidden):
 			s.leave(p)
 			code, _ := s.fail(ctx, inMsg{ProjectID: p}, err)
-			span.AddEvent("left", trace.WithAttributes(attribute.String("gyoza.project_id", p), attribute.String("gyoza.refused", code)))
+			span.AddEvent("left", trace.WithAttributes(attribute.String("modulith.project_id", p), attribute.String("modulith.refused", code)))
 		case s.ctx.Err() == nil:
 			slog.WarnContext(ctx, "ws: access re-check failed", "project", p, "err", err)
 		}

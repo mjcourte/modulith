@@ -8,16 +8,16 @@
 # under this project's name, so their data is separate from the monolith's.
 # They publish the same host ports, so run one of the two at a time.
 
-name: gyoza-distributed
+name: modulith-distributed
 
 include:
   - ../monolith/compose.yaml
 
 # Telemetry for every service: SigNoz (deploy/observability) runs in WSL's
 # Docker, so containers reach its OTLP port through the host, where WSL
-# forwards it. GYOZA_CONTAINER_OTLP_ENDPOINT= (empty) turns it off.
+# forwards it. MODULITH_CONTAINER_OTLP_ENDPOINT= (empty) turns it off.
 x-telemetry: &telemetry
-  GYOZA_OTLP_ENDPOINT: ${GYOZA_CONTAINER_OTLP_ENDPOINT-http://host.docker.internal:4317}
+  MODULITH_OTLP_ENDPOINT: ${MODULITH_CONTAINER_OTLP_ENDPOINT-http://host.docker.internal:4317}
 x-host: &host
   - host.docker.internal:host-gateway # Docker Desktop has it; Linux engines need this
 
@@ -29,15 +29,15 @@ services:
     extra_hosts: *host
     environment:
       <<: *telemetry
-      GYOZA_DATABASE_URL: postgres://gyoza:gyoza@postgres:5432/gyoza
-      GYOZA_S3_ENDPOINT: http://s3:9000
-      GYOZA_S3_ACCESS_KEY: gyoza
-      GYOZA_S3_SECRET_KEY: gyoza-dev-secret # local development only
-      GYOZA_S3_PATH_STYLE: "true"
-      GYOZA_S3_BUCKET: gyoza-dev
-      GYOZA_S3_CREATE_BUCKET: "true"
-      GYOZA_MEDIAPROCESSOR_ADDR: mediaprocessor:9090
-      GYOZA_IAM_ADDR: iam:9090
+      MODULITH_DATABASE_URL: postgres://modulith:modulith@postgres:5432/modulith
+      MODULITH_S3_ENDPOINT: http://s3:9000
+      MODULITH_S3_ACCESS_KEY: modulith
+      MODULITH_S3_SECRET_KEY: modulith-dev-secret # local development only
+      MODULITH_S3_PATH_STYLE: "true"
+      MODULITH_S3_BUCKET: modulith-dev
+      MODULITH_S3_CREATE_BUCKET: "true"
+      MODULITH_MEDIAPROCESSOR_ADDR: mediaprocessor:9090
+      MODULITH_IAM_ADDR: iam:9090
     ports:
       - "127.0.0.1:9091:9090" # gRPC, as go run ./cmd/storage serves it
     depends_on:
@@ -55,10 +55,10 @@ services:
     extra_hosts: *host
     environment:
       <<: *telemetry
-      GYOZA_DATABASE_URL: postgres://gyoza:gyoza@postgres:5432/gyoza
-      GYOZA_STORAGE_ADDR: storage:9090
-      GYOZA_DOCUMENTS_ADDR: documents:9090
-      GYOZA_SUPERTOKENS_URL: http://supertokens:3567
+      MODULITH_DATABASE_URL: postgres://modulith:modulith@postgres:5432/modulith
+      MODULITH_STORAGE_ADDR: storage:9090
+      MODULITH_DOCUMENTS_ADDR: documents:9090
+      MODULITH_SUPERTOKENS_URL: http://supertokens:3567
     ports:
       - "127.0.0.1:9093:9090" # gRPC, as go run ./cmd/iam serves it
     depends_on:
@@ -74,16 +74,16 @@ services:
     extra_hosts: *host
     environment:
       <<: *telemetry
-      GYOZA_IAM_ADDR: iam:9090
-      GYOZA_STORAGE_ADDR: storage:9090
-      GYOZA_DOCUMENTS_ADDR: documents:9090
-      GYOZA_NATS_URL: nats://nats-1:4222,nats-2:4222,nats-3:4222
-      GYOZA_SUPERTOKENS_URL: http://supertokens:3567
-      GYOZA_PUBLIC_URL: http://localhost:8080
+      MODULITH_IAM_ADDR: iam:9090
+      MODULITH_STORAGE_ADDR: storage:9090
+      MODULITH_DOCUMENTS_ADDR: documents:9090
+      MODULITH_NATS_URL: nats://nats-1:4222,nats-2:4222,nats-3:4222
+      MODULITH_SUPERTOKENS_URL: http://supertokens:3567
+      MODULITH_PUBLIC_URL: http://localhost:8080
       # SuperTokens' public demo Google client: localhost only (see .env.example).
-      GYOZA_GOOGLE_CLIENT_ID: 1060725074195-kmeum4crr01uirfl2op9kd5acmi9jutn.apps.googleusercontent.com
-      GYOZA_GOOGLE_CLIENT_SECRET: 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
-      GYOZA_GATEWAY_DEV_PAGES: "true"
+      MODULITH_GOOGLE_CLIENT_ID: 1060725074195-kmeum4crr01uirfl2op9kd5acmi9jutn.apps.googleusercontent.com
+      MODULITH_GOOGLE_CLIENT_SECRET: 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
+      MODULITH_GATEWAY_DEV_PAGES: "true"
     ports:
       - "127.0.0.1:8080:8080" # as go run ./cmd/gateway serves it
     depends_on:
@@ -104,9 +104,9 @@ services:
     extra_hosts: *host
     environment:
       <<: *telemetry
-      GYOZA_STORAGE_ADDR: storage:9090
-      GYOZA_IAM_ADDR: iam:9090
-      GYOZA_NATS_URL: nats://nats-1:4222,nats-2:4222,nats-3:4222
+      MODULITH_STORAGE_ADDR: storage:9090
+      MODULITH_IAM_ADDR: iam:9090
+      MODULITH_NATS_URL: nats://nats-1:4222,nats-2:4222,nats-3:4222
     ports:
       - "127.0.0.1:9094:9090" # gRPC, as go run ./cmd/documents serves it
     depends_on:

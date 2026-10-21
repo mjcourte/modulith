@@ -2,7 +2,7 @@ import type { Me } from '@/api/me'
 import { useState, type ReactNode } from 'react'
 import { WorkspaceCtx, type Owner, type Workspace, type WorkspaceKind } from './workspace-context'
 
-const storageKey = 'gyoza.workspace'
+const storageKey = 'modulith.workspace'
 
 // The last choice in this browser; storage can throw (private windows).
 function readStored(): WorkspaceKind {

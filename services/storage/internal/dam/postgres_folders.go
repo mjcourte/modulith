@@ -8,8 +8,8 @@ import (
 	"slices"
 	"strings"
 
-	"gyoza/services/storage/internal/db"
-	"gyoza/services/storage/internal/ledger"
+	"github.com/mjcourte/modulith/services/storage/internal/db"
+	"github.com/mjcourte/modulith/services/storage/internal/ledger"
 )
 
 func getFolderTx(ctx context.Context, q *db.Queries, id string) (Folder, error) {

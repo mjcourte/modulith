@@ -15,14 +15,14 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"gyoza/platform/config"
-	gnats "gyoza/platform/nats"
-	"gyoza/platform/shutdown"
-	"gyoza/platform/telemetry"
-	"gyoza/services/documents"
-	"gyoza/services/gateway"
-	"gyoza/services/iam"
-	"gyoza/services/storage"
+	"github.com/mjcourte/modulith/platform/config"
+	gnats "github.com/mjcourte/modulith/platform/nats"
+	"github.com/mjcourte/modulith/platform/shutdown"
+	"github.com/mjcourte/modulith/platform/telemetry"
+	"github.com/mjcourte/modulith/services/documents"
+	"github.com/mjcourte/modulith/services/gateway"
+	"github.com/mjcourte/modulith/services/iam"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 func main() {
@@ -40,15 +40,15 @@ func run() error {
 
 	env := config.FromEnv()
 	logLevel := slog.LevelInfo
-	env.Text("GYOZA_LOG_LEVEL", &logLevel)
+	env.Text("MODULITH_LOG_LEVEL", &logLevel)
 	telemetrySettings := telemetry.SettingsFromEnv(env)
-	shutdownTimeout := env.Duration("GYOZA_SHUTDOWN_TIMEOUT", 20*time.Second)
+	shutdownTimeout := env.Duration("MODULITH_SHUTDOWN_TIMEOUT", 20*time.Second)
 	// cmd/iam's local default. Sign-ins fail while it's unreachable.
-	iamAddr := env.String("GYOZA_IAM_ADDR", "localhost:9093")
+	iamAddr := env.String("MODULITH_IAM_ADDR", "localhost:9093")
 	// cmd/storage's and cmd/documents' local defaults. Their routes fail
 	// while they're unreachable.
-	storageAddr := env.String("GYOZA_STORAGE_ADDR", "localhost:9091")
-	documentsAddr := env.String("GYOZA_DOCUMENTS_ADDR", "localhost:9094")
+	storageAddr := env.String("MODULITH_STORAGE_ADDR", "localhost:9091")
+	documentsAddr := env.String("MODULITH_DOCUMENTS_ADDR", "localhost:9094")
 	settings := gateway.SettingsFromEnv(env)
 	if err := env.Err(); err != nil {
 		return err

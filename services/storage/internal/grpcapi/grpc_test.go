@@ -13,11 +13,11 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/test/bufconn"
 
-	pb "gyoza/contracts/gen/go/gyoza/storage/v1"
-	"gyoza/services/storage/internal/dam"
-	"gyoza/services/storage/internal/grpcapi"
-	"gyoza/services/storage/internal/ledger"
-	"gyoza/services/storage/internal/manager"
+	pb "github.com/mjcourte/modulith/contracts/gen/go/modulith/storage/v1"
+	"github.com/mjcourte/modulith/services/storage/internal/dam"
+	"github.com/mjcourte/modulith/services/storage/internal/grpcapi"
+	"github.com/mjcourte/modulith/services/storage/internal/ledger"
+	"github.com/mjcourte/modulith/services/storage/internal/manager"
 )
 
 // newGRPCClient serves svc over an in-memory connection and returns a client

@@ -22,9 +22,9 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 
-	"gyoza/platform/telemetry"
-	"gyoza/services/iam/internal/directory"
-	"gyoza/services/storage"
+	"github.com/mjcourte/modulith/platform/telemetry"
+	"github.com/mjcourte/modulith/services/iam/internal/directory"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 // cascadeBatch is how many rows one listing in a cascade or cleanup pass takes.
@@ -39,15 +39,15 @@ func (m *Manager) DeleteProject(ctx context.Context, actorID, projectID string) 
 	return m.deleteProject(ctx, projectID)
 }
 
-// DeleteTemplate deletes a gyoza template. Service to service only
+// DeleteTemplate deletes a modulith template. Service to service only
 // (seeding/admin tooling); the gateway must never expose it.
 func (m *Manager) DeleteTemplate(ctx context.Context, projectID string) error {
 	p, err := m.store.GetProject(ctx, projectID)
 	if err != nil {
 		return err
 	}
-	if p.Owner.Kind != storage.OwnerGyoza {
-		return fmt.Errorf("%w: not a gyoza template", directory.ErrInvalidProject)
+	if p.Owner.Kind != storage.OwnerModulith {
+		return fmt.Errorf("%w: not a modulith template", directory.ErrInvalidProject)
 	}
 	return m.deleteProject(ctx, projectID)
 }
@@ -111,7 +111,7 @@ func (m *Manager) checkNotLastAdmin(ctx context.Context, orgID, userID string) e
 // deleteProject marks the project, trashes its files and removes it with its
 // shares. A project already gone is done.
 func (m *Manager) deleteProject(ctx context.Context, projectID string) (err error) {
-	ctx, span := tracer.Start(ctx, "iam.delete_project", trace.WithAttributes(attribute.String("gyoza.project_id", projectID)))
+	ctx, span := tracer.Start(ctx, "iam.delete_project", trace.WithAttributes(attribute.String("modulith.project_id", projectID)))
 	defer telemetry.End(span, &err)
 	if _, err := m.store.MarkProjectDeleting(ctx, projectID); err != nil {
 		if errors.Is(err, directory.ErrProjectNotFound) {
@@ -129,7 +129,7 @@ func (m *Manager) deleteProject(ctx context.Context, projectID string) (err erro
 // projects, trashes its files and removes it with its memberships and
 // invites. An org already gone is done.
 func (m *Manager) deleteOrg(ctx context.Context, orgID string) (err error) {
-	ctx, span := tracer.Start(ctx, "iam.delete_org", trace.WithAttributes(attribute.String("gyoza.org_id", orgID)))
+	ctx, span := tracer.Start(ctx, "iam.delete_org", trace.WithAttributes(attribute.String("modulith.org_id", orgID)))
 	defer telemetry.End(span, &err)
 	if _, err := m.store.MarkOrgDeleting(ctx, orgID); err != nil {
 		if errors.Is(err, directory.ErrOrgNotFound) {

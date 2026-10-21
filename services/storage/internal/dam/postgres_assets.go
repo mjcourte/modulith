@@ -6,8 +6,8 @@ import (
 	"context"
 	"fmt"
 
-	"gyoza/services/storage/internal/db"
-	"gyoza/services/storage/internal/ledger"
+	"github.com/mjcourte/modulith/services/storage/internal/db"
+	"github.com/mjcourte/modulith/services/storage/internal/ledger"
 )
 
 // checkFolderTx accepts "" or a live folder of owner, inside a transaction.

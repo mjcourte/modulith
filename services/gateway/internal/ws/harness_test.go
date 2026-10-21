@@ -13,13 +13,13 @@ import (
 
 	"github.com/coder/websocket"
 
-	"gyoza/internal/engine"
-	gnats "gyoza/platform/nats"
-	"gyoza/services/documents"
-	"gyoza/services/gateway/internal/session"
-	"gyoza/services/gateway/internal/ws"
-	"gyoza/services/iam"
-	"gyoza/services/storage"
+	"github.com/mjcourte/modulith/internal/engine"
+	gnats "github.com/mjcourte/modulith/platform/nats"
+	"github.com/mjcourte/modulith/services/documents"
+	"github.com/mjcourte/modulith/services/gateway/internal/session"
+	"github.com/mjcourte/modulith/services/gateway/internal/ws"
+	"github.com/mjcourte/modulith/services/iam"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 // world is the monolith in memory behind the WebSocket: real iam, storage
@@ -46,7 +46,7 @@ func newWorldWith(t *testing.T, wrap func(documents.Service) documents.Service) 
 	t.Helper()
 	store := iam.NewMemoryStore()
 	authz := iam.NewStorageAuthorizer(store)
-	files, err := storage.NewMemory(authz, storage.Config{Bucket: "gyoza-test"})
+	files, err := storage.NewMemory(authz, storage.Config{Bucket: "modulith-test"})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -5,10 +5,10 @@ import (
 	"log/slog"
 	"net/http"
 
-	"gyoza/internal/engine"
-	"gyoza/services/documents"
-	"gyoza/services/iam"
-	"gyoza/services/storage"
+	"github.com/mjcourte/modulith/internal/engine"
+	"github.com/mjcourte/modulith/services/documents"
+	"github.com/mjcourte/modulith/services/iam"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 // errorCode is one row of a table: a sentinel (matched with errors.Is, so

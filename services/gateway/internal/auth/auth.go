@@ -21,7 +21,7 @@ import (
 	"github.com/supertokens/supertokens-golang/recipe/thirdparty/tpmodels"
 	"github.com/supertokens/supertokens-golang/supertokens"
 
-	gsession "gyoza/services/gateway/internal/session"
+	gsession "github.com/mjcourte/modulith/services/gateway/internal/session"
 )
 
 // Config is what authentication needs.
@@ -48,7 +48,7 @@ func Init(cfg Config, users Users, api http.Handler) (http.Handler, error) {
 	err := supertokens.Init(supertokens.TypeInput{
 		Supertokens: &supertokens.ConnectionInfo{ConnectionURI: cfg.CoreURL, APIKey: cfg.CoreAPIKey},
 		AppInfo: supertokens.AppInfo{
-			AppName:         "Gyoza",
+			AppName:         "Modulith",
 			APIDomain:       cfg.PublicURL,
 			WebsiteDomain:   cfg.PublicURL,
 			WebsiteBasePath: new("/login"),

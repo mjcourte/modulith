@@ -23,10 +23,10 @@ import (
 // published it. Readers trust the stamps of deltas with an origin, so only
 // documents may set it: the gateway, publishing browsers' deltas, never does.
 const (
-	HeaderFormat  = "Gyoza-Format"
-	HeaderVersion = "Gyoza-Version"
-	HeaderActor   = "Gyoza-Actor"
-	HeaderOrigin  = "Gyoza-Origin"
+	HeaderFormat  = "Modulith-Format"
+	HeaderVersion = "Modulith-Version"
+	HeaderActor   = "Modulith-Actor"
+	HeaderOrigin  = "Modulith-Origin"
 )
 
 // Delta is one delta message.

@@ -9,11 +9,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"gyoza/services/documents"
-	"gyoza/services/gateway/internal/rest"
-	"gyoza/services/gateway/internal/session"
-	"gyoza/services/iam"
-	"gyoza/services/storage"
+	"github.com/mjcourte/modulith/services/documents"
+	"github.com/mjcourte/modulith/services/gateway/internal/rest"
+	"github.com/mjcourte/modulith/services/gateway/internal/session"
+	"github.com/mjcourte/modulith/services/iam"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 // world is the monolith in memory behind the REST handler: real iam,
@@ -33,7 +33,7 @@ func newWorld(t *testing.T) *world {
 	t.Helper()
 	store := iam.NewMemoryStore()
 	authz := iam.NewStorageAuthorizer(store)
-	files, err := storage.NewMemory(authz, storage.Config{Bucket: "gyoza-test"})
+	files, err := storage.NewMemory(authz, storage.Config{Bucket: "modulith-test"})
 	if err != nil {
 		t.Fatal(err)
 	}

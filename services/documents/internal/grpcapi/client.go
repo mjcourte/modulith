@@ -7,9 +7,9 @@ import (
 
 	"google.golang.org/grpc"
 
-	pb "gyoza/contracts/gen/go/gyoza/documents/v1"
-	"gyoza/internal/engine"
-	"gyoza/services/documents/internal/manager"
+	pb "github.com/mjcourte/modulith/contracts/gen/go/modulith/documents/v1"
+	"github.com/mjcourte/modulith/internal/engine"
+	"github.com/mjcourte/modulith/services/documents/internal/manager"
 )
 
 // Client is a Service over the wire: the same results and errors as the

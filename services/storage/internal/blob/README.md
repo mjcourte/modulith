@@ -19,11 +19,11 @@ File storage addressed by bucket and key: S3 in production, an in-memory fake in
 
 ## Testing against S3
 
-`s3_test.go` runs `blobtest.RunSuite` against a real server, playing the browser with plain `net/http` PUT/GET. It's skipped unless `GYOZA_TEST_S3_ENDPOINT` is set; credentials default to the compose file's (override with `GYOZA_TEST_S3_ACCESS_KEY` / `GYOZA_TEST_S3_SECRET_KEY`), bucket `gyoza-test`.
+`s3_test.go` runs `blobtest.RunSuite` against a real server, playing the browser with plain `net/http` PUT/GET. It's skipped unless `MODULITH_TEST_S3_ENDPOINT` is set; credentials default to the compose file's (override with `MODULITH_TEST_S3_ACCESS_KEY` / `MODULITH_TEST_S3_SECRET_KEY`), bucket `modulith-test`.
 
 ```
 docker compose -f deploy/monolith/compose.yaml up -d --wait
-GYOZA_TEST_S3_ENDPOINT=http://localhost:9000 go test ./services/storage/internal/blob -run TestS3 -v
+MODULITH_TEST_S3_ENDPOINT=http://localhost:9000 go test ./services/storage/internal/blob -run TestS3 -v
 ```
 
 Local S3 is RustFS 1.0.0 (Apache-2.0; MinIO no longer publishes community images). It enforces signed size, content type, expiry and method like S3: all 15 suite cases pass. Mutation check: 7/9 planted bugs caught. The two survivors each removed one of the two prefix limits (Range header, `LimitReader`), which back each other up, so no test can tell them apart.

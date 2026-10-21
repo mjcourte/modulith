@@ -6,7 +6,7 @@ import (
 	"context"
 	"fmt"
 
-	"gyoza/services/iam/internal/db"
+	"github.com/mjcourte/modulith/services/iam/internal/db"
 )
 
 func (p *Postgres) UpsertUser(ctx context.Context, id Identity) (User, bool, error) {

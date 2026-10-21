@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"gyoza/internal/engine/fbs"
+	"github.com/mjcourte/modulith/internal/engine/fbs"
 )
 
 // A crafted snapshot whose clock looks honest but which hides one register

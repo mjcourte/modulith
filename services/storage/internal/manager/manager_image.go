@@ -23,7 +23,7 @@ import (
 
 	_ "golang.org/x/image/webp"
 
-	"gyoza/services/storage/internal/ledger"
+	"github.com/mjcourte/modulith/services/storage/internal/ledger"
 )
 
 // imageHeaderLen is how much of an image is read to measure it. JPEG puts

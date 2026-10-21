@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 
-	"gyoza/platform/telemetry"
+	"github.com/mjcourte/modulith/platform/telemetry"
 )
 
 // CleanupReport says what one Cleanup run did.
@@ -99,7 +99,7 @@ func (m *Manager) Cleanup(ctx context.Context) (CleanupReport, error) {
 	return r, errors.Join(errs...)
 }
 
-var tracer = otel.Tracer("gyoza/services/iam/internal/manager")
+var tracer = otel.Tracer("modulith/services/iam/internal/manager")
 
 // RunCleanup runs Cleanup now and then every interval until ctx is done,
 // logging what each run did. Run it in its own goroutine.
@@ -111,7 +111,7 @@ func (m *Manager) RunCleanup(ctx context.Context, interval time.Duration) {
 		// are only traced inside one.
 		rctx, span := tracer.Start(ctx, "iam.cleanup", trace.WithNewRoot())
 		r, err := m.Cleanup(rctx)
-		span.SetAttributes(attribute.String("gyoza.done", fmt.Sprintf("%+v", r)))
+		span.SetAttributes(attribute.String("modulith.done", fmt.Sprintf("%+v", r)))
 		switch {
 		case ctx.Err() != nil:
 			span.End()

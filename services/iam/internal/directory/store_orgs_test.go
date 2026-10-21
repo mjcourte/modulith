@@ -2,7 +2,7 @@ package directory_test
 
 import (
 	"errors"
-	"gyoza/services/iam/internal/directory"
+	"github.com/mjcourte/modulith/services/iam/internal/directory"
 	"slices"
 	"testing"
 

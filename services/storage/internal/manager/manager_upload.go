@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"gyoza/services/storage/internal/dam"
-	"gyoza/services/storage/internal/ledger"
+	"github.com/mjcourte/modulith/services/storage/internal/dam"
+	"github.com/mjcourte/modulith/services/storage/internal/ledger"
 )
 
 // UploadRequest is what a client asks for when it wants to upload a file:

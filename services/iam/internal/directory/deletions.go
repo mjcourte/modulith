@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"gyoza/services/storage"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 // ErrNotDeleting: a hard delete was asked for something whose deletion

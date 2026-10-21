@@ -9,11 +9,11 @@ import (
 	"slices"
 	"time"
 
-	"gyoza/services/storage"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 // checkProjectOwner checks that o can own a project: a well-formed user, org
-// or gyoza owner. A project can't own a project.
+// or modulith owner. A project can't own a project.
 func checkProjectOwner(o storage.Owner, invalid error) error {
 	if err := o.Validate(); err != nil {
 		return fmt.Errorf("%w: %w", invalid, err)
@@ -64,8 +64,8 @@ func checkTransfer(p Project, to storage.Owner) error {
 	if err := checkProjectOwner(to, ErrInvalidProject); err != nil {
 		return err
 	}
-	if p.Owner.Kind == storage.OwnerGyoza || to.Kind == storage.OwnerGyoza {
-		return fmt.Errorf("%w: gyoza templates can't change owner", ErrInvalidProject)
+	if p.Owner.Kind == storage.OwnerModulith || to.Kind == storage.OwnerModulith {
+		return fmt.Errorf("%w: modulith templates can't change owner", ErrInvalidProject)
 	}
 	return nil
 }
@@ -151,11 +151,11 @@ func sortPendingShares(shares []Share) {
 	})
 }
 
-// checkShareable refuses shares on gyoza templates: every signed-in user can
+// checkShareable refuses shares on modulith templates: every signed-in user can
 // already see them.
 func checkShareable(p Project) error {
-	if p.Owner.Kind == storage.OwnerGyoza {
-		return fmt.Errorf("%w: gyoza templates are visible to everyone and can't be shared", ErrInvalidShare)
+	if p.Owner.Kind == storage.OwnerModulith {
+		return fmt.Errorf("%w: modulith templates are visible to everyone and can't be shared", ErrInvalidShare)
 	}
 	return nil
 }

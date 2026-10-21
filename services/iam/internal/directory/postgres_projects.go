@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"time"
 
-	"gyoza/services/iam/internal/db"
-	"gyoza/services/storage"
+	"github.com/mjcourte/modulith/services/iam/internal/db"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 // zeroID is the smallest UUID: the cursor for a first page.

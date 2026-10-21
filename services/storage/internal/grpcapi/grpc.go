@@ -15,16 +15,16 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	pb "gyoza/contracts/gen/go/gyoza/storage/v1"
-	"gyoza/services/storage/internal/dam"
-	"gyoza/services/storage/internal/ledger"
-	"gyoza/services/storage/internal/manager"
+	pb "github.com/mjcourte/modulith/contracts/gen/go/modulith/storage/v1"
+	"github.com/mjcourte/modulith/services/storage/internal/dam"
+	"github.com/mjcourte/modulith/services/storage/internal/ledger"
+	"github.com/mjcourte/modulith/services/storage/internal/manager"
 )
 
 // ---- Errors
 
 // errorDomain identifies this service in google.rpc.ErrorInfo details.
-const errorDomain = "storage.gyoza"
+const errorDomain = "storage.modulith"
 
 // wireErrors lists every sentinel that may cross the API, with its status
 // code and its stable name on the wire. Several share a code, so the name
@@ -340,14 +340,14 @@ var ownerKindToProto = map[ledger.OwnerKind]pb.OwnerKind{
 	ledger.OwnerProject: pb.OwnerKind_OWNER_KIND_PROJECT,
 	ledger.OwnerUser:    pb.OwnerKind_OWNER_KIND_USER,
 	ledger.OwnerOrg:     pb.OwnerKind_OWNER_KIND_ORG,
-	ledger.OwnerGyoza:   pb.OwnerKind_OWNER_KIND_GYOZA,
+	ledger.OwnerModulith:   pb.OwnerKind_OWNER_KIND_MODULITH,
 }
 
 var ownerKindFromProto = map[pb.OwnerKind]ledger.OwnerKind{
 	pb.OwnerKind_OWNER_KIND_PROJECT: ledger.OwnerProject,
 	pb.OwnerKind_OWNER_KIND_USER:    ledger.OwnerUser,
 	pb.OwnerKind_OWNER_KIND_ORG:     ledger.OwnerOrg,
-	pb.OwnerKind_OWNER_KIND_GYOZA:   ledger.OwnerGyoza,
+	pb.OwnerKind_OWNER_KIND_MODULITH:   ledger.OwnerModulith,
 }
 
 // Unknown kinds map to the zero value on both sides (missing map keys return

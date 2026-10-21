@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Starts the web app's dev server (apps/web) on http://localhost:3000. It proxies
-# /api and /auth to the gateway: start scripts/gyoza.sh first, with
-# GYOZA_PUBLIC_URL=http://localhost:3000.
+# /api and /auth to the gateway: start scripts/modulith.sh first, with
+# MODULITH_PUBLIC_URL=http://localhost:3000.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/../apps/web"
 

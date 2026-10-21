@@ -6,16 +6,16 @@ import (
 	"os"
 	"testing"
 
-	gsession "gyoza/services/gateway/internal/session"
+	gsession "github.com/mjcourte/modulith/services/gateway/internal/session"
 )
 
 // Every /api route is behind a session: without one the API is never
-// reached. Needs the SuperTokens core (GYOZA_TEST_SUPERTOKENS_URL); Init's
+// reached. Needs the SuperTokens core (MODULITH_TEST_SUPERTOKENS_URL); Init's
 // state is global, so this is the package's only Init.
 func TestAPIRequiresASession(t *testing.T) {
-	url := os.Getenv("GYOZA_TEST_SUPERTOKENS_URL")
+	url := os.Getenv("MODULITH_TEST_SUPERTOKENS_URL")
 	if url == "" {
-		t.Skip("set GYOZA_TEST_SUPERTOKENS_URL to run against the SuperTokens core")
+		t.Skip("set MODULITH_TEST_SUPERTOKENS_URL to run against the SuperTokens core")
 	}
 	reached := false
 	api := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

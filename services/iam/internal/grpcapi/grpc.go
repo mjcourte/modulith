@@ -17,17 +17,17 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	pb "gyoza/contracts/gen/go/gyoza/iam/v1"
-	storagepb "gyoza/contracts/gen/go/gyoza/storage/v1"
-	"gyoza/services/iam/internal/directory"
-	"gyoza/services/iam/internal/manager"
-	"gyoza/services/storage"
+	pb "github.com/mjcourte/modulith/contracts/gen/go/modulith/iam/v1"
+	storagepb "github.com/mjcourte/modulith/contracts/gen/go/modulith/storage/v1"
+	"github.com/mjcourte/modulith/services/iam/internal/directory"
+	"github.com/mjcourte/modulith/services/iam/internal/manager"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 // ---- Errors
 
 // errorDomain identifies this service in google.rpc.ErrorInfo details.
-const errorDomain = "iam.gyoza"
+const errorDomain = "iam.modulith"
 
 type wireError struct {
 	err    error
@@ -213,14 +213,14 @@ var ownerKindToProto = map[storage.OwnerKind]storagepb.OwnerKind{
 	storage.OwnerProject: storagepb.OwnerKind_OWNER_KIND_PROJECT,
 	storage.OwnerUser:    storagepb.OwnerKind_OWNER_KIND_USER,
 	storage.OwnerOrg:     storagepb.OwnerKind_OWNER_KIND_ORG,
-	storage.OwnerGyoza:   storagepb.OwnerKind_OWNER_KIND_GYOZA,
+	storage.OwnerModulith:   storagepb.OwnerKind_OWNER_KIND_MODULITH,
 }
 
 var ownerKindFromProto = map[storagepb.OwnerKind]storage.OwnerKind{
 	storagepb.OwnerKind_OWNER_KIND_PROJECT: storage.OwnerProject,
 	storagepb.OwnerKind_OWNER_KIND_USER:    storage.OwnerUser,
 	storagepb.OwnerKind_OWNER_KIND_ORG:     storage.OwnerOrg,
-	storagepb.OwnerKind_OWNER_KIND_GYOZA:   storage.OwnerGyoza,
+	storagepb.OwnerKind_OWNER_KIND_MODULITH:   storage.OwnerModulith,
 }
 
 func ownerToProto(o storage.Owner) *storagepb.Owner {

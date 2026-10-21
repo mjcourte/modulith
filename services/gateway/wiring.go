@@ -1,12 +1,12 @@
 package gateway
 
-// Setup shared by the binaries hosting the gateway (cmd/gyoza,
+// Setup shared by the binaries hosting the gateway (cmd/modulith,
 // cmd/gateway), so they can't drift apart.
 
 import (
-	"gyoza/platform/config"
-	"gyoza/services/gateway/internal/auth"
-	"gyoza/services/iam"
+	"github.com/mjcourte/modulith/platform/config"
+	"github.com/mjcourte/modulith/services/gateway/internal/auth"
+	"github.com/mjcourte/modulith/services/iam"
 )
 
 // Settings is everything the gateway reads from the environment.
@@ -25,16 +25,16 @@ func SettingsFromEnv(env *config.Env) Settings {
 	coreURL, coreKey := coreFromEnv(env)
 	return Settings{
 		// localhost by default so local runs don't listen on the network.
-		Addr:    env.String("GYOZA_GATEWAY_ADDR", "localhost:8080"),
-		NATSURL: env.Required("GYOZA_NATS_URL"),
+		Addr:    env.String("MODULITH_GATEWAY_ADDR", "localhost:8080"),
+		NATSURL: env.Required("MODULITH_NATS_URL"),
 		Auth: auth.Config{
 			CoreURL:    coreURL,
 			CoreAPIKey: coreKey,
 			// Where browsers reach the gateway; session cookies are scoped to it.
-			PublicURL:          env.String("GYOZA_PUBLIC_URL", "http://localhost:8080"),
-			GoogleClientID:     env.Required("GYOZA_GOOGLE_CLIENT_ID"),
-			GoogleClientSecret: env.Required("GYOZA_GOOGLE_CLIENT_SECRET"),
-			DevPages:           env.Bool("GYOZA_GATEWAY_DEV_PAGES", false),
+			PublicURL:          env.String("MODULITH_PUBLIC_URL", "http://localhost:8080"),
+			GoogleClientID:     env.Required("MODULITH_GOOGLE_CLIENT_ID"),
+			GoogleClientSecret: env.Required("MODULITH_GOOGLE_CLIENT_SECRET"),
+			DevPages:           env.Bool("MODULITH_GATEWAY_DEV_PAGES", false),
 		},
 	}
 }
@@ -47,5 +47,5 @@ func IdentityProviderFromEnv(env *config.Env) iam.IdentityProvider {
 }
 
 func coreFromEnv(env *config.Env) (url, apiKey string) {
-	return env.String("GYOZA_SUPERTOKENS_URL", "http://localhost:3567"), env.String("GYOZA_SUPERTOKENS_API_KEY", "")
+	return env.String("MODULITH_SUPERTOKENS_URL", "http://localhost:3567"), env.String("MODULITH_SUPERTOKENS_API_KEY", "")
 }

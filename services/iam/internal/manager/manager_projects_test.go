@@ -2,8 +2,8 @@ package manager_test
 
 import (
 	"errors"
-	"gyoza/services/iam/internal/directory"
-	"gyoza/services/iam/internal/manager"
+	"github.com/mjcourte/modulith/services/iam/internal/directory"
+	"github.com/mjcourte/modulith/services/iam/internal/manager"
 	"slices"
 	"testing"
 	"time"
@@ -75,7 +75,7 @@ func TestManagerCreateProject(t *testing.T) {
 		{"for someone else", w.bob.ID, directory.Project{Owner: userOwner(w.ann.ID)}, manager.ErrForbidden},
 		{"for another org", w.mem.ID, directory.Project{Owner: orgOwner(w.beta.ID)}, manager.ErrForbidden},
 		{"for an org, from outside", w.bob.ID, directory.Project{Owner: orgOwner(w.acme.ID)}, manager.ErrForbidden},
-		{"a template", w.ann.ID, directory.Project{Owner: gyoza}, manager.ErrForbidden},
+		{"a template", w.ann.ID, directory.Project{Owner: modulith}, manager.ErrForbidden},
 		{"by an unknown user", "ghost", directory.Project{Owner: userOwner("ghost")}, manager.ErrForbidden},
 		{"a locked personal project", w.ann.ID, directory.Project{Owner: userOwner(w.ann.ID), OrgLocked: true}, directory.ErrInvalidProject},
 	}
@@ -86,7 +86,7 @@ func TestManagerCreateProject(t *testing.T) {
 	}
 
 	tmpl, err := w.m.CreateTemplate(ctx, "Poster template")
-	if err != nil || tmpl.Owner != gyoza || tmpl.CreatedBy != "" {
+	if err != nil || tmpl.Owner != modulith || tmpl.CreatedBy != "" {
 		t.Errorf("CreateTemplate = %+v, %v", tmpl, err)
 	}
 }

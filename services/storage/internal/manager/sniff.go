@@ -3,7 +3,7 @@ package manager
 import (
 	"errors"
 	"fmt"
-	"gyoza/services/storage/internal/dam"
+	"github.com/mjcourte/modulith/services/storage/internal/dam"
 	"net/http"
 	"strings"
 )

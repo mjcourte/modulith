@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"gyoza/platform/shutdown"
+	"github.com/mjcourte/modulith/platform/shutdown"
 )
 
 func TestWithinReturnsWhenStopFinishes(t *testing.T) {

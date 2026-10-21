@@ -9,7 +9,7 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
 
-	"gyoza/platform/nats"
+	"github.com/mjcourte/modulith/platform/nats"
 )
 
 func TestDeltaRoundTrip(t *testing.T) {

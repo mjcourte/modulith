@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"gyoza/services/documents/internal/snapshots"
+	"github.com/mjcourte/modulith/services/documents/internal/snapshots"
 )
 
 // The HTTP transfer reports a refused PUT itself (not only when

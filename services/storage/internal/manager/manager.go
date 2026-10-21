@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	"gyoza/services/storage/internal/blob"
-	"gyoza/services/storage/internal/dam"
-	"gyoza/services/storage/internal/ledger"
-	"gyoza/services/storage/internal/snapshots"
+	"github.com/mjcourte/modulith/services/storage/internal/blob"
+	"github.com/mjcourte/modulith/services/storage/internal/dam"
+	"github.com/mjcourte/modulith/services/storage/internal/ledger"
+	"github.com/mjcourte/modulith/services/storage/internal/snapshots"
 )
 
 // Errors returned by Manager methods, besides those from the Store,

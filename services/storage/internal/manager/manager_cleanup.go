@@ -17,10 +17,10 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 
-	"gyoza/platform/telemetry"
+	"github.com/mjcourte/modulith/platform/telemetry"
 
-	"gyoza/services/storage/internal/ledger"
-	"gyoza/services/storage/internal/snapshots"
+	"github.com/mjcourte/modulith/services/storage/internal/ledger"
+	"github.com/mjcourte/modulith/services/storage/internal/snapshots"
 )
 
 const (
@@ -231,7 +231,7 @@ func (m *Manager) restorable(deletedAt *time.Time) bool {
 	return deletedAt == nil || m.now().Sub(*deletedAt) < m.cfg.TrashRetention-clockSkew
 }
 
-var tracer = otel.Tracer("gyoza/services/storage/internal/manager")
+var tracer = otel.Tracer("modulith/services/storage/internal/manager")
 
 // RunCleanup runs Cleanup now and then every interval until ctx is done,
 // logging what each run did. Run it in its own goroutine.
@@ -243,7 +243,7 @@ func (m *Manager) RunCleanup(ctx context.Context, interval time.Duration) {
 		// traced inside one.
 		rctx, span := tracer.Start(ctx, "storage.cleanup", trace.WithNewRoot())
 		r, err := m.Cleanup(rctx, m.now())
-		span.SetAttributes(attribute.String("gyoza.done", fmt.Sprintf("%+v", r)))
+		span.SetAttributes(attribute.String("modulith.done", fmt.Sprintf("%+v", r)))
 		switch {
 		case ctx.Err() != nil:
 			span.End()

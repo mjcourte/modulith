@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	ledger "gyoza/services/storage/internal/ledger"
+	ledger "github.com/mjcourte/modulith/services/storage/internal/ledger"
 )
 
 // runServiceTests checks the behaviour every Service implementation must
@@ -69,7 +69,7 @@ func testCreateThenGet(t *testing.T, svc ledger.Service) {
 		Owner:       alice,
 		CreatedBy:   "alice",
 		Kind:        ledger.KindAsset,
-		Bucket:      "gyoza-assets",
+		Bucket:      "modulith-assets",
 		Key:         "users/alice/avatar.png",
 		SizeBytes:   2048,
 		ContentType: "image/png",
@@ -124,7 +124,7 @@ func testListFilters(t *testing.T, svc ledger.Service) {
 	orgAsset := mustCreate(t, svc, ledger.Object{Owner: acme, CreatedBy: "alice", Kind: ledger.KindAsset, ProjectID: "p1"})
 	snapshot := mustCreate(t, svc, ledger.Object{Owner: acme, Kind: ledger.KindSnapshot, ProjectID: "p1"})
 	deleted := mustCreate(t, svc, ledger.Object{Owner: acme, CreatedBy: "alice", Kind: ledger.KindAsset, ProjectID: "p1"})
-	shared := mustCreate(t, svc, ledger.Object{Owner: ledger.Owner{Kind: ledger.OwnerGyoza}, Kind: ledger.KindAsset})
+	shared := mustCreate(t, svc, ledger.Object{Owner: ledger.Owner{Kind: ledger.OwnerModulith}, Kind: ledger.KindAsset})
 	if err := svc.MarkDeleted(t.Context(), deleted.ID); err != nil {
 		t.Fatalf("MarkDeleted: %v", err)
 	}
@@ -137,7 +137,7 @@ func testListFilters(t *testing.T, svc ledger.Service) {
 		{"by project", ledger.ListQuery{ProjectID: "p1"}, []ledger.Object{orgAsset, snapshot}},
 		{"by project and kind", ledger.ListQuery{ProjectID: "p1", Kind: ledger.KindSnapshot}, []ledger.Object{snapshot}},
 		{"by owner", ledger.ListQuery{Owner: alice}, []ledger.Object{personal}},
-		{"gyoza-owned", ledger.ListQuery{Owner: ledger.Owner{Kind: ledger.OwnerGyoza}}, []ledger.Object{shared}},
+		{"modulith-owned", ledger.ListQuery{Owner: ledger.Owner{Kind: ledger.OwnerModulith}}, []ledger.Object{shared}},
 		{"by owner and creator", ledger.ListQuery{Owner: alice, CreatedBy: "alice"}, []ledger.Object{personal}},
 		{"org assets alice created", ledger.ListQuery{Owner: acme, CreatedBy: "alice"}, []ledger.Object{orgAsset}},
 		{"including deleted", ledger.ListQuery{Owner: acme, CreatedBy: "alice", IncludeDeleted: true}, []ledger.Object{orgAsset, deleted}},
@@ -164,7 +164,7 @@ func testCreateRejectsInvalidObjects(t *testing.T, svc ledger.Service) {
 		{"no owner", ledger.Owner{}, ""},
 		{"unknown owner kind", ledger.Owner{Kind: "team", ID: "t1"}, ""},
 		{"user without ID", ledger.Owner{Kind: ledger.OwnerUser}, ""},
-		{"gyoza with ID", ledger.Owner{Kind: ledger.OwnerGyoza, ID: "x"}, ""},
+		{"modulith with ID", ledger.Owner{Kind: ledger.OwnerModulith, ID: "x"}, ""},
 		{"project owner, other ProjectID", ledger.Owner{Kind: ledger.OwnerProject, ID: "p1"}, "p2"},
 	}
 	for _, tt := range tests {

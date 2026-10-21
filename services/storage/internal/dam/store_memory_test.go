@@ -1,7 +1,7 @@
 package dam_test
 
 import (
-	"gyoza/services/storage/internal/dam"
+	"github.com/mjcourte/modulith/services/storage/internal/dam"
 	"testing"
 )
 

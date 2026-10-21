@@ -7,7 +7,7 @@ import (
 	"github.com/supertokens/supertokens-golang/recipe/thirdparty/tpmodels"
 	"github.com/supertokens/supertokens-golang/supertokens"
 
-	"gyoza/services/iam"
+	"github.com/mjcourte/modulith/services/iam"
 )
 
 // Users is what sign-in needs from iam: recording the user on every sign-in.

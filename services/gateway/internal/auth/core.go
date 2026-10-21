@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"gyoza/platform/telemetry"
-	"gyoza/services/iam"
+	"github.com/mjcourte/modulith/platform/telemetry"
+	"github.com/mjcourte/modulith/services/iam"
 )
 
 // coreAPIVersion is the core driver interface the SDK speaks (its

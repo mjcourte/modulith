@@ -7,14 +7,14 @@ import (
 	"testing"
 	"time"
 
-	ledger "gyoza/services/storage/internal/ledger"
+	ledger "github.com/mjcourte/modulith/services/storage/internal/ledger"
 )
 
 // photo is a file description reused by the chosen-ID tests.
 func photo(id string) ledger.Object {
 	return ledger.Object{
 		ID: id, Owner: alice, CreatedBy: "alice", Kind: ledger.KindAsset,
-		Bucket: "gyoza-assets", Key: "library/asset/" + id, SizeBytes: 10, ContentType: "image/png",
+		Bucket: "modulith-assets", Key: "library/asset/" + id, SizeBytes: 10, ContentType: "image/png",
 	}
 }
 

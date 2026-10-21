@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"gyoza/internal/engine"
+	"github.com/mjcourte/modulith/internal/engine"
 )
 
 var (
@@ -69,7 +69,7 @@ type Store interface {
 // Content types per wire format, as storage records them in its ledger
 // (Kind=snapshot). The engine version travels in the type's parameter.
 var contentTypes = map[engine.WireFormat]string{
-	engine.WireNative: "application/vnd.gyoza.app+flatbuffers",
+	engine.WireNative: "application/vnd.modulith.app+flatbuffers",
 	engine.WireJSON:   "application/json",
 }
 

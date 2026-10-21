@@ -23,9 +23,9 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"gyoza/services/documents"
-	"gyoza/services/iam"
-	"gyoza/services/storage"
+	"github.com/mjcourte/modulith/services/documents"
+	"github.com/mjcourte/modulith/services/iam"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 //go:embed templates/*.html
@@ -34,7 +34,7 @@ var templateFS embed.FS
 //go:embed static
 var staticFS embed.FS
 
-const actorCookie = "gyoza_admin_actor"
+const actorCookie = "modulith_admin_actor"
 
 type server struct {
 	q       *queries
@@ -46,7 +46,7 @@ type server struct {
 }
 
 // New returns the admin UI. iamSvc, storageSvc and docsSvc are normally gRPC
-// clients to a running gyoza; pool reads both schemas.
+// clients to a running modulith; pool reads both schemas.
 func New(pool *pgxpool.Pool, iamSvc iam.Service, storageSvc storage.Service, docsSvc documents.Service) (http.Handler, error) {
 	s := &server{
 		q:       &queries{pool: pool},
@@ -182,7 +182,7 @@ var funcs = template.FuncMap{
 	"indent": func(depth int32) string { return strings.Repeat("    ", int(depth)) },
 }
 
-// ownerURL links an owner to its page ("" for gyoza).
+// ownerURL links an owner to its page ("" for modulith).
 func ownerURL(kind, id string) string {
 	switch kind {
 	case "user":

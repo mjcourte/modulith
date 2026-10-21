@@ -8,8 +8,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"gyoza/services/storage/internal/dam"
-	sm "gyoza/services/storage/internal/manager"
+	"github.com/mjcourte/modulith/services/storage/internal/dam"
+	sm "github.com/mjcourte/modulith/services/storage/internal/manager"
 )
 
 // damManager is a test Manager where "member" may write acme's files,

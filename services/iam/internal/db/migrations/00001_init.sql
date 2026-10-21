@@ -55,9 +55,9 @@ CREATE INDEX invites_invited_by ON iam.invites (invited_by) WHERE invited_by <> 
 
 CREATE TABLE iam.projects (
     id          uuid PRIMARY KEY,
-    -- No foreign key to the owner: it's a user, an org or gyoza ('' ID). The
+    -- No foreign key to the owner: it's a user, an org or modulith ('' ID). The
     -- Store checks it exists, under a lock on the owner's row.
-    owner_kind  text COLLATE "C" NOT NULL CHECK (owner_kind IN ('user', 'org', 'gyoza')),
+    owner_kind  text COLLATE "C" NOT NULL CHECK (owner_kind IN ('user', 'org', 'modulith')),
     owner_id    text COLLATE "C" NOT NULL,
     name        text        NOT NULL,
     state       text        NOT NULL CHECK (state IN ('ready', 'cloning')),
@@ -67,7 +67,7 @@ CREATE TABLE iam.projects (
     created_at  timestamptz NOT NULL,
     updated_at  timestamptz NOT NULL,
     deleting_at timestamptz,
-    CHECK ((owner_kind = 'gyoza') = (owner_id = '')),
+    CHECK ((owner_kind = 'modulith') = (owner_id = '')),
     CHECK (NOT org_locked OR owner_kind = 'org')
 );
 -- Listing by owner, in page order (also "my projects": mine and my org's).

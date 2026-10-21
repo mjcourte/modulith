@@ -8,11 +8,11 @@ import (
 
 	"github.com/google/uuid"
 
-	"gyoza/services/storage/internal/blob"
-	"gyoza/services/storage/internal/dam"
-	"gyoza/services/storage/internal/ledger"
-	sm "gyoza/services/storage/internal/manager"
-	"gyoza/services/storage/internal/snapshots"
+	"github.com/mjcourte/modulith/services/storage/internal/blob"
+	"github.com/mjcourte/modulith/services/storage/internal/dam"
+	"github.com/mjcourte/modulith/services/storage/internal/ledger"
+	sm "github.com/mjcourte/modulith/services/storage/internal/manager"
+	"github.com/mjcourte/modulith/services/storage/internal/snapshots"
 )
 
 // testManager is a Manager built from memory fakes, with the fakes kept so
@@ -26,7 +26,7 @@ type testManager struct {
 	authz       *sm.RuleAuthorizer
 }
 
-const testBucket = "gyoza-test"
+const testBucket = "modulith-test"
 
 // newTestManager returns a Manager where "member" may write acme's files and
 // every user may write their own library.

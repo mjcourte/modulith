@@ -1,4 +1,4 @@
-module gyoza
+module github.com/mjcourte/modulith
 
 go 1.27.2
 

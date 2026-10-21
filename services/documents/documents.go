@@ -10,11 +10,11 @@ package documents
 import (
 	"google.golang.org/grpc"
 
-	pb "gyoza/contracts/gen/go/gyoza/documents/v1"
-	"gyoza/internal/engine"
-	"gyoza/services/documents/internal/grpcapi"
-	"gyoza/services/documents/internal/manager"
-	"gyoza/services/documents/internal/snapshots"
+	pb "github.com/mjcourte/modulith/contracts/gen/go/modulith/documents/v1"
+	"github.com/mjcourte/modulith/internal/engine"
+	"github.com/mjcourte/modulith/services/documents/internal/grpcapi"
+	"github.com/mjcourte/modulith/services/documents/internal/manager"
+	"github.com/mjcourte/modulith/services/documents/internal/snapshots"
 )
 
 // Manager API.

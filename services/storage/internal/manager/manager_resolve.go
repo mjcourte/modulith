@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"gyoza/services/storage/internal/dam"
-	"gyoza/services/storage/internal/ledger"
+	"github.com/mjcourte/modulith/services/storage/internal/dam"
+	"github.com/mjcourte/modulith/services/storage/internal/ledger"
 )
 
 // ResolvedRef is what a document's pinned ref points at.

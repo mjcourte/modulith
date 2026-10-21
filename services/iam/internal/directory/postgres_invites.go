@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	"gyoza/services/iam/internal/db"
+	"github.com/mjcourte/modulith/services/iam/internal/db"
 )
 
 func (p *Postgres) CreateInvite(ctx context.Context, inv Invite) (Invite, error) {

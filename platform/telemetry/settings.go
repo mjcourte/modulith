@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"gyoza/platform/config"
+	"github.com/mjcourte/modulith/platform/config"
 )
 
 // Settings is what telemetry reads from the environment.
@@ -21,16 +21,16 @@ type Settings struct {
 // DefaultHotRate keeps one hot trace in a hundred.
 const DefaultHotRate Rate = 0.01
 
-// SettingsFromEnv reads GYOZA_OTLP_ENDPOINT, GYOZA_TRACE_HOT_RATE and
-// GYOZA_DEBUG_ADDR. Problems are recorded in env; check env.Err() after
+// SettingsFromEnv reads MODULITH_OTLP_ENDPOINT, MODULITH_TRACE_HOT_RATE and
+// MODULITH_DEBUG_ADDR. Problems are recorded in env; check env.Err() after
 // reading everything.
 func SettingsFromEnv(env *config.Env) Settings {
 	s := Settings{
-		Endpoint:  env.String("GYOZA_OTLP_ENDPOINT", ""),
+		Endpoint:  env.String("MODULITH_OTLP_ENDPOINT", ""),
 		HotRate:   DefaultHotRate,
-		DebugAddr: env.String("GYOZA_DEBUG_ADDR", ""),
+		DebugAddr: env.String("MODULITH_DEBUG_ADDR", ""),
 	}
-	env.Text("GYOZA_TRACE_HOT_RATE", &s.HotRate)
+	env.Text("MODULITH_TRACE_HOT_RATE", &s.HotRate)
 	return s
 }
 

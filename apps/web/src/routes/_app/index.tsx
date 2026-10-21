@@ -19,7 +19,7 @@ function Home() {
 
     return (
         <div className="p-8 space-y-4">
-            <h1 className="text-3xl font-bold">Gyoza</h1>
+            <h1 className="text-3xl font-bold">Modulith</h1>
             <div className="flex items-center gap-3">
                 <UserAvatar user={user} size="lg" />
                 <div>

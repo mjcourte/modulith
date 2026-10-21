@@ -34,7 +34,7 @@ var Documents = jetstream.StreamConfig{
 	Replicas:    3,
 }
 
-// Streams is every stream Gyoza uses. Their subjects must not overlap: the
+// Streams is every stream Modulith uses. Their subjects must not overlap: the
 // server rejects a stream whose subjects another stream already covers.
 var Streams = []jetstream.StreamConfig{Documents}
 

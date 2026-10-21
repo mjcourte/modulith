@@ -12,11 +12,11 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 
-	"gyoza/internal/engine"
-	"gyoza/platform/telemetry"
-	"gyoza/services/documents/internal/live"
-	"gyoza/services/documents/internal/snapshots"
-	"gyoza/services/documents/internal/wal"
+	"github.com/mjcourte/modulith/internal/engine"
+	"github.com/mjcourte/modulith/platform/telemetry"
+	"github.com/mjcourte/modulith/services/documents/internal/live"
+	"github.com/mjcourte/modulith/services/documents/internal/snapshots"
+	"github.com/mjcourte/modulith/services/documents/internal/wal"
 )
 
 // Config holds the Manager's settings.
@@ -54,8 +54,8 @@ type Manager struct {
 }
 
 var (
-	tracer = otel.Tracer("gyoza/services/documents/internal/manager")
-	meter  = otel.Meter("gyoza/services/documents/internal/manager")
+	tracer = otel.Tracer("modulith/services/documents/internal/manager")
+	meter  = otel.Meter("modulith/services/documents/internal/manager")
 )
 
 func New(eng engine.Engine, store snapshots.Store, authz Authorizer, uses AssetUses, cfg Config) *Manager {
@@ -64,7 +64,7 @@ func New(eng engine.Engine, store snapshots.Store, authz Authorizer, uses AssetU
 		projectUses: map[string]*projectUses{},
 	}
 	m.docs = live.New(m.load, m.save, cfg.Live)
-	loaded, err := meter.Int64ObservableGauge("gyoza.documents.loaded",
+	loaded, err := meter.Int64ObservableGauge("modulith.documents.loaded",
 		metric.WithDescription("Documents open in this replica."), metric.WithUnit("{document}"))
 	if err == nil { // only a malformed name fails, which a test would catch
 		m.metrics, _ = meter.RegisterCallback(func(_ context.Context, o metric.Observer) error {
@@ -89,7 +89,7 @@ func (m *Manager) Close(ctx context.Context) error {
 func (m *Manager) load(ctx context.Context, projectID string) (_ engine.Document, _ uint64, err error) {
 	// Restoring the snapshot and replaying the stream: CPU the I/O spans
 	// under it don't show.
-	ctx, span := tracer.Start(ctx, "document.load", trace.WithAttributes(attribute.String("gyoza.project_id", projectID)))
+	ctx, span := tracer.Start(ctx, "document.load", trace.WithAttributes(attribute.String("modulith.project_id", projectID)))
 	defer telemetry.End(span, &err)
 	doc, seq, err := m.restore(ctx, projectID)
 	if err != nil {
@@ -150,7 +150,7 @@ func (m *Manager) replay(ctx context.Context, projectID string, doc engine.Docum
 		return seq, nil
 	}
 	replayed := 0
-	defer func() { trace.SpanFromContext(ctx).SetAttributes(attribute.Int("gyoza.deltas_replayed", replayed)) }()
+	defer func() { trace.SpanFromContext(ctx).SetAttributes(attribute.Int("modulith.deltas_replayed", replayed)) }()
 	err := m.cfg.WAL.DeltasAfter(ctx, projectID, seq, func(d wal.Delta) error {
 		if _, err := doc.Edit(ctx, streamInput(d)); err != nil {
 			slog.ErrorContext(ctx, "documents: skipping a delta that can't be applied", "project", projectID, "seq", d.Seq, "err", err)
@@ -189,8 +189,8 @@ func (m *Manager) save(ctx context.Context, projectID string, doc engine.Documen
 	// Usually the debounce timer's call, with no trace to join: a trace of
 	// its own (always kept: one per document per debounce, and a failed save
 	// is worth seeing).
-	ctx, span := tracer.Start(ctx, "document.save", trace.WithAttributes(attribute.String("gyoza.project_id", projectID),
-		attribute.Int64("gyoza.seq", int64(seq)), attribute.Int("gyoza.snapshot_bytes", len(snap.Payload))))
+	ctx, span := tracer.Start(ctx, "document.save", trace.WithAttributes(attribute.String("modulith.project_id", projectID),
+		attribute.Int64("modulith.seq", int64(seq)), attribute.Int("modulith.snapshot_bytes", len(snap.Payload))))
 	defer telemetry.End(span, &err)
 	edit := snapshots.Edit{By: last.By, At: last.At}
 	ref, err := m.store.Put(ctx, projectID, snap, seq, edit)

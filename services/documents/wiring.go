@@ -1,6 +1,6 @@
 package documents
 
-// Setup shared by the binaries hosting documents (cmd/gyoza, cmd/documents),
+// Setup shared by the binaries hosting documents (cmd/modulith, cmd/documents),
 // so they can't drift apart.
 
 import (
@@ -10,14 +10,14 @@ import (
 	"os"
 	"time"
 
-	"gyoza/internal/engine"
-	"gyoza/platform/config"
-	gnats "gyoza/platform/nats"
-	"gyoza/services/documents/internal/live"
-	"gyoza/services/documents/internal/manager"
-	"gyoza/services/documents/internal/snapshots"
-	"gyoza/services/documents/internal/wal"
-	"gyoza/services/storage"
+	"github.com/mjcourte/modulith/internal/engine"
+	"github.com/mjcourte/modulith/platform/config"
+	gnats "github.com/mjcourte/modulith/platform/nats"
+	"github.com/mjcourte/modulith/services/documents/internal/live"
+	"github.com/mjcourte/modulith/services/documents/internal/manager"
+	"github.com/mjcourte/modulith/services/documents/internal/snapshots"
+	"github.com/mjcourte/modulith/services/documents/internal/wal"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 // Settings is everything documents reads from the environment.
@@ -35,16 +35,16 @@ type Settings struct {
 func SettingsFromEnv(env *config.Env) Settings {
 	return Settings{
 		Manager: Config{
-			Replica: env.String("GYOZA_DOCUMENTS_REPLICA", defaultReplica()),
+			Replica: env.String("MODULITH_DOCUMENTS_REPLICA", defaultReplica()),
 			Live: live.Config{
-				Debounce: env.Duration("GYOZA_DOCUMENTS_DEBOUNCE", 2*time.Second),
-				MaxDelay: env.Duration("GYOZA_DOCUMENTS_MAX_DELAY", 30*time.Second),
-				TTL:      env.Duration("GYOZA_DOCUMENTS_TTL", 10*time.Minute),
+				Debounce: env.Duration("MODULITH_DOCUMENTS_DEBOUNCE", 2*time.Second),
+				MaxDelay: env.Duration("MODULITH_DOCUMENTS_MAX_DELAY", 30*time.Second),
+				TTL:      env.Duration("MODULITH_DOCUMENTS_TTL", 10*time.Minute),
 			},
 		},
-		NATSURL:          env.Required("GYOZA_NATS_URL"),
-		Consumer:         env.String("GYOZA_DOCUMENTS_CONSUMER", "documents"),
-		MaxSnapshotBytes: env.PositiveInt("GYOZA_SNAPSHOT_MAX_BYTES", storage.DefaultMaxSnapshotBytes),
+		NATSURL:          env.Required("MODULITH_NATS_URL"),
+		Consumer:         env.String("MODULITH_DOCUMENTS_CONSUMER", "documents"),
+		MaxSnapshotBytes: env.PositiveInt("MODULITH_SNAPSHOT_MAX_BYTES", storage.DefaultMaxSnapshotBytes),
 	}
 }
 

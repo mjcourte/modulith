@@ -3,7 +3,7 @@ package ledger_test
 import (
 	"testing"
 
-	ledger "gyoza/services/storage/internal/ledger"
+	ledger "github.com/mjcourte/modulith/services/storage/internal/ledger"
 )
 
 func TestMemory(t *testing.T) {

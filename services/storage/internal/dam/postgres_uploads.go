@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	"gyoza/services/storage/internal/db"
+	"github.com/mjcourte/modulith/services/storage/internal/db"
 )
 
 // checkUploadTargetTx repeats, against stored data, the checks CreateUpload

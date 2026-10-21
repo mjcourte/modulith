@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"gyoza/services/storage"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 func (s *server) listAssets(w http.ResponseWriter, r *http.Request) {

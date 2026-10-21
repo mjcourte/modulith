@@ -1,4 +1,4 @@
-// Package nats connects to NATS and JetStream and defines Gyoza's streams and
+// Package nats connects to NATS and JetStream and defines Modulith's streams and
 // subjects. The client library is imported as natsgo so it doesn't read as
 // this package.
 package nats

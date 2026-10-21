@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"gyoza/services/storage/internal/ledger"
+	"github.com/mjcourte/modulith/services/storage/internal/ledger"
 )
 
 func TestNormalizeFolderName(t *testing.T) {

@@ -4,8 +4,8 @@ import (
 	"errors"
 	"testing"
 
-	"gyoza/internal/engine"
-	"gyoza/services/documents/internal/snapshots"
+	"github.com/mjcourte/modulith/internal/engine"
+	"github.com/mjcourte/modulith/services/documents/internal/snapshots"
 )
 
 func TestContentTypeRoundTrip(t *testing.T) {
@@ -19,7 +19,7 @@ func TestContentTypeRoundTrip(t *testing.T) {
 			t.Errorf("%s: parsed %q as %s v%d, %v", f, ct, gotF, gotV, err)
 		}
 	}
-	for _, bad := range []string{"image/png", "application/vnd.gyoza.app+flatbuffers", "application/json; version=x"} {
+	for _, bad := range []string{"image/png", "application/vnd.modulith.app+flatbuffers", "application/json; version=x"} {
 		if _, _, err := snapshots.ParseContentType(bad); !errors.Is(err, snapshots.ErrInvalid) {
 			t.Errorf("%q: got %v, want ErrInvalid", bad, err)
 		}

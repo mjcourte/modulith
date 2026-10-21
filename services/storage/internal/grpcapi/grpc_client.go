@@ -5,10 +5,10 @@ import (
 
 	"google.golang.org/grpc"
 
-	pb "gyoza/contracts/gen/go/gyoza/storage/v1"
-	"gyoza/services/storage/internal/dam"
-	"gyoza/services/storage/internal/ledger"
-	"gyoza/services/storage/internal/manager"
+	pb "github.com/mjcourte/modulith/contracts/gen/go/modulith/storage/v1"
+	"github.com/mjcourte/modulith/services/storage/internal/dam"
+	"github.com/mjcourte/modulith/services/storage/internal/ledger"
+	"github.com/mjcourte/modulith/services/storage/internal/manager"
 )
 
 // Client is a Service that calls a remote storage over gRPC.

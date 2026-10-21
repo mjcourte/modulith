@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"gyoza/internal/engine"
-	"gyoza/services/gateway/internal/session"
-	"gyoza/services/storage"
+	"github.com/mjcourte/modulith/internal/engine"
+	"github.com/mjcourte/modulith/services/gateway/internal/session"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 // AssetRef pins an asset version, as documents use them.
@@ -19,7 +19,7 @@ type AssetRef struct {
 func (s *Server) routesDocuments(mux *http.ServeMux) {
 	// The document as engine bytes (the latest state, created if the project
 	// has none), with what a client needs to apply live deltas after it:
-	// Gyoza-Format and Gyoza-Version (the wire format), Gyoza-Seq (the last
+	// Modulith-Format and Modulith-Version (the wire format), Modulith-Seq (the last
 	// delta stream sequence it covers).
 	mux.HandleFunc("GET /projects/{id}/document", func(w http.ResponseWriter, r *http.Request) {
 		d, err := s.docs.GetDocument(r.Context(), session.Actor(r.Context()), r.PathValue("id"))
@@ -29,9 +29,9 @@ func (s *Server) routesDocuments(mux *http.ServeMux) {
 		}
 		h := w.Header()
 		h.Set("Content-Type", "application/octet-stream")
-		h.Set("Gyoza-Format", string(d.Snapshot.Format))
-		h.Set("Gyoza-Version", strconv.Itoa(d.Snapshot.Version))
-		h.Set("Gyoza-Seq", strconv.FormatUint(d.Seq, 10))
+		h.Set("Modulith-Format", string(d.Snapshot.Format))
+		h.Set("Modulith-Version", strconv.Itoa(d.Snapshot.Version))
+		h.Set("Modulith-Seq", strconv.FormatUint(d.Seq, 10))
 		w.Write(d.Snapshot.Payload)
 	})
 	// Part of the document as JSON (the engine's query formats). The engine's

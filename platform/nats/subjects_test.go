@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"gyoza/platform/nats"
+	"github.com/mjcourte/modulith/platform/nats"
 )
 
 func TestSubjects(t *testing.T) {

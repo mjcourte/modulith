@@ -8,7 +8,7 @@ import (
 	"github.com/supertokens/supertokens-golang/recipe/thirdparty/tpmodels"
 	"github.com/supertokens/supertokens-golang/supertokens"
 
-	"gyoza/services/iam"
+	"github.com/mjcourte/modulith/services/iam"
 )
 
 // fakeUsers is iam's SignIn: it records identities and fails on demand.

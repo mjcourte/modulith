@@ -1,5 +1,5 @@
 // Package postgres opens the shared PostgreSQL connection pool with the
-// settings every Gyoza service relies on.
+// settings every Modulith service relies on.
 package postgres
 
 import (

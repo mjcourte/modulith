@@ -8,8 +8,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"gyoza/services/iam/internal/directory"
-	"gyoza/services/storage"
+	"github.com/mjcourte/modulith/services/iam/internal/directory"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 func userOwner(id string) storage.Owner {
@@ -20,7 +20,7 @@ func orgOwner(id string) storage.Owner {
 	return storage.Owner{Kind: storage.OwnerOrg, ID: id}
 }
 
-var gyoza = storage.Owner{Kind: storage.OwnerGyoza}
+var modulith = storage.Owner{Kind: storage.OwnerModulith}
 
 func mustProject(t *testing.T, s directory.Store, p directory.Project) directory.Project {
 	t.Helper()
@@ -89,7 +89,7 @@ func testCreateProject(t *testing.T, s directory.Store) {
 	if !locked.OrgLocked {
 		t.Error("org project created locked isn't locked")
 	}
-	template := mustProject(t, s, directory.Project{Owner: gyoza, Name: "Template"})
+	template := mustProject(t, s, directory.Project{Owner: modulith, Name: "Template"})
 	if template.CreatedBy != "" || template.State != directory.ProjectReady {
 		t.Errorf("template = %+v", template)
 	}
@@ -145,7 +145,7 @@ func testListMyProjects(t *testing.T, s directory.Store) {
 	mustShare(t, s, betas.ID, ann.ID, directory.AccessViewer)
 	// Not mine: bob's unshared project, a template, a clone in progress.
 	mustProject(t, s, directory.Project{Owner: userOwner(bob.ID), Name: "bob's"})
-	template := mustProject(t, s, directory.Project{Owner: gyoza, Name: "template"})
+	template := mustProject(t, s, directory.Project{Owner: modulith, Name: "template"})
 	mustProject(t, s, directory.Project{Owner: userOwner(ann.ID), Name: "cloning", State: directory.ProjectCloning, ClonedFrom: template.ID})
 
 	want := []string{own.ID, orgs.ID, shared.ID, both.ID, betas.ID}
@@ -177,12 +177,12 @@ func testListMyProjects(t *testing.T, s directory.Store) {
 func testListProjectsByOwner(t *testing.T, s directory.Store) {
 	ann := mustUser(t, s, "ann")
 	acme := mustOrg(t, s, "Acme", ann.ID)
-	t1 := mustProject(t, s, directory.Project{Owner: gyoza, Name: "T1"})
+	t1 := mustProject(t, s, directory.Project{Owner: modulith, Name: "T1"})
 	mustProject(t, s, directory.Project{Owner: orgOwner(acme.ID), Name: "org"})
-	t2 := mustProject(t, s, directory.Project{Owner: gyoza, Name: "T2"})
+	t2 := mustProject(t, s, directory.Project{Owner: modulith, Name: "T2"})
 	mustProject(t, s, directory.Project{Owner: userOwner(ann.ID), Name: "clone of T1", State: directory.ProjectCloning, ClonedFrom: t1.ID})
 
-	if got, want := listAll(t, s, directory.ProjectQuery{Owner: gyoza}), []string{t1.ID, t2.ID}; !slices.Equal(got, want) {
+	if got, want := listAll(t, s, directory.ProjectQuery{Owner: modulith}), []string{t1.ID, t2.ID}; !slices.Equal(got, want) {
 		t.Errorf("templates = %v, want %v", got, want)
 	}
 	if got := listAll(t, s, directory.ProjectQuery{Owner: orgOwner(acme.ID)}); len(got) != 1 {
@@ -277,7 +277,7 @@ func testTransferProject(t *testing.T, s directory.Store) {
 		t.Errorf("transfer of a locked project = %+v, %v; want unlocked", back, err)
 	}
 
-	template := mustProject(t, s, directory.Project{Owner: gyoza, Name: "T"})
+	template := mustProject(t, s, directory.Project{Owner: modulith, Name: "T"})
 	tests := []struct {
 		name string
 		id   string
@@ -285,7 +285,7 @@ func testTransferProject(t *testing.T, s directory.Store) {
 		want error
 	}{
 		{"template away", template.ID, userOwner(ann.ID), directory.ErrInvalidProject},
-		{"to gyoza", p.ID, gyoza, directory.ErrInvalidProject},
+		{"to modulith", p.ID, modulith, directory.ErrInvalidProject},
 		{"to a project", p.ID, storage.Owner{Kind: storage.OwnerProject, ID: template.ID}, directory.ErrInvalidProject},
 		{"to an unknown org", p.ID, orgOwner(uuid.NewString()), directory.ErrOrgNotFound},
 		{"to an unknown user", p.ID, userOwner("ghost"), directory.ErrUserNotFound},
@@ -305,7 +305,7 @@ func testProjectStateAndLock(t *testing.T, s directory.Store) {
 	ctx := t.Context()
 	ann := mustUser(t, s, "ann")
 	acme := mustOrg(t, s, "Acme", ann.ID)
-	source := mustProject(t, s, directory.Project{Owner: gyoza, Name: "T"})
+	source := mustProject(t, s, directory.Project{Owner: modulith, Name: "T"})
 	clone := mustProject(t, s, directory.Project{Owner: userOwner(ann.ID), Name: "T", State: directory.ProjectCloning, ClonedFrom: source.ID})
 
 	letTimePass()
@@ -388,7 +388,7 @@ func testShareProject(t *testing.T, s directory.Store) {
 		t.Errorf("ListShares includes another project's shares: %+v", shares)
 	}
 
-	template := mustProject(t, s, directory.Project{Owner: gyoza, Name: "T"})
+	template := mustProject(t, s, directory.Project{Owner: modulith, Name: "T"})
 	tests := []struct {
 		name string
 		sh   directory.Share
@@ -467,7 +467,7 @@ func testUnshare(t *testing.T, s directory.Store) {
 func testListCloningProjects(t *testing.T, s directory.Store) {
 	ctx := t.Context()
 	ann := mustUser(t, s, "ann")
-	source := mustProject(t, s, directory.Project{Owner: gyoza, Name: "T"})
+	source := mustProject(t, s, directory.Project{Owner: modulith, Name: "T"})
 	clone := func() directory.Project {
 		letTimePass()
 		return mustProject(t, s, directory.Project{Owner: userOwner(ann.ID), Name: "T", State: directory.ProjectCloning, ClonedFrom: source.ID})

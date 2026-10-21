@@ -6,7 +6,7 @@ import (
 	"context"
 	"fmt"
 
-	"gyoza/services/storage/internal/db"
+	"github.com/mjcourte/modulith/services/storage/internal/db"
 )
 
 func (p *Postgres) RecordUse(ctx context.Context, projectID string, ref AssetRef) error {

@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"gyoza/internal/engine"
-	"gyoza/services/documents/internal/live"
+	"github.com/mjcourte/modulith/internal/engine"
+	"github.com/mjcourte/modulith/services/documents/internal/live"
 )
 
 var testConfig = live.Config{Debounce: 2 * time.Second, MaxDelay: 30 * time.Second, TTL: 10 * time.Minute}

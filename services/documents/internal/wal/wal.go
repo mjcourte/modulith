@@ -16,9 +16,9 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 
-	"gyoza/internal/engine"
-	gnats "gyoza/platform/nats"
-	"gyoza/platform/telemetry"
+	"github.com/mjcourte/modulith/internal/engine"
+	gnats "github.com/mjcourte/modulith/platform/nats"
+	"github.com/mjcourte/modulith/platform/telemetry"
 )
 
 // ErrBadDelta marks a delta that can never be applied (malformed, wrong
@@ -42,7 +42,7 @@ type Delta struct {
 // message formats are in platform/nats, shared with the gateway.
 type Pointer = gnats.Pointer
 
-var tracer = otel.Tracer("gyoza/services/documents/internal/wal")
+var tracer = otel.Tracer("modulith/services/documents/internal/wal")
 
 // Log publishes to and reads from the DOCUMENTS stream.
 type Log struct {
@@ -160,10 +160,10 @@ func (l *Log) Consume(ctx context.Context, cfg ConsumerConfig, fn func(context.C
 		// starts a trace of its own, a hot path like the edits.
 		mctx, span := tracer.Start(gnats.TraceContext(ctx, m.Headers()), "document.apply",
 			trace.WithSpanKind(trace.SpanKindConsumer), telemetry.Hot,
-			trace.WithAttributes(attribute.String("gyoza.project_id", d.ProjectID), attribute.Int64("gyoza.seq", int64(d.Seq))))
+			trace.WithAttributes(attribute.String("modulith.project_id", d.ProjectID), attribute.Int64("modulith.seq", int64(d.Seq))))
 		defer span.End()
 		if err := fn(mctx, d); errors.Is(err, ErrBadDelta) {
-			span.SetAttributes(attribute.String("gyoza.refused", "BAD_DELTA"))
+			span.SetAttributes(attribute.String("modulith.refused", "BAD_DELTA"))
 			onBad(fmt.Errorf("wal: dropping delta %d of %s: %w", d.Seq, d.ProjectID, err))
 			m.Term()
 			deltas.Add(ctx, 1, outcome("dropped"))
@@ -204,10 +204,10 @@ func decode(subject string, seq uint64, h natsgo.Header, data []byte) (Delta, er
 }
 
 var (
-	meter = otel.Meter("gyoza/services/documents/internal/wal")
+	meter = otel.Meter("modulith/services/documents/internal/wal")
 	// deltas counts the consumer's deltas by outcome: applied, dropped
 	// (unreadable or rejected, never retried) or retried.
-	deltas, _ = meter.Int64Counter("gyoza.documents.deltas",
+	deltas, _ = meter.Int64Counter("modulith.documents.deltas",
 		metric.WithDescription("Deltas the documents consumer handled, by outcome."), metric.WithUnit("{delta}"))
 )
 
@@ -220,7 +220,7 @@ func outcome(o string) metric.AddOption {
 // count is a JetStream API call, bounded so a slow server can't stall
 // collection.
 func consumerMetrics(cons jetstream.Consumer) func() {
-	pending, err := meter.Int64ObservableGauge("gyoza.documents.consumer.pending",
+	pending, err := meter.Int64ObservableGauge("modulith.documents.consumer.pending",
 		metric.WithDescription("Deltas in the stream the documents consumer hasn't handled yet."), metric.WithUnit("{delta}"))
 	if err != nil {
 		return func() {}

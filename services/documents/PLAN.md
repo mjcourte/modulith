@@ -122,10 +122,10 @@ forking, snapshot calls), [iam/PLAN.md](../iam/PLAN.md) (cloning),
 
 `internal/wal` (the NATS adapter) plus the manager's use of it; `Manager.Config.WAL`
 is optional (nil in unit tests). Tests of everything NATS are gated on
-`GYOZA_TEST_NATS_URL`; they pass against the compose cluster and under `-race`.
+`MODULITH_TEST_NATS_URL`; they pass against the compose cluster and under `-race`.
 
 - **Publishing:** `UpdateDocument` publishes the stamped delta to `document.{p}.delta`
-  with headers `Gyoza-Format`, `Gyoza-Version`, `Gyoza-Actor` and `Gyoza-Origin` (this
+  with headers `Modulith-Format`, `Modulith-Version`, `Modulith-Actor` and `Modulith-Origin` (this
   replica). `Nats-Msg-Id` is a UUIDv7 per publish, so a retry with the same ID is
   stored once; dedupe only saves work, since applying twice is harmless. A failed
   publish returns the delta with `ErrNotPublished`.
@@ -133,7 +133,7 @@ is optional (nil in unit tests). Tests of everything NATS are gated on
   project, with `Manager.ApplyDelta` as the handler:
   - a delta for a project not in memory loads it, so every project with deltas is
     snapshotted before MaxAge (7d)
-  - deltas from the gateway (`Gyoza-Actor`, foreign origin) sync asset uses; this
+  - deltas from the gateway (`Modulith-Actor`, foreign origin) sync asset uses; this
     replica's echoes were synced when made
   - an engine refusal (malformed, wrong format, forged stamp) is `wal.ErrBadDelta`:
     terminated, not redelivered. Eviction races are redelivered.
@@ -169,7 +169,7 @@ Still to do in the gateway (see gateway/PLAN.md "NATS to WebSocket"):
 - bind each socket to a replica ID the gateway assigns, and refuse browser deltas
   stamped with another replica's ID (forged tie-breaks, or impersonating the server).
   Needs an engine helper to read a delta's stamp (`engine.StampOf`, to add)
-- check `CanWrite`, then publish with `Gyoza-Actor` set from the session
+- check `CanWrite`, then publish with `Modulith-Actor` set from the session
 - send the server's time on connect, so the WASM engine stamps with server-adjusted
   time: a browser clock more than `MaxSkew` ahead would have its edits refused
 - only the server enforces `MaxSkew`. A browser whose clock is behind must still
@@ -193,7 +193,7 @@ binary may wire it.
   `storage.Authorizer`, calls it with the project as both owner and project, and
   re-wraps `storage.ErrForbidden` as `documents.ErrForbidden`. Other errors pass
   through unchanged (a store failure isn't "forbidden").
-  - monolith (`cmd/gyoza`): `iam.NewStorageAuthorizer(iamStore)`, the same value
+  - monolith (`cmd/modulith`): `iam.NewStorageAuthorizer(iamStore)`, the same value
     storage gets
   - distributed (`cmd/documents`): `iam.NewAuthzClient(conn)` to the iam service
 - **Test (done):** `iam_authz_test.go` runs the adapter over iam's real
@@ -227,12 +227,12 @@ binary may wire it.
   - `Put` returns only once the object is confirmed in S3 (`CompleteSnapshot` checks
     it), never when the URL is issued, and storage checks staleness and records the
     row atomically (`ErrStale` as one transaction). `Durable()` is true.
-- `contracts/proto/gyoza/documents/v1/documents.proto`: `DocumentsService` mirroring
+- `contracts/proto/modulith/documents/v1/documents.proto`: `DocumentsService` mirroring
   `Service`; snapshots and deltas as `bytes` with format and version.
 - `internal/grpcapi`: `Server`, a `Client` implementing `Service`, a sentinel-error
   table (`wireErrors` style), and a bufconn test running the manager suite.
 - Wiring: `documents.go` (`RegisterGRPC`, `NewGRPCClient`), `wiring.go` (settings:
-  debounce, max delay, TTL; `Open`), `cmd/documents`, and `cmd/gyoza`. No migrations,
+  debounce, max delay, TTL; `Open`), `cmd/documents`, and `cmd/modulith`. No migrations,
   so no `Migrate`.
 - **Step 4 done (2026-10-12):** `DocumentsService` (Get, Query, Init, Update), `grpcapi`
   (one error table; an applied edit that wasn't published or whose uses failed still
@@ -283,7 +283,7 @@ Administrative un-sticking: put a project back to an earlier stored version. Not
 - engine: `Document.RevertTo(ctx, snapshot) (Delta, error)`. Mock now, contract for
   the native engine.
 - storage: `ListSnapshots` (newest first) and `SnapshotURL`. Retention
-  (`GYOZA_SNAPSHOT_KEEP`, 100) is the revert window.
+  (`MODULITH_SNAPSHOT_KEEP`, 100) is the revert window.
 - documents: `RevertDocument(ctx, actorID, projectID, version)`: fetch that version,
   `RevertTo`, then publish, sync asset uses and save as usual.
 - **Built:** `engine.Document.RevertTo`, `RevertDocument(ctx, actorID, projectID,

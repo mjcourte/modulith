@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	sm "gyoza/services/storage/internal/manager"
+	sm "github.com/mjcourte/modulith/services/storage/internal/manager"
 )
 
 func TestAllowAll(t *testing.T) {

@@ -7,7 +7,7 @@ import ThirdParty, { Google } from 'supertokens-auth-react/recipe/thirdparty'
 // /api to the gateway (vite.config.ts), so cookies and the no-CORS gateway work.
 SuperTokens.init({
     appInfo: {
-        appName: 'Gyoza',
+        appName: 'Modulith',
         apiDomain: window.location.origin,
         websiteDomain: window.location.origin,
         apiBasePath: '/auth',

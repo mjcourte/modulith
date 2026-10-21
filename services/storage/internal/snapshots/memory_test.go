@@ -3,7 +3,7 @@ package snapshots_test
 import (
 	"testing"
 
-	"gyoza/services/storage/internal/snapshots"
+	"github.com/mjcourte/modulith/services/storage/internal/snapshots"
 )
 
 func TestMemory(t *testing.T) {

@@ -4,9 +4,9 @@
 // misconfigured binary reports every missing or invalid setting at once:
 //
 //	env := config.FromEnv()
-//	dbURL := env.Required("GYOZA_DATABASE_URL")
+//	dbURL := env.Required("MODULITH_DATABASE_URL")
 //	level := slog.LevelInfo
-//	env.Text("GYOZA_LOG_LEVEL", &level)
+//	env.Text("MODULITH_LOG_LEVEL", &level)
 //	if err := env.Err(); err != nil {
 //		return err
 //	}

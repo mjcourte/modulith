@@ -5,10 +5,10 @@ import (
 
 	"google.golang.org/grpc"
 
-	pb "gyoza/contracts/gen/go/gyoza/iam/v1"
-	"gyoza/services/iam/internal/directory"
-	"gyoza/services/iam/internal/manager"
-	"gyoza/services/storage"
+	pb "github.com/mjcourte/modulith/contracts/gen/go/modulith/iam/v1"
+	"github.com/mjcourte/modulith/services/iam/internal/directory"
+	"github.com/mjcourte/modulith/services/iam/internal/manager"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 // Client is a Service that calls a remote iam over gRPC.

@@ -45,11 +45,11 @@ in one can't join the other's networks, but both publish to Windows' `localhost`
 
 ## Checking it
 
-Send a span from Windows and look for service `gyoza-smoke-test` in the UI:
+Send a span from Windows and look for service `modulith-smoke-test` in the UI:
 
 ```sh
 now=$(date +%s)
-curl -X POST http://localhost:4318/v1/traces -H 'Content-Type: application/json' -d '{"resourceSpans":[{"resource":{"attributes":[{"key":"service.name","value":{"stringValue":"gyoza-smoke-test"}}]},"scopeSpans":[{"spans":[{"traceId":"5b8efff798038103d269b633813fc60c","spanId":"eee19b7ec3c1b174","name":"smoke-test","kind":1,"startTimeUnixNano":"'$now'000000000","endTimeUnixNano":"'$((now+1))'000000000"}]}]}]}'
+curl -X POST http://localhost:4318/v1/traces -H 'Content-Type: application/json' -d '{"resourceSpans":[{"resource":{"attributes":[{"key":"service.name","value":{"stringValue":"modulith-smoke-test"}}]},"scopeSpans":[{"spans":[{"traceId":"5b8efff798038103d269b633813fc60c","spanId":"eee19b7ec3c1b174","name":"smoke-test","kind":1,"startTimeUnixNano":"'$now'000000000","endTimeUnixNano":"'$((now+1))'000000000"}]}]}]}'
 ```
 
 A 200 with no span in the UI means the collector is still on its placeholder pipelines:

@@ -8,9 +8,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"gyoza/services/storage/internal/dam"
-	"gyoza/services/storage/internal/ledger"
-	sm "gyoza/services/storage/internal/manager"
+	"github.com/mjcourte/modulith/services/storage/internal/dam"
+	"github.com/mjcourte/modulith/services/storage/internal/ledger"
+	sm "github.com/mjcourte/modulith/services/storage/internal/manager"
 )
 
 // uploadAsset runs the whole upload flow as actor and returns the new asset

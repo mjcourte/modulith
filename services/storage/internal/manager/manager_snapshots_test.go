@@ -7,14 +7,14 @@ import (
 	"testing"
 	"time"
 
-	"gyoza/services/storage/internal/blob"
-	"gyoza/services/storage/internal/ledger"
-	sm "gyoza/services/storage/internal/manager"
+	"github.com/mjcourte/modulith/services/storage/internal/blob"
+	"github.com/mjcourte/modulith/services/storage/internal/ledger"
+	sm "github.com/mjcourte/modulith/services/storage/internal/manager"
 )
 
 const (
 	snapProject = "proj-snap"
-	snapType    = "application/vnd.gyoza.app+flatbuffers; version=1"
+	snapType    = "application/vnd.modulith.app+flatbuffers; version=1"
 )
 
 // newSnapshotManager is a test Manager that knows snapProject, owned by acme.

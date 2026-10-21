@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"gyoza/services/storage"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 // IAMAuthorizer is documents' Authorizer, answered by iam. iam already

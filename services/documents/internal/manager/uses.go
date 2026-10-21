@@ -7,7 +7,7 @@ import (
 	"slices"
 	"sync"
 
-	"gyoza/internal/engine"
+	"github.com/mjcourte/modulith/internal/engine"
 )
 
 // AssetUses keeps storage's record of which asset versions each project's

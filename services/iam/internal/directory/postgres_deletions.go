@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"time"
 
-	"gyoza/services/iam/internal/db"
-	"gyoza/services/storage"
+	"github.com/mjcourte/modulith/services/iam/internal/db"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 func (p *Postgres) MarkUserDeleting(ctx context.Context, userID, toOrgID string) (User, error) {

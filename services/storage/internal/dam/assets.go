@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"gyoza/services/storage/internal/ledger"
+	"github.com/mjcourte/modulith/services/storage/internal/ledger"
 )
 
 // Asset errors returned by every Store. Check them with errors.Is: they are

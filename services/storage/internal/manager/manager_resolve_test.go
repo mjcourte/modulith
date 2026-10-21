@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"gyoza/services/storage/internal/dam"
-	sm "gyoza/services/storage/internal/manager"
+	"github.com/mjcourte/modulith/services/storage/internal/dam"
+	sm "github.com/mjcourte/modulith/services/storage/internal/manager"
 )
 
 // resolveFixture: acme's asset (two versions) used by project p1 at version 1,

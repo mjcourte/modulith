@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"gyoza/internal/engine"
+	"github.com/mjcourte/modulith/internal/engine"
 )
 
 // ErrExists is returned by InitDocument for a project that already has a

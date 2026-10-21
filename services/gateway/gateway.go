@@ -8,14 +8,14 @@ import (
 	"context"
 	"net/http"
 
-	gnats "gyoza/platform/nats"
-	"gyoza/platform/telemetry"
-	"gyoza/services/documents"
-	"gyoza/services/gateway/internal/auth"
-	"gyoza/services/gateway/internal/rest"
-	"gyoza/services/gateway/internal/ws"
-	"gyoza/services/iam"
-	"gyoza/services/storage"
+	gnats "github.com/mjcourte/modulith/platform/nats"
+	"github.com/mjcourte/modulith/platform/telemetry"
+	"github.com/mjcourte/modulith/services/documents"
+	"github.com/mjcourte/modulith/services/gateway/internal/auth"
+	"github.com/mjcourte/modulith/services/gateway/internal/rest"
+	"github.com/mjcourte/modulith/services/gateway/internal/ws"
+	"github.com/mjcourte/modulith/services/iam"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 // Services is what the gateway calls: in-process implementations in the

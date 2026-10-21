@@ -20,10 +20,10 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 
-	gnats "gyoza/platform/nats"
-	"gyoza/services/documents"
-	"gyoza/services/gateway/internal/session"
-	"gyoza/services/storage"
+	gnats "github.com/mjcourte/modulith/platform/nats"
+	"github.com/mjcourte/modulith/services/documents"
+	"github.com/mjcourte/modulith/services/gateway/internal/session"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 // UserState is one user's presence message in a project.
@@ -270,10 +270,10 @@ func (h *Hub) fanout(projectID string, seq uint64, msg func() any) {
 }
 
 var (
-	meter = otel.Meter("gyoza/services/gateway/internal/ws")
+	meter = otel.Meter("modulith/services/gateway/internal/ws")
 	// messages counts client messages by type, presence included: the
 	// busiest message, which gets no spans.
-	messages, _ = meter.Int64Counter("gyoza.ws.messages",
+	messages, _ = meter.Int64Counter("modulith.ws.messages",
 		metric.WithDescription("Messages received from browsers, by type."), metric.WithUnit("{message}"))
 )
 
@@ -291,9 +291,9 @@ func countMessage(ctx context.Context, typ string) {
 // observe reports the open sockets and the projects they joined at each
 // collection, until the returned function stops it.
 func (h *Hub) observe() func() {
-	sockets, err1 := meter.Int64ObservableGauge("gyoza.ws.sockets",
+	sockets, err1 := meter.Int64ObservableGauge("modulith.ws.sockets",
 		metric.WithDescription("Open WebSockets."), metric.WithUnit("{socket}"))
-	projects, err2 := meter.Int64ObservableGauge("gyoza.ws.projects",
+	projects, err2 := meter.Int64ObservableGauge("modulith.ws.projects",
 		metric.WithDescription("Projects at least one WebSocket has joined."), metric.WithUnit("{project}"))
 	if err := errors.Join(err1, err2); err != nil {
 		return func() {}

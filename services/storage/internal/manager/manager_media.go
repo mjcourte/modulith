@@ -15,9 +15,9 @@ import (
 	"log/slog"
 	"time"
 
-	"gyoza/services/mediaprocessor"
-	"gyoza/services/storage/internal/dam"
-	"gyoza/services/storage/internal/ledger"
+	"github.com/mjcourte/modulith/services/mediaprocessor"
+	"github.com/mjcourte/modulith/services/storage/internal/dam"
+	"github.com/mjcourte/modulith/services/storage/internal/ledger"
 )
 
 const (

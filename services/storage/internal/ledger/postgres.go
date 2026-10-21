@@ -10,7 +10,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 
-	"gyoza/services/storage/internal/db"
+	"github.com/mjcourte/modulith/services/storage/internal/db"
 )
 
 // DB is the connection Postgres runs queries on.
@@ -45,7 +45,7 @@ func (p *Postgres) Create(ctx context.Context, obj Object) (Object, error) {
 	row, err := p.q.CreateObject(ctx, db.CreateObjectParams{
 		ID:          obj.ID,
 		OwnerKind:   string(obj.Owner.Kind),
-		OwnerID:     obj.Owner.ID, // "" for gyoza
+		OwnerID:     obj.Owner.ID, // "" for modulith
 		CreatedBy:   nullable(obj.CreatedBy),
 		ProjectID:   nullable(obj.ProjectID),
 		Kind:        nullable(string(obj.Kind)),

@@ -23,8 +23,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 
-	"gyoza/services/iam/internal/db"
-	"gyoza/services/storage"
+	"github.com/mjcourte/modulith/services/iam/internal/db"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 // DB is the connection Postgres runs on: *pgxpool.Pool in production, a
@@ -122,7 +122,7 @@ func lockLiveOrg(ctx context.Context, q *db.Queries, id string) error {
 }
 
 // lockLiveOwner checks a project owner as the memory store's ownerExists:
-// a live user or org; gyoza always exists.
+// a live user or org; modulith always exists.
 func lockLiveOwner(ctx context.Context, q *db.Queries, o storage.Owner) error {
 	switch o.Kind {
 	case storage.OwnerUser:

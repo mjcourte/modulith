@@ -38,7 +38,7 @@ func one[T any](ctx context.Context, q *queries, sql string, args ...any) (T, er
 // orphan is a SQL expression: whether the row aliased a has an owner that
 // doesn't exist in iam (no such user, org or project). Storage never checks
 // owners exist, so rows written by hand or by old runs can point at nobody,
-// and then no actor may touch them. gyoza owners always exist.
+// and then no actor may touch them. modulith owners always exist.
 func orphan(a string) string {
 	return `(CASE ` + a + `.owner_kind
 		WHEN 'user' THEN NOT EXISTS (SELECT 1 FROM iam.users ou WHERE ou.id = ` + a + `.owner_id)
@@ -201,7 +201,7 @@ type ProjectRow struct {
 
 var projectSelect = `
 	SELECT p.id::text AS id, p.owner_kind, p.owner_id,
-	       COALESCE(u.name, o.name, 'gyoza') AS owner_name, ` + orphan("p") + ` AS orphan,
+	       COALESCE(u.name, o.name, 'modulith') AS owner_name, ` + orphan("p") + ` AS orphan,
 	       p.name, p.state, p.cloned_from::text AS cloned_from, p.org_locked,
 	       p.created_by, p.created_at, p.deleting_at
 	FROM iam.projects p
@@ -375,14 +375,14 @@ func (q *queries) writableProjects(ctx context.Context, actorID string) ([]Writa
 }
 
 // usableAssets lists the live assets projectID can use in place: its own,
-// its owner's, and gyoza's (see storage's RecordAssetUse).
+// its owner's, and modulith's (see storage's RecordAssetUse).
 func (q *queries) usableAssets(ctx context.Context, projectID string) ([]AssetRow, error) {
 	return collect[AssetRow](ctx, q, assetSelect+`
 		JOIN iam.projects p ON p.id::text = $1
 		WHERE a.deleted_at IS NULL
 		  AND ((a.owner_kind = 'project' AND a.owner_id = $1)
 		    OR (a.owner_kind = p.owner_kind AND a.owner_id = p.owner_id)
-		    OR a.owner_kind = 'gyoza')
+		    OR a.owner_kind = 'modulith')
 		ORDER BY a.name LIMIT $2`, projectID, listLimit)
 }
 
@@ -500,7 +500,7 @@ type SnapshotRow struct {
 }
 
 // snapshots lists a project's completed snapshots, newest first: the
-// versions it can be reverted to (storage keeps the newest GYOZA_SNAPSHOT_KEEP).
+// versions it can be reverted to (storage keeps the newest MODULITH_SNAPSHOT_KEEP).
 func (q *queries) snapshots(ctx context.Context, projectID string) ([]SnapshotRow, error) {
 	return collect[SnapshotRow](ctx, q, `
 		SELECT object_id, version, seq, edited_by, edited_at, content_type, size_bytes, completed_at

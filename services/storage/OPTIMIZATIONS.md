@@ -23,10 +23,10 @@ one owner with 20k objects.
 
 #### Owner listing scanned the whole table
 
-- **Found:** `owner_id IS NOT DISTINCT FROM $2` (so Gyoza's NULL owner ID
+- **Found:** `owner_id IS NOT DISTINCT FROM $2` (so Modulith's NULL owner ID
   matched) can't use an index. Listing by owner was a sequential scan of the
   entire table: 131ms to return 29 rows.
-- **Fix:** the schema stores `''` instead of NULL for Gyoza and the
+- **Fix:** the schema stores `''` instead of NULL for Modulith and the
   query uses `owner_id = $2`. Now an index scan.
 
 #### Later pages re-read every earlier row

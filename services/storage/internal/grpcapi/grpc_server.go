@@ -3,9 +3,9 @@ package grpcapi
 import (
 	"context"
 
-	pb "gyoza/contracts/gen/go/gyoza/storage/v1"
-	"gyoza/services/storage/internal/dam"
-	"gyoza/services/storage/internal/manager"
+	pb "github.com/mjcourte/modulith/contracts/gen/go/modulith/storage/v1"
+	"github.com/mjcourte/modulith/services/storage/internal/dam"
+	"github.com/mjcourte/modulith/services/storage/internal/manager"
 )
 
 // Server exposes a Service over gRPC. Register it with

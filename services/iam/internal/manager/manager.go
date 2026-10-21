@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"gyoza/services/iam/internal/directory"
-	"gyoza/services/storage"
+	"github.com/mjcourte/modulith/services/iam/internal/directory"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 // ErrForbidden means the acting user may not do what they asked. Manager

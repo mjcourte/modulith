@@ -7,9 +7,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"gyoza/services/iam/internal/directory"
-	"gyoza/services/iam/internal/manager"
-	"gyoza/services/storage"
+	"github.com/mjcourte/modulith/services/iam/internal/directory"
+	"github.com/mjcourte/modulith/services/iam/internal/manager"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 // authzWorld is a small populated store:
@@ -19,7 +19,7 @@ import (
 //	eve: admin of beta
 //	bob, vic, edi: in no org
 //	acmeP: acme's (vic viewer); lockedP: acme's, org-locked (bob's share suspended)
-//	tmpl: a gyoza template; cloning: ann's clone still being copied
+//	tmpl: a modulith template; cloning: ann's clone still being copied
 type authzWorld struct {
 	store                               *directory.MemoryStore
 	acme                                directory.Org
@@ -49,7 +49,7 @@ func newAuthzWorld(t *testing.T) authzWorld {
 	if _, err := s.SetOrgLocked(t.Context(), w.lockedP.ID, true); err != nil {
 		t.Fatalf("SetOrgLocked: %v", err)
 	}
-	w.tmpl = mustProject(t, s, directory.Project{Owner: gyoza, Name: "template"})
+	w.tmpl = mustProject(t, s, directory.Project{Owner: modulith, Name: "template"})
 	w.cloning = mustProject(t, s, directory.Project{Owner: userOwner("ann"), Name: "clone", State: directory.ProjectCloning, ClonedFrom: w.tmpl.ID})
 	return w
 }
@@ -92,7 +92,7 @@ func TestStorageAuthorizer(t *testing.T) {
 		{"clone in progress, even its owner", "ann", projectOwner(w.cloning), w.cloning.ID, false, false},
 		{"missing project", "ann", storage.Owner{Kind: storage.OwnerProject, ID: uuid.NewString()}, "", false, false},
 
-		{"gyoza's shared files", "bob", gyoza, "", true, false},
+		{"modulith's shared files", "bob", modulith, "", true, false},
 
 		// Files owned by someone else but associated with a project: reading
 		// the project lets you read them; writing still needs the owner.
@@ -103,7 +103,7 @@ func TestStorageAuthorizer(t *testing.T) {
 		{"associated with a template", "bob", acmeLib, w.tmpl.ID, true, false},
 
 		{"unknown user, own-looking library", "ghost", userOwner("ghost"), "", false, false},
-		{"no actor", "", gyoza, "", false, false},
+		{"no actor", "", modulith, "", false, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -145,7 +145,7 @@ func TestStorageAuthorizerStoreFailure(t *testing.T) {
 func TestStorageAuthorizerWithStorage(t *testing.T) {
 	ctx := t.Context()
 	w := newAuthzWorld(t)
-	m, err := storage.NewMemory(manager.NewStorageAuthorizer(w.store), storage.Config{Bucket: "gyoza-test"})
+	m, err := storage.NewMemory(manager.NewStorageAuthorizer(w.store), storage.Config{Bucket: "modulith-test"})
 	if err != nil {
 		t.Fatalf("NewManager: %v", err)
 	}

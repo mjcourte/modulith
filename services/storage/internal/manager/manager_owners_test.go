@@ -4,9 +4,9 @@ import (
 	"errors"
 	"testing"
 
-	"gyoza/services/storage/internal/dam"
-	"gyoza/services/storage/internal/ledger"
-	sm "gyoza/services/storage/internal/manager"
+	"github.com/mjcourte/modulith/services/storage/internal/dam"
+	"github.com/mjcourte/modulith/services/storage/internal/ledger"
+	sm "github.com/mjcourte/modulith/services/storage/internal/manager"
 )
 
 func ledgerObjects(t *testing.T, tm testManager, owner ledger.Owner, includeDeleted bool) []ledger.Object {

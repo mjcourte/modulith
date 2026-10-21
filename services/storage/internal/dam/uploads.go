@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"gyoza/services/storage/internal/ledger"
+	"github.com/mjcourte/modulith/services/storage/internal/ledger"
 )
 
 // Upload session errors returned by every Store (see UploadStore).

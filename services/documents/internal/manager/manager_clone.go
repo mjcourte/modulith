@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"time"
 
-	"gyoza/internal/engine"
-	"gyoza/services/documents/internal/snapshots"
-	"gyoza/services/storage"
+	"github.com/mjcourte/modulith/internal/engine"
+	"github.com/mjcourte/modulith/services/documents/internal/snapshots"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 // CloneDocument copies from's document into the clone project to, with every

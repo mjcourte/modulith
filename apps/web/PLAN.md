@@ -32,7 +32,7 @@ full-screen now, the project page (later the canvas) as a side panel.
 - Commands (toolbar, context menu, multi-select where sensible): open/download, upload,
   replace (new version: `POST /uploads` with `assetId`), rename, move, delete, share,
   clone, link to project, versions/revert.
-- Ownership badges: self, org, project, Gyoza, shared with me, other (read through a
+- Ownership badges: self, org, project, Modulith, shared with me, other (read through a
   project). Computed from the item's `owner` against `useMe()`, plus the `shared` flag
   storage adds.
 - Clone anything readable (own, org, project, shared) to an owner the user can write:
@@ -121,7 +121,7 @@ whole view: `path` (breadcrumbs), `folders`, and `assets` (paged).
 ### Verification
 
 `npm run build` and `npm run lint`. Then by hand, with two Google accounts on
-`scripts/gyoza.sh` + `scripts/web.sh`: org invite and accept; upload, download, trash,
+`scripts/modulith.sh` + `scripts/web.sh`: org invite and accept; upload, download, trash,
 restore; share a folder and check the other account can download but not rename, and
 can copy; link and unlink; create, share, clone and delete a project.
 
@@ -146,7 +146,7 @@ is the default owner for new projects and uploads.
   members of one). Choosing the org shows an org-lock switch ("only people in this org"),
   on by default; any member creating the project may turn it off. Changing it later is
   for org admins (see Sharing).
-- Gyoza templates listed separately; read-only, with a "clone" action.
+- Modulith templates listed separately; read-only, with a "clone" action.
 - Clone any project you can read: choose the target (your library or your org). A
   locked project offers only its org as the target. A clone
   appears once it's ready (it's hidden while copying).

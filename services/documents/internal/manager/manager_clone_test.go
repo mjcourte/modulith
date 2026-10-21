@@ -7,9 +7,9 @@ import (
 	"slices"
 	"testing"
 
-	"gyoza/internal/engine"
-	"gyoza/services/documents/internal/manager"
-	"gyoza/services/storage"
+	"github.com/mjcourte/modulith/internal/engine"
+	"github.com/mjcourte/modulith/services/documents/internal/manager"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 // storedAssets loads a project's latest stored snapshot and returns the

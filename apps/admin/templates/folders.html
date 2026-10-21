@@ -2,7 +2,7 @@
 <h1>Folders</h1>
 <form method="get" action="/folders" class="filters">
   <select name="owner_kind">
-    {{range $k := (list "user" "org" "project" "gyoza")}}<option {{if eq $k $.Data.OwnerKind}}selected{{end}}>{{$k}}</option>{{end}}
+    {{range $k := (list "user" "org" "project" "modulith")}}<option {{if eq $k $.Data.OwnerKind}}selected{{end}}>{{$k}}</option>{{end}}
   </select>
   <input name="owner_id" value="{{.Data.OwnerID}}" placeholder="owner id" size="38">
   <button>Show tree</button>

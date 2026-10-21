@@ -12,7 +12,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"gyoza/services/storage/internal/ledger"
+	"github.com/mjcourte/modulith/services/storage/internal/ledger"
 )
 
 func TestCategoryOf(t *testing.T) {

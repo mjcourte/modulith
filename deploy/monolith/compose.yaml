@@ -1,4 +1,4 @@
-# Local dependencies for running the monolith (go run ./cmd/gyoza) on any
+# Local dependencies for running the monolith (go run ./cmd/modulith) on any
 # machine. From the repo root:
 #
 #   docker compose -f deploy/monolith/compose.yaml up -d --wait
@@ -6,45 +6,45 @@
 #   docker compose -f deploy/monolith/compose.yaml down -v     # deletes data
 #
 # Then point the binaries and tests at it:
-#   GYOZA_DATABASE_URL=postgres://gyoza:gyoza@localhost:5433/gyoza
-#   GYOZA_TEST_S3_ENDPOINT=http://localhost:9000   (S3: access key gyoza, secret gyoza-dev-secret)
-#   GYOZA_TEST_NATS_URL=nats://localhost:4222
+#   MODULITH_DATABASE_URL=postgres://modulith:modulith@localhost:5433/modulith
+#   MODULITH_TEST_S3_ENDPOINT=http://localhost:9000   (S3: access key modulith, secret modulith-dev-secret)
+#   MODULITH_TEST_NATS_URL=nats://localhost:4222
 
-name: gyoza
+name: modulith
 
 services:
   # The monolith itself, in a container. Off by default: during development
-  # it runs on the host (go run ./cmd/gyoza). Start it with --profile app.
+  # it runs on the host (go run ./cmd/modulith). Start it with --profile app.
   # Presigned URLs then name http://s3:9000, which only containers resolve,
   # so uploads from the host need the host-run binary instead.
   app:
     profiles: [app]
     build:
       context: ../..
-      target: gyoza
+      target: modulith
     environment:
-      GYOZA_DATABASE_URL: postgres://gyoza:gyoza@postgres:5432/gyoza
-      GYOZA_S3_ENDPOINT: http://s3:9000
-      GYOZA_S3_ACCESS_KEY: gyoza
-      GYOZA_S3_SECRET_KEY: gyoza-dev-secret # local development only
-      GYOZA_S3_PATH_STYLE: "true"
-      GYOZA_S3_BUCKET: gyoza-dev
-      GYOZA_S3_CREATE_BUCKET: "true"
-      GYOZA_NATS_URL: nats://nats-1:4222,nats-2:4222,nats-3:4222
-      GYOZA_SUPERTOKENS_URL: http://supertokens:3567
-      GYOZA_PUBLIC_URL: http://localhost:8080
+      MODULITH_DATABASE_URL: postgres://modulith:modulith@postgres:5432/modulith
+      MODULITH_S3_ENDPOINT: http://s3:9000
+      MODULITH_S3_ACCESS_KEY: modulith
+      MODULITH_S3_SECRET_KEY: modulith-dev-secret # local development only
+      MODULITH_S3_PATH_STYLE: "true"
+      MODULITH_S3_BUCKET: modulith-dev
+      MODULITH_S3_CREATE_BUCKET: "true"
+      MODULITH_NATS_URL: nats://nats-1:4222,nats-2:4222,nats-3:4222
+      MODULITH_SUPERTOKENS_URL: http://supertokens:3567
+      MODULITH_PUBLIC_URL: http://localhost:8080
       # SuperTokens' public demo Google client: localhost only (see .env.example).
-      GYOZA_GOOGLE_CLIENT_ID: 1060725074195-kmeum4crr01uirfl2op9kd5acmi9jutn.apps.googleusercontent.com
-      GYOZA_GOOGLE_CLIENT_SECRET: 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
-      GYOZA_GATEWAY_DEV_PAGES: "true"
+      MODULITH_GOOGLE_CLIENT_ID: 1060725074195-kmeum4crr01uirfl2op9kd5acmi9jutn.apps.googleusercontent.com
+      MODULITH_GOOGLE_CLIENT_SECRET: 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
+      MODULITH_GATEWAY_DEV_PAGES: "true"
       # SigNoz (deploy/observability) runs in WSL's Docker: reached through the
-      # host, where WSL forwards its OTLP port. GYOZA_CONTAINER_OTLP_ENDPOINT=
+      # host, where WSL forwards its OTLP port. MODULITH_CONTAINER_OTLP_ENDPOINT=
       # (empty) turns telemetry off.
-      GYOZA_OTLP_ENDPOINT: ${GYOZA_CONTAINER_OTLP_ENDPOINT-http://host.docker.internal:4317}
+      MODULITH_OTLP_ENDPOINT: ${MODULITH_CONTAINER_OTLP_ENDPOINT-http://host.docker.internal:4317}
     extra_hosts:
       - host.docker.internal:host-gateway # Docker Desktop has it; Linux engines need this
     ports:
-      - "127.0.0.1:9090:9090" # gRPC, as go run ./cmd/gyoza serves it
+      - "127.0.0.1:9090:9090" # gRPC, as go run ./cmd/modulith serves it
       - "127.0.0.1:8080:8080" # the gateway (HTTP)
     depends_on:
       postgres: { condition: service_healthy }
@@ -57,9 +57,9 @@ services:
   postgres:
     image: postgres:18.6-alpine
     environment:
-      POSTGRES_USER: gyoza
-      POSTGRES_PASSWORD: gyoza # local development only
-      POSTGRES_DB: gyoza
+      POSTGRES_USER: modulith
+      POSTGRES_PASSWORD: modulith # local development only
+      POSTGRES_DB: modulith
     ports:
       # 5433 on the host so it can run next to a locally installed Postgres on 5432.
       # Bound to localhost so the database isn't reachable from the network.
@@ -70,7 +70,7 @@ services:
       - postgres-data:/var/lib/postgresql
     healthcheck:
       # `up --wait` blocks until this passes, so the database is ready to use.
-      test: ["CMD", "pg_isready", "-U", "gyoza", "-d", "gyoza"]
+      test: ["CMD", "pg_isready", "-U", "modulith", "-d", "modulith"]
       interval: 2s
       timeout: 5s
       retries: 15
@@ -82,7 +82,7 @@ services:
   supertokens:
     image: supertokens/supertokens-postgresql:12.2.0
     environment:
-      POSTGRESQL_CONNECTION_URI: postgresql://gyoza:gyoza@postgres:5432/gyoza
+      POSTGRESQL_CONNECTION_URI: postgresql://modulith:modulith@postgres:5432/modulith
       POSTGRESQL_TABLE_SCHEMA: supertokens
     ports:
       - "127.0.0.1:3567:3567"
@@ -100,8 +100,8 @@ services:
   s3:
     image: rustfs/rustfs:1.0.0
     environment:
-      RUSTFS_ACCESS_KEY: gyoza
-      RUSTFS_SECRET_KEY: gyoza-dev-secret # local development only
+      RUSTFS_ACCESS_KEY: modulith
+      RUSTFS_SECRET_KEY: modulith-dev-secret # local development only
       RUSTFS_VOLUMES: /data
     ports:
       - "127.0.0.1:9000:9000" # S3 API

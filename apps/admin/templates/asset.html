@@ -52,7 +52,7 @@
     version <select name="version">{{range .Versions}}<option {{if eq .Number $a.CurrentVersion}}selected{{end}}>{{.Number}}</option>{{end}}</select>
     <button>Record use</button>
   </form>
-  <p class="muted" style="margin:4px 0 0">Projects the acting user can write. A project may only use its own or its owner's assets in place (or gyoza's); anything else is refused with "fork required".</p>
+  <p class="muted" style="margin:4px 0 0">Projects the acting user can write. A project may only use its own or its owner's assets in place (or modulith's); anything else is refused with "fork required".</p>
   {{else}}<span class="muted">Pick an acting user with a writable project to record a use.</span>{{end}}
 </div>
 {{end}}

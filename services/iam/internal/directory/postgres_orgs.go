@@ -5,7 +5,7 @@ package directory
 import (
 	"context"
 
-	"gyoza/services/iam/internal/db"
+	"github.com/mjcourte/modulith/services/iam/internal/db"
 )
 
 func (p *Postgres) CreateOrg(ctx context.Context, o Org, creatorID string) (Org, Member, error) {

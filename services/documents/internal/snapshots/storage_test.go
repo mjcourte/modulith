@@ -7,11 +7,11 @@ import (
 	"os"
 	"testing"
 
-	"gyoza/internal/engine"
-	"gyoza/platform/postgres"
-	"gyoza/services/documents/internal/snapshots"
-	"gyoza/services/documents/internal/snapshots/snapshotstest"
-	"gyoza/services/storage"
+	"github.com/mjcourte/modulith/internal/engine"
+	"github.com/mjcourte/modulith/platform/postgres"
+	"github.com/mjcourte/modulith/services/documents/internal/snapshots"
+	"github.com/mjcourte/modulith/services/documents/internal/snapshots/snapshotstest"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 // anyProject is storage's Authorizer for these tests: every project exists
@@ -48,13 +48,13 @@ func TestStorageStore(t *testing.T) {
 }
 
 // The same over the real stack: storage on Postgres and RustFS, the bytes
-// over HTTP. Needs GYOZA_TEST_DATABASE_URL and GYOZA_TEST_S3_ENDPOINT (see
+// over HTTP. Needs MODULITH_TEST_DATABASE_URL and MODULITH_TEST_S3_ENDPOINT (see
 // CLAUDE.md). It commits to the dev database and bucket: every run uses fresh
 // project IDs, and retention cleans their snapshots up eventually.
 func TestStorageStoreOnS3(t *testing.T) {
-	dbURL, s3 := os.Getenv("GYOZA_TEST_DATABASE_URL"), os.Getenv("GYOZA_TEST_S3_ENDPOINT")
+	dbURL, s3 := os.Getenv("MODULITH_TEST_DATABASE_URL"), os.Getenv("MODULITH_TEST_S3_ENDPOINT")
 	if dbURL == "" || s3 == "" {
-		t.Skip("set GYOZA_TEST_DATABASE_URL and GYOZA_TEST_S3_ENDPOINT to run against Postgres and S3")
+		t.Skip("set MODULITH_TEST_DATABASE_URL and MODULITH_TEST_S3_ENDPOINT to run against Postgres and S3")
 	}
 	pool, err := postgres.Connect(t.Context(), dbURL, "documents-snapshots-test")
 	if err != nil {
@@ -64,12 +64,12 @@ func TestStorageStoreOnS3(t *testing.T) {
 	m, err := storage.Open(t.Context(), pool, storage.Settings{
 		S3: storage.S3Config{
 			Endpoint:  s3,
-			AccessKey: envOr("GYOZA_TEST_S3_ACCESS_KEY", "gyoza"),
-			SecretKey: envOr("GYOZA_TEST_S3_SECRET_KEY", "gyoza-dev-secret"),
+			AccessKey: envOr("MODULITH_TEST_S3_ACCESS_KEY", "modulith"),
+			SecretKey: envOr("MODULITH_TEST_S3_SECRET_KEY", "modulith-dev-secret"),
 			PathStyle: true,
 		},
 		CreateBucket: true,
-		Manager:      storage.Config{Bucket: "gyoza-test"},
+		Manager:      storage.Config{Bucket: "modulith-test"},
 	}, anyProject{})
 	if err != nil {
 		t.Fatal(err)

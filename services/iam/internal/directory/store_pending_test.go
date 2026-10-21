@@ -8,7 +8,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"gyoza/services/iam/internal/directory"
+	"github.com/mjcourte/modulith/services/iam/internal/directory"
 )
 
 // mustSharePending shares projectID with email, expiring after ttl
@@ -61,7 +61,7 @@ func testSharePending(t *testing.T, s directory.Store) {
 
 	acme := mustOrg(t, s, "Acme", ann.ID)
 	locked := mustProject(t, s, directory.Project{Owner: orgOwner(acme.ID), Name: "Brand", OrgLocked: true})
-	template := mustProject(t, s, directory.Project{Owner: gyoza, Name: "T"})
+	template := mustProject(t, s, directory.Project{Owner: modulith, Name: "T"})
 	valid := directory.Share{ProjectID: p.ID, Email: "x@example.com", Access: directory.AccessViewer, SharedBy: "x", ExpiresAt: time.Now().Add(time.Hour)}
 	with := func(f func(*directory.Share)) directory.Share { sh := valid; f(&sh); return sh }
 	tests := []struct {

@@ -87,7 +87,7 @@ func (t *Telemetry) LogHandler(h slog.Handler, level slog.Leveler) slog.Handler 
 	if t.logs == nil {
 		return h
 	}
-	otlp := otelslog.NewHandler("gyoza", otelslog.WithLoggerProvider(t.logs))
+	otlp := otelslog.NewHandler("modulith", otelslog.WithLoggerProvider(t.logs))
 	return slog.NewMultiHandler(h, minLevel{otlp, level})
 }
 

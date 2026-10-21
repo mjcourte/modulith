@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"gyoza/services/storage/internal/ledger"
+	"github.com/mjcourte/modulith/services/storage/internal/ledger"
 )
 
 func validUpload() Upload {
@@ -16,7 +16,7 @@ func validUpload() Upload {
 		Owner:  ledger.Owner{Kind: ledger.OwnerOrg, ID: "acme"},
 		Name:   " Logo ",
 		Tags:   []string{"Brand", "brand"},
-		Bucket: "gyoza", Key: "library/asset/x", ContentType: "image/png", SizeBytes: 10,
+		Bucket: "modulith", Key: "library/asset/x", ContentType: "image/png", SizeBytes: 10,
 		ExpiresAt: time.Now().Add(time.Hour),
 	}
 }

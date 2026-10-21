@@ -8,6 +8,6 @@ Domain logic does not belong here; it lives in `services/`.
 
 - `postgres`: `Connect(ctx, url, appName)` opens the shared pgx pool, sets the session settings every service relies on (`application_name`, `plan_cache_mode=force_custom_plan`), and pings so a bad URL fails at startup.
 
-- `config`: reads environment variables (falling back to `.env` for local dev), collecting every problem so a misconfigured binary reports them all at once. Settings: `GYOZA_DATABASE_URL`, `GYOZA_LOG_LEVEL`, `GYOZA_SHUTDOWN_TIMEOUT` (see `.env.example`).
+- `config`: reads environment variables (falling back to `.env` for local dev), collecting every problem so a misconfigured binary reports them all at once. Settings: `MODULITH_DATABASE_URL`, `MODULITH_LOG_LEVEL`, `MODULITH_SHUTDOWN_TIMEOUT` (see `.env.example`).
 - `shutdown`: `Within(ctx, fn)` runs a blocking cleanup such as `pool.Close` but gives up at the shutdown deadline.
 - `nats`: the NATS/JetStream client, stream definitions and subject names, plus the cluster configs (`nats-*.conf`, mounted by `deploy/monolith/compose.yaml`). See [nats/README.md](nats/README.md).

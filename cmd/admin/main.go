@@ -1,5 +1,5 @@
 // Command admin serves the development admin UI (apps/admin) next to a
-// running gyoza: it reads the database directly and makes changes over gRPC.
+// running modulith: it reads the database directly and makes changes over gRPC.
 // Dev only: it lets anyone act as any user.
 package main
 
@@ -18,13 +18,13 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"gyoza/apps/admin"
-	"gyoza/platform/config"
-	"gyoza/platform/postgres"
-	"gyoza/platform/shutdown"
-	"gyoza/services/documents"
-	"gyoza/services/iam"
-	"gyoza/services/storage"
+	"github.com/mjcourte/modulith/apps/admin"
+	"github.com/mjcourte/modulith/platform/config"
+	"github.com/mjcourte/modulith/platform/postgres"
+	"github.com/mjcourte/modulith/platform/shutdown"
+	"github.com/mjcourte/modulith/services/documents"
+	"github.com/mjcourte/modulith/services/iam"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 func main() {
@@ -39,22 +39,22 @@ func run() error {
 	defer stop()
 
 	env := config.FromEnv()
-	enabled := env.Bool("GYOZA_ADMIN", false)
-	dbURL := env.Required("GYOZA_DATABASE_URL")
-	addr := env.String("GYOZA_ADMIN_ADDR", "localhost:8081")
+	enabled := env.Bool("MODULITH_ADMIN", false)
+	dbURL := env.Required("MODULITH_DATABASE_URL")
+	addr := env.String("MODULITH_ADMIN_ADDR", "localhost:8081")
 	// The services it calls: a monolith serves both on one address.
-	iamAddr := env.String("GYOZA_ADMIN_IAM_ADDR", "localhost:9090")
-	storageAddr := env.String("GYOZA_ADMIN_STORAGE_ADDR", "localhost:9090")
-	docsAddr := env.String("GYOZA_ADMIN_DOCUMENTS_ADDR", "localhost:9090")
-	shutdownTimeout := env.Duration("GYOZA_SHUTDOWN_TIMEOUT", 20*time.Second)
+	iamAddr := env.String("MODULITH_ADMIN_IAM_ADDR", "localhost:9090")
+	storageAddr := env.String("MODULITH_ADMIN_STORAGE_ADDR", "localhost:9090")
+	docsAddr := env.String("MODULITH_ADMIN_DOCUMENTS_ADDR", "localhost:9090")
+	shutdownTimeout := env.Duration("MODULITH_SHUTDOWN_TIMEOUT", 20*time.Second)
 	if err := env.Err(); err != nil {
 		return err
 	}
 	if !enabled {
-		return errors.New("the admin UI lets anyone act as any user: set GYOZA_ADMIN=1 to run it (development only)")
+		return errors.New("the admin UI lets anyone act as any user: set MODULITH_ADMIN=1 to run it (development only)")
 	}
 
-	pool, err := postgres.Connect(ctx, dbURL, "gyoza-admin")
+	pool, err := postgres.Connect(ctx, dbURL, "modulith-admin")
 	if err != nil {
 		return err
 	}

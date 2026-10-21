@@ -51,15 +51,15 @@ behind the [OpenFeature](https://openfeature.dev) API so the backend can change 
    a flag needs them (a `value jsonb` column then).
 
 3. **Snapshot, not a query per lookup.** The provider evaluates against an in-memory map of
-   all flags, reloaded every `GYOZA_FLAGS_REFRESH` (default 30s) as a background job.
+   all flags, reloaded every `MODULITH_FLAGS_REFRESH` (default 30s) as a background job.
    A failed reload keeps the last snapshot and logs; a failed *first* load fails startup.
    The source is an interface (`Postgres`, `Memory`) so tests need no database.
 4. **Tests.** One shared suite over the provider with each source (memory always, Postgres
-   with `GYOZA_TEST_DATABASE_URL`): env scoping, allow-lists, rollout stability and
+   with `MODULITH_TEST_DATABASE_URL`): env scoping, allow-lists, rollout stability and
    monotonicity (users on at 10% stay on at 20%; roughly the right share over many keys),
    missing targeting key, reload picking up changes. Mutation-check it.
 5. **Wiring.** `featureflags.Open(ctx, pool)`: migrate, first load, start the refresher,
-   return the provider. `cmd/gyoza` first, then the standalone binaries; mains without a
+   return the provider. `cmd/modulith` first, then the standalone binaries; mains without a
    database (`cmd/mediaprocessor`) keep OpenFeature's no-op provider (defaults everywhere).
 6. **Changing flags.** No API for the MVP: SQL, or a page in the dev-only admin UI
    (`apps/admin`), which is exempt from the one-schema rule.

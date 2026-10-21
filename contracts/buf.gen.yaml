@@ -3,9 +3,9 @@ version: v2
 managed:
   enabled: true
   override:
-    # gyoza/storage/v1/x.proto -> package gyoza/contracts/gen/go/gyoza/storage/v1
+    # modulith/storage/v1/x.proto -> package github.com/mjcourte/modulith/contracts/gen/go/modulith/storage/v1
     - file_option: go_package_prefix
-      value: gyoza/contracts/gen/go
+      value: github.com/mjcourte/modulith/contracts/gen/go
 plugins:
   # The generators are Go tool dependencies (see go.mod), so no separate install.
   - local: ["go", "tool", "protoc-gen-go"]

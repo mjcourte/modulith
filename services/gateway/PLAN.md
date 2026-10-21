@@ -16,7 +16,7 @@ Steps 1 (sign-in), 2 (REST API) and 3 (WebSocket) done 2026-10-13, see the READM
    methods and `actor_id` on the wire (already in storage). Services trust it,
    so they're reachable only inside the platform (private subnets, security groups:
    only the gateway). Service-to-service calls (`DeleteOwned`, `RemoveUser`,
-   `CopyProjectFiles`, gyoza project management) are never routed by the gateway.
+   `CopyProjectFiles`, modulith project management) are never routed by the gateway.
 3. **Authorization (may they?)**: in each service, through an interface it declares
    (storage's `Authorizer`), implemented by iam. SuperTokens holds
    identities and sessions only, never our permissions.
@@ -74,7 +74,7 @@ Rule: one consumer per gateway instance, never one per project or socket
   same way.
 - Browser deltas: the gateway publishes them to `document.{p}.delta` after checking
   write access (`CanWrite`), with the op ID as `Nats-Msg-Id`. Never set
-  `Gyoza-Origin` on them: documents trusts the stamps of deltas carrying it (another
+  `Modulith-Origin` on them: documents trusts the stamps of deltas carrying it (another
   documents replica published them) and bounds the rest by `MaxSkew`, so an empty
   Origin is what keeps a browser from forging stamps
   ([engine/PLAN.md](../../internal/engine/PLAN.md) row 2). Also forward `ReplaceAssetRef`
@@ -92,7 +92,7 @@ for everything else; step 3 only once there's a canvas.
 ### Step 1: sign-in
 
 **Done (2026-10-13).** As planned, except: SuperTokens' tables are a `supertokens` schema
-in the `gyoza` database (`POSTGRESQL_TABLE_SCHEMA`), not a database of their own, matching
+in the `modulith` database (`POSTGRESQL_TABLE_SCHEMA`), not a database of their own, matching
 one schema per service; the demo client routes through a SuperTokens proxy, so any
 localhost callback works (the gateway stays on 8080); the identity provider calls the
 core's HTTP API directly, so `cmd/iam` needs no SDK. Sign-in and sign-out checked in a browser
@@ -102,11 +102,11 @@ email`). Still to do: our own OAuth client before leaving localhost.
 
 - **SuperTokens core:** a `supertokens/supertokens-postgresql` container in
   `deploy/monolith/compose.yaml` (pinned version), on its own database (`supertokens`)
-  on the compose Postgres; `GYOZA_SUPERTOKENS_URL` (default `http://localhost:3567`).
+  on the compose Postgres; `MODULITH_SUPERTOKENS_URL` (default `http://localhost:3567`).
   The distributed compose gets the same service.
 - **Google credentials:** SuperTokens' public demo keys for now (from the SuperTokens
   docs, `localhost` only), as `.env.example` defaults for
-  `GYOZA_GOOGLE_CLIENT_ID`/`GYOZA_GOOGLE_CLIENT_SECRET`. Verify which website domain
+  `MODULITH_GOOGLE_CLIENT_ID`/`MODULITH_GOOGLE_CLIENT_SECRET`. Verify which website domain
   and callback path the demo client allows (their examples use `http://localhost:3000`
   and `/auth/callback/google`), and set the gateway's `WebsiteDomain`/`APIDomain` to
   match. Swap in our own OAuth client before anything leaves localhost.
@@ -127,7 +127,7 @@ email`). Still to do: our own OAuth client before leaving localhost.
 - **`IdentityProvider`** for iam: `DeleteUser` via the SuperTokens SDK (deleting a
   missing user succeeds). The monolith wires it instead of `NoIdentityProvider`;
   `cmd/iam` needs the core URL too.
-- **Binaries:** `cmd/gyoza` serves the gateway on its own listener next to gRPC (same
+- **Binaries:** `cmd/modulith` serves the gateway on its own listener next to gRPC (same
   shutdown sequence: `http.Server.Shutdown` with the shutdown timeout);
   `cmd/gateway` for distributed mode, calling iam over gRPC.
 - **Tests:** the hook's mapping and its failure path against iam's memory store with
@@ -171,7 +171,7 @@ Design rules are in "Browser-facing API"; this was the build.
   generic message, the real error logged.
 - Lists: `?pageToken=`, responses carry `nextPageToken` (empty at the end).
 - Owners in requests and responses: `{"kind": "user"|"org"|"project", "id": "..."}`.
-  The `gyoza` kind is never accepted from a browser (templates are service-to-service).
+  The `modulith` kind is never accepted from a browser (templates are service-to-service).
 - Request bodies capped at 1 MiB (`http.MaxBytesReader`); files never pass through
   (presigned URLs).
 - CSRF: session cookies are `SameSite=Lax`, every mutating route requires
@@ -191,7 +191,7 @@ Design rules are in "Browser-facing API"; this was the build.
 | Uploads | `POST /uploads`, `POST /uploads/{id}/complete` | `BeginUpload` (returns the presigned PUT), `CompleteUpload` |
 | Assets | `GET /assets` (scope and filters as query params), `GET/PATCH/DELETE /assets/{id}`, `POST /assets/{id}/restore`, `GET /assets/{id}/versions`, `POST /assets/{id}/revert`, `GET /assets/{id}/download?version=` | `ListAssets`, `GetAsset`, `UpdateAsset`, `DeleteAsset`, `RestoreAsset`, `ListVersions`, `RevertAsset`, `DownloadURL` |
 | Folders | `GET /folders` (an owner's folder contents), `POST /folders`, `PATCH /folders/{id}` (rename and/or move), `DELETE /folders/{id}?tree=true`, `POST /folders/{id}/restore`, `GET /folders/{id}/path`, `GET /trash` | `ListFolderContents`, `CreateFolder`, `RenameFolder`/`MoveFolder`, `DeleteFolder`/`DeleteFolderTree`, `RestoreFolder`, `FolderPath`, `ListTrash` |
-| Documents | `GET /projects/{id}/document`, `POST /projects/{id}/document/query`, `GET /projects/{id}/refs/{assetId}/{version}`, `POST /projects/{id}/forks`, `GET /projects/{id}/snapshots/{objectId}` | `GetDocument` (the snapshot as `application/octet-stream`, with `Gyoza-Format`, `Gyoza-Version` and `Gyoza-Seq` headers), `QueryDocument`, `ResolveRef`, `ForkAsset` then `ReplaceAssetRef`, `SnapshotURL` |
+| Documents | `GET /projects/{id}/document`, `POST /projects/{id}/document/query`, `GET /projects/{id}/refs/{assetId}/{version}`, `POST /projects/{id}/forks`, `GET /projects/{id}/snapshots/{objectId}` | `GetDocument` (the snapshot as `application/octet-stream`, with `Modulith-Format`, `Modulith-Version` and `Modulith-Seq` headers), `QueryDocument`, `ResolveRef`, `ForkAsset` then `ReplaceAssetRef`, `SnapshotURL` |
 
 - **Fork** is one route: `ForkAsset`, then `ReplaceAssetRef` with the fork's ref. If the
   rewrite fails after the fork succeeded, return the fork with the error in the
@@ -213,9 +213,9 @@ Design rules are in "Browser-facing API"; this was the build.
   `ErrNameTaken`, `ErrUploadNotFound`, `ErrUploadExpired`, `ErrInvalidUpload`); today
   they're only in `internal/dam`. The gRPC client already rebuilds them, so mapping by
   `errors.Is` works on both transports.
-- Wiring: `Open` takes the three services and the authorizer; `cmd/gyoza` passes the
+- Wiring: `Open` takes the three services and the authorizer; `cmd/modulith` passes the
   in-process ones, `cmd/gateway` gRPC clients (storage, documents, and iam's
-  `NewAuthzClient`), so it gains `GYOZA_STORAGE_ADDR` and `GYOZA_DOCUMENTS_ADDR`.
+  `NewAuthzClient`), so it gains `MODULITH_STORAGE_ADDR` and `MODULITH_DOCUMENTS_ADDR`.
 
 **Tests**
 
@@ -237,7 +237,7 @@ Design rules are in "Browser-facing API"; this was the build.
 
 **Done (2026-10-13)** as planned, with all six decisions below. The package is
 `internal/ws` (not `live`, which documents already uses); `cmd/gateway` connects to NATS
-(`GYOZA_NATS_URL`). Not tested: a real browser edit end to end (no WASM engine yet to
+(`MODULITH_NATS_URL`). Not tested: a real browser edit end to end (no WASM engine yet to
 stamp one; the dev page can join and send user state), and the ordered consumer
 recovering from a NATS restart. Design rules are in "NATS to WebSocket".
 
@@ -255,10 +255,10 @@ recovering from a NATS restart. Design rules are in "NATS to WebSocket".
    the gateway closes the socket with code 4001. The client refreshes
    (`/auth/session/refresh`) and reconnects, rejoining its projects (they resync from
    `GetDocument`, so nothing is lost). No in-band token refresh.
-5. **Delta headers move to `platform/nats`:** the `Gyoza-*` header names and the delta
+5. **Delta headers move to `platform/nats`:** the `Modulith-*` header names and the delta
    message encode/decode are a wire contract between documents and the gateway, but
    live in documents' `internal/wal`. They move to `platform/nats` (`documents.go`);
-   `wal` uses them. The gateway still never sets `Gyoza-Origin`.
+   `wal` uses them. The gateway still never sets `Modulith-Origin`.
 6. **Slow sockets:** each socket has a bounded send queue (256 messages); a full queue
    closes the socket (code 4008), never blocks the fan-out. The client reconnects and
    resyncs.
@@ -275,7 +275,7 @@ recovering from a NATS restart. Design rules are in "NATS to WebSocket".
 - `leave {projectId}`.
 - `edit {projectId, id, format, version, payload}`: `CanWrite`, the delta's stamp
   replica must be the socket's (`engine.StampOf`; unstamped is refused too), then
-  published to `document.{p}.delta` with `Nats-Msg-Id = id` and `Gyoza-Actor` = the
+  published to `document.{p}.delta` with `Nats-Msg-Id = id` and `Modulith-Actor` = the
   session user; `ack {id, seq}` or `error {id, code, message}` (REST's codes).
 - `userstate {projectId, kind: viewing|cursorpos, data}`: published to
   `userstate.{p}.{sessionUser}.{kind}` (the user ID always from the session); joined
@@ -298,8 +298,8 @@ recovering from a NATS restart. Design rules are in "NATS to WebSocket".
   subscription on `userstate.>`. A memory `Bus` for tests.
 - `engine.StampOf(DeltaInput) (lamport uint64, replica string, err error)`: read a
   delta's stamp without applying it (mock: decode the flatbuffer header).
-- Wiring: `gateway.Services` gains the NATS client (`cmd/gyoza` already has one;
-  `cmd/gateway` connects with `GYOZA_NATS_URL`, added to the distributed compose).
+- Wiring: `gateway.Services` gains the NATS client (`cmd/modulith` already has one;
+  `cmd/gateway` connects with `MODULITH_NATS_URL`, added to the distributed compose).
 
 **Tests**
 
@@ -310,7 +310,7 @@ recovering from a NATS restart. Design rules are in "NATS to WebSocket".
   an origin and carry the session's actor; user state subjects use the session user;
   leave stops deltas; a slow socket is closed without stalling others; expiry closes
   with 4001.
-- The NATS `Bus` against the compose cluster (`GYOZA_TEST_NATS_URL`): a delta
+- The NATS `Bus` against the compose cluster (`MODULITH_TEST_NATS_URL`): a delta
   published by `wal` reaches a joined socket, and a gateway edit reaches documents'
   consumer.
 - `engine.StampOf` in the engine's suite. Mutation-check the hub's checks.

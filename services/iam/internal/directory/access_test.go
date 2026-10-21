@@ -4,14 +4,14 @@ import (
 	"errors"
 	"testing"
 
-	"gyoza/services/storage"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 func TestProjectAccess(t *testing.T) {
 	userProject := Project{Owner: ruleUser, State: ProjectReady} // owned by ann
 	orgProject := Project{Owner: ruleOrg, State: ProjectReady}   // owned by acme
 	locked := Project{Owner: ruleOrg, State: ProjectReady, OrgLocked: true}
-	template := Project{Owner: ruleGyoza, State: ProjectReady}
+	template := Project{Owner: ruleModulith, State: ProjectReady}
 	cloning := Project{Owner: ruleUser, State: ProjectCloning}
 
 	tests := []struct {
@@ -83,7 +83,7 @@ func TestAccessTo(t *testing.T) {
 	if _, _, err := s.UpsertUser(ctx, Identity{UserID: "ann", Email: "ann@example.com"}); err != nil {
 		t.Fatalf("UpsertUser: %v", err)
 	}
-	tmpl, err := s.CreateProject(ctx, Project{Owner: ruleGyoza, Name: "T"})
+	tmpl, err := s.CreateProject(ctx, Project{Owner: ruleModulith, Name: "T"})
 	if err != nil {
 		t.Fatalf("CreateProject: %v", err)
 	}

@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"gyoza/services/storage/internal/blob"
+	"github.com/mjcourte/modulith/services/storage/internal/blob"
 )
 
 // Harness is one blob.Store implementation plus a way to act as the browser

@@ -10,11 +10,11 @@ import (
 	"strings"
 	"time"
 
-	"gyoza/services/storage"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 // ownerExists reports whether o names a live (existing, not being deleted)
-// user or org; gyoza always exists. The caller must hold m.mu.
+// user or org; modulith always exists. The caller must hold m.mu.
 func (m *MemoryStore) ownerExists(o storage.Owner) error {
 	switch o.Kind {
 	case storage.OwnerUser:

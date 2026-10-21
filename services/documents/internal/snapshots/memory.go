@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"sync"
 
-	"gyoza/internal/engine"
+	"github.com/mjcourte/modulith/internal/engine"
 )
 
 // Memory is an in-memory Store. It isn't durable, so a Manager over it never

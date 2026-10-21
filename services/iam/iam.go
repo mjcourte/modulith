@@ -15,12 +15,12 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"google.golang.org/grpc"
 
-	pb "gyoza/contracts/gen/go/gyoza/iam/v1"
-	"gyoza/services/iam/internal/db"
-	"gyoza/services/iam/internal/directory"
-	"gyoza/services/iam/internal/grpcapi"
-	"gyoza/services/iam/internal/manager"
-	"gyoza/services/storage"
+	pb "github.com/mjcourte/modulith/contracts/gen/go/modulith/iam/v1"
+	"github.com/mjcourte/modulith/services/iam/internal/db"
+	"github.com/mjcourte/modulith/services/iam/internal/directory"
+	"github.com/mjcourte/modulith/services/iam/internal/grpcapi"
+	"github.com/mjcourte/modulith/services/iam/internal/manager"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 // The API: Service and the types its calls take and return.

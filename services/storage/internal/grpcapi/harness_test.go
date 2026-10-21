@@ -3,11 +3,11 @@ package grpcapi_test
 import (
 	"testing"
 
-	"gyoza/services/storage/internal/blob"
-	"gyoza/services/storage/internal/dam"
-	"gyoza/services/storage/internal/ledger"
-	"gyoza/services/storage/internal/manager"
-	"gyoza/services/storage/internal/snapshots"
+	"github.com/mjcourte/modulith/services/storage/internal/blob"
+	"github.com/mjcourte/modulith/services/storage/internal/dam"
+	"github.com/mjcourte/modulith/services/storage/internal/ledger"
+	"github.com/mjcourte/modulith/services/storage/internal/manager"
+	"github.com/mjcourte/modulith/services/storage/internal/snapshots"
 )
 
 // testManager is a Manager on memory fakes, kept so tests can compare the
@@ -20,7 +20,7 @@ type testManager struct {
 	authz  *manager.RuleAuthorizer
 }
 
-const testBucket = "gyoza-test"
+const testBucket = "modulith-test"
 
 var (
 	acme    = ledger.Owner{Kind: ledger.OwnerOrg, ID: "acme"}

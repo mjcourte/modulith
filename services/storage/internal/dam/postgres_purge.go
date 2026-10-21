@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	"gyoza/services/storage/internal/db"
+	"github.com/mjcourte/modulith/services/storage/internal/db"
 )
 
 func (p *Postgres) ListAssetsTrashedBefore(ctx context.Context, before time.Time, limit int) ([]Asset, error) {

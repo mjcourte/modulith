@@ -6,9 +6,9 @@ import (
 	"errors"
 	"fmt"
 
-	pb "gyoza/contracts/gen/go/gyoza/documents/v1"
-	"gyoza/internal/engine"
-	"gyoza/services/documents/internal/manager"
+	pb "github.com/mjcourte/modulith/contracts/gen/go/modulith/documents/v1"
+	"github.com/mjcourte/modulith/internal/engine"
+	"github.com/mjcourte/modulith/services/documents/internal/manager"
 )
 
 // Server serves any Service (normally *manager.Manager) as DocumentsService.

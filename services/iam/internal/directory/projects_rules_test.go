@@ -10,13 +10,13 @@ import (
 	"testing"
 	"time"
 
-	"gyoza/services/storage"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 var (
 	ruleUser  = storage.Owner{Kind: storage.OwnerUser, ID: "ann"}
 	ruleOrg   = storage.Owner{Kind: storage.OwnerOrg, ID: "acme"}
-	ruleGyoza = storage.Owner{Kind: storage.OwnerGyoza}
+	ruleModulith = storage.Owner{Kind: storage.OwnerModulith}
 )
 
 func TestProjectNormalize(t *testing.T) {
@@ -24,7 +24,7 @@ func TestProjectNormalize(t *testing.T) {
 	if err != nil || p.Name != "Poster" || p.State != ProjectReady {
 		t.Fatalf("normalize = %+v, %v; want trimmed name, state ready", p, err)
 	}
-	for _, owner := range []storage.Owner{ruleOrg, ruleGyoza} {
+	for _, owner := range []storage.Owner{ruleOrg, ruleModulith} {
 		if _, err := (Project{Owner: owner, Name: "X"}).normalize(); err != nil {
 			t.Errorf("owner %v: %v", owner, err)
 		}
@@ -37,7 +37,7 @@ func TestProjectNormalize(t *testing.T) {
 	bad := map[string]Project{
 		"no owner":         {Name: "X"},
 		"project owner":    {Owner: storage.Owner{Kind: storage.OwnerProject, ID: "p1"}, Name: "X"},
-		"gyoza with ID":    {Owner: storage.Owner{Kind: storage.OwnerGyoza, ID: "x"}, Name: "X"},
+		"modulith with ID":    {Owner: storage.Owner{Kind: storage.OwnerModulith, ID: "x"}, Name: "X"},
 		"no name":          {Owner: ruleUser, Name: "  "},
 		"long name":        {Owner: ruleUser, Name: strings.Repeat("a", MaxNameLen+1)},
 		"unknown state":    {Owner: ruleUser, Name: "X", State: "archived"},
@@ -61,8 +61,8 @@ func TestCheckTransfer(t *testing.T) {
 		p  Project
 		to storage.Owner
 	}{
-		"to gyoza":      {userProject, ruleGyoza},
-		"from gyoza":    {Project{Owner: ruleGyoza}, ruleOrg},
+		"to modulith":      {userProject, ruleModulith},
+		"from modulith":    {Project{Owner: ruleModulith}, ruleOrg},
 		"to a project":  {userProject, storage.Owner{Kind: storage.OwnerProject, ID: "p1"}},
 		"to no one":     {userProject, storage.Owner{}},
 		"malformed org": {userProject, storage.Owner{Kind: storage.OwnerOrg}},
@@ -100,8 +100,8 @@ func TestCheckShareable(t *testing.T) {
 			t.Errorf("%v-owned project: %v", owner.Kind, err)
 		}
 	}
-	if err := checkShareable(Project{Owner: ruleGyoza}); !errors.Is(err, ErrInvalidShare) {
-		t.Errorf("gyoza template = %v, want ErrInvalidShare", err)
+	if err := checkShareable(Project{Owner: ruleModulith}); !errors.Is(err, ErrInvalidShare) {
+		t.Errorf("modulith template = %v, want ErrInvalidShare", err)
 	}
 }
 
@@ -110,7 +110,7 @@ func TestProjectQueryNormalize(t *testing.T) {
 	if err != nil || q.PageSize != DefaultPageSize {
 		t.Errorf("default page size: %+v, %v", q, err)
 	}
-	if q, _ := (ProjectQuery{Owner: ruleGyoza, PageSize: MaxPageSize + 1}).normalize(); q.PageSize != MaxPageSize {
+	if q, _ := (ProjectQuery{Owner: ruleModulith, PageSize: MaxPageSize + 1}).normalize(); q.PageSize != MaxPageSize {
 		t.Errorf("page size not capped: %d", q.PageSize)
 	}
 	bad := map[string]ProjectQuery{
@@ -161,7 +161,7 @@ func TestOrgLockRules(t *testing.T) {
 	if _, err := (Project{Owner: ruleOrg, Name: "X", OrgLocked: true}).normalize(); err != nil {
 		t.Errorf("locked org project: %v", err)
 	}
-	for _, owner := range []storage.Owner{ruleUser, ruleGyoza} {
+	for _, owner := range []storage.Owner{ruleUser, ruleModulith} {
 		if _, err := (Project{Owner: owner, Name: "X", OrgLocked: true}).normalize(); !errors.Is(err, ErrInvalidProject) {
 			t.Errorf("locked %v project = %v, want ErrInvalidProject", owner.Kind, err)
 		}

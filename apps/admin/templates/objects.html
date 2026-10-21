@@ -3,7 +3,7 @@
 <form method="get" action="/objects" class="filters">
   <select name="owner_kind">
     <option value="">any owner</option>
-    {{range $k := (list "user" "org" "project" "gyoza")}}<option {{if eq $k ($.Query.Get "owner_kind")}}selected{{end}}>{{$k}}</option>{{end}}
+    {{range $k := (list "user" "org" "project" "modulith")}}<option {{if eq $k ($.Query.Get "owner_kind")}}selected{{end}}>{{$k}}</option>{{end}}
   </select>
   <input name="owner_id" value="{{.Query.Get "owner_id"}}" placeholder="owner id" size="38">
   <input type="search" name="q" value="{{.Query.Get "q"}}" placeholder="search id, key">

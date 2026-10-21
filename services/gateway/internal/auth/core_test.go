@@ -8,15 +8,15 @@ import (
 	"testing"
 )
 
-// Against the compose core (GYOZA_TEST_SUPERTOKENS_URL): deleting a user it
+// Against the compose core (MODULITH_TEST_SUPERTOKENS_URL): deleting a user it
 // doesn't know succeeds, so a resumed account deletion can repeat it.
 func TestCoreIdentityProviderDeletesMissingUser(t *testing.T) {
-	url := os.Getenv("GYOZA_TEST_SUPERTOKENS_URL")
+	url := os.Getenv("MODULITH_TEST_SUPERTOKENS_URL")
 	if url == "" {
-		t.Skip("set GYOZA_TEST_SUPERTOKENS_URL to run against the SuperTokens core")
+		t.Skip("set MODULITH_TEST_SUPERTOKENS_URL to run against the SuperTokens core")
 	}
-	p := NewCoreIdentityProvider(url, os.Getenv("GYOZA_TEST_SUPERTOKENS_API_KEY"))
-	if err := p.DeleteUser(context.Background(), "gyoza-test-no-such-user"); err != nil {
+	p := NewCoreIdentityProvider(url, os.Getenv("MODULITH_TEST_SUPERTOKENS_API_KEY"))
+	if err := p.DeleteUser(context.Background(), "modulith-test-no-such-user"); err != nil {
 		t.Fatalf("DeleteUser of a missing user: %v", err)
 	}
 }

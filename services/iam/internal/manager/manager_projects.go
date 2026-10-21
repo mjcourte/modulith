@@ -2,7 +2,7 @@ package manager
 
 // Projects and sharing. Who may do what:
 //   - create: for yourself, or for your org (any member; they choose the
-//     org-lock). Templates (gyoza) only through CreateTemplate, service to service
+//     org-lock). Templates (modulith) only through CreateTemplate, service to service
 //   - see: anyone with access (projectAccess: owner, org member, share, template)
 //   - manage (rename, move to the org): the owning user, or admins of the
 //     owning org; templates are never changed this way
@@ -16,8 +16,8 @@ import (
 	"errors"
 	"fmt"
 
-	"gyoza/services/iam/internal/directory"
-	"gyoza/services/storage"
+	"github.com/mjcourte/modulith/services/iam/internal/directory"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 // ProjectView is a project as one user sees it: with their access level, so
@@ -62,7 +62,7 @@ func (m *Manager) manageable(ctx context.Context, actorID, projectID string) (di
 
 // CreateProject creates a project owned by the acting user or by their org
 // (any member may). orgLocked applies to org projects only (the UI offers it,
-// on by default). Gyoza templates are made with CreateTemplate.
+// on by default). Modulith templates are made with CreateTemplate.
 func (m *Manager) CreateProject(ctx context.Context, actorID string, owner storage.Owner, name string, orgLocked bool) (directory.Project, error) {
 	if err := m.canCreateFor(ctx, actorID, owner); err != nil {
 		return directory.Project{}, err
@@ -88,11 +88,11 @@ func (m *Manager) canCreateFor(ctx context.Context, actorID string, owner storag
 	return fmt.Errorf("%w: you can only create projects for yourself or your org", ErrForbidden)
 }
 
-// CreateTemplate creates a gyoza template: readable by every signed-in user,
+// CreateTemplate creates a modulith template: readable by every signed-in user,
 // changed by nobody. Service to service only (seeding/admin tooling); the
 // gateway must never expose it.
 func (m *Manager) CreateTemplate(ctx context.Context, name string) (directory.Project, error) {
-	return m.store.CreateProject(ctx, directory.Project{Owner: storage.Owner{Kind: storage.OwnerGyoza}, Name: name})
+	return m.store.CreateProject(ctx, directory.Project{Owner: storage.Owner{Kind: storage.OwnerModulith}, Name: name})
 }
 
 // GetProject returns a project the acting user can see, with their access.
@@ -113,12 +113,12 @@ func (m *Manager) ListMyProjects(ctx context.Context, actorID string, pageSize i
 	return m.store.ListProjects(ctx, directory.ProjectQuery{VisibleTo: actorID, PageSize: pageSize, PageToken: pageToken})
 }
 
-// ListTemplates lists the gyoza templates, for any signed-in user.
+// ListTemplates lists the modulith templates, for any signed-in user.
 func (m *Manager) ListTemplates(ctx context.Context, actorID string, pageSize int, pageToken string) (directory.ProjectPage, error) {
 	if _, err := m.actor(ctx, actorID); err != nil {
 		return directory.ProjectPage{}, err
 	}
-	return m.store.ListProjects(ctx, directory.ProjectQuery{Owner: storage.Owner{Kind: storage.OwnerGyoza}, PageSize: pageSize, PageToken: pageToken})
+	return m.store.ListProjects(ctx, directory.ProjectQuery{Owner: storage.Owner{Kind: storage.OwnerModulith}, PageSize: pageSize, PageToken: pageToken})
 }
 
 // RenameProject renames a project; its owner (or an admin of the owning org).

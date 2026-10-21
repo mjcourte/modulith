@@ -9,7 +9,7 @@ import (
 	"slices"
 	"time"
 
-	"gyoza/services/storage"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 func (m *MemoryStore) MarkUserDeleting(ctx context.Context, userID, toOrgID string) (User, error) {

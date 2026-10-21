@@ -10,9 +10,9 @@ import (
 	"strconv"
 	"time"
 
-	"gyoza/internal/engine"
-	"gyoza/platform/telemetry"
-	"gyoza/services/storage"
+	"github.com/mjcourte/modulith/internal/engine"
+	"github.com/mjcourte/modulith/platform/telemetry"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 // Storage is what StorageStore needs from the storage service: its snapshot

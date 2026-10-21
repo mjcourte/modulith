@@ -12,8 +12,8 @@ import (
 func TestParseDotEnv(t *testing.T) {
 	input := `
 # local settings
-GYOZA_DATABASE_URL=postgres://gyoza:gyoza@localhost:5432/gyoza
-  GYOZA_LOG_LEVEL = debug
+MODULITH_DATABASE_URL=postgres://modulith:modulith@localhost:5432/modulith
+  MODULITH_LOG_LEVEL = debug
 QUOTED="has spaces"
 SINGLE='x=y'
 EMPTY=
@@ -23,8 +23,8 @@ EMPTY=
 		t.Fatalf("parseDotEnv: %v", err)
 	}
 	want := map[string]string{
-		"GYOZA_DATABASE_URL": "postgres://gyoza:gyoza@localhost:5432/gyoza",
-		"GYOZA_LOG_LEVEL":    "debug",
+		"MODULITH_DATABASE_URL": "postgres://modulith:modulith@localhost:5432/modulith",
+		"MODULITH_LOG_LEVEL":    "debug",
 		"QUOTED":             "has spaces",
 		"SINGLE":             "x=y",
 		"EMPTY":              "",

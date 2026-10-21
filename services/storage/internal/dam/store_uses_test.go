@@ -8,7 +8,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"gyoza/services/storage/internal/dam"
+	"github.com/mjcourte/modulith/services/storage/internal/dam"
 )
 
 // Asset uses: which asset versions each project uses (dam/uses.go).

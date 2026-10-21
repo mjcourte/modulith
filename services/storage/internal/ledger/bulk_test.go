@@ -6,7 +6,7 @@ import (
 	"errors"
 	"testing"
 
-	ledger "gyoza/services/storage/internal/ledger"
+	ledger "github.com/mjcourte/modulith/services/storage/internal/ledger"
 )
 
 func countOwned(t *testing.T, svc ledger.Service, owner ledger.Owner, includeDeleted bool) int {

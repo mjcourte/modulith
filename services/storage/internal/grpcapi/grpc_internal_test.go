@@ -10,8 +10,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"gyoza/services/storage/internal/dam"
-	"gyoza/services/storage/internal/manager"
+	"github.com/mjcourte/modulith/services/storage/internal/dam"
+	"github.com/mjcourte/modulith/services/storage/internal/manager"
 )
 
 // overWire sends err through the server's and the client's error mapping, as

@@ -5,10 +5,10 @@ import (
 	"errors"
 	"fmt"
 
-	"gyoza/internal/engine"
-	"gyoza/services/documents/internal/live"
-	"gyoza/services/documents/internal/snapshots"
-	"gyoza/services/documents/internal/wal"
+	"github.com/mjcourte/modulith/internal/engine"
+	"github.com/mjcourte/modulith/services/documents/internal/live"
+	"github.com/mjcourte/modulith/services/documents/internal/snapshots"
+	"github.com/mjcourte/modulith/services/documents/internal/wal"
 )
 
 func (m *Manager) GetDocument(ctx context.Context, actorID, projectID string) (Document, error) {

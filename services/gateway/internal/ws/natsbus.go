@@ -11,8 +11,8 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 
-	gnats "gyoza/platform/nats"
-	"gyoza/platform/telemetry"
+	gnats "github.com/mjcourte/modulith/platform/nats"
+	"github.com/mjcourte/modulith/platform/telemetry"
 )
 
 // NATSBus is the Bus on NATS: one ordered consumer on the DOCUMENTS stream
@@ -119,7 +119,7 @@ func (b *NATSBus) Run(ctx context.Context, f Feed) error {
 func startFanout(ctx context.Context, h natsgo.Header, name, projectID string, opts ...trace.SpanStartOption) trace.Span {
 	link := trace.LinkFromContext(gnats.TraceContext(ctx, h))
 	opts = append(opts, trace.WithNewRoot(), trace.WithSpanKind(trace.SpanKindConsumer), trace.WithLinks(link),
-		trace.WithAttributes(attribute.String("gyoza.project_id", projectID)))
+		trace.WithAttributes(attribute.String("modulith.project_id", projectID)))
 	_, span := tracer.Start(ctx, name, opts...)
 	return span
 }

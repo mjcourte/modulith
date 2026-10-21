@@ -8,15 +8,15 @@ import (
 	"testing"
 	"time"
 
-	"gyoza/services/iam/internal/directory"
-	"gyoza/services/iam/internal/manager"
-	"gyoza/services/storage"
+	"github.com/mjcourte/modulith/services/iam/internal/directory"
+	"github.com/mjcourte/modulith/services/iam/internal/manager"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 func userOwner(id string) storage.Owner { return storage.Owner{Kind: storage.OwnerUser, ID: id} }
 func orgOwner(id string) storage.Owner  { return storage.Owner{Kind: storage.OwnerOrg, ID: id} }
 
-var gyoza = storage.Owner{Kind: storage.OwnerGyoza}
+var modulith = storage.Owner{Kind: storage.OwnerModulith}
 
 // mustUser signs a user in with ID name and email name@example.com.
 func mustUser(t *testing.T, s directory.Store, name string) directory.User {
@@ -87,7 +87,7 @@ func (a inspectingAuthz) CanRead(ctx context.Context, actorID string, owner stor
 // over s (plus the inspector), as the binaries wire it.
 func newFilesFor(t *testing.T, s directory.Store) *storage.Memory {
 	t.Helper()
-	files, err := storage.NewMemory(inspectingAuthz{manager.NewStorageAuthorizer(s)}, storage.Config{Bucket: "gyoza-test"})
+	files, err := storage.NewMemory(inspectingAuthz{manager.NewStorageAuthorizer(s)}, storage.Config{Bucket: "modulith-test"})
 	if err != nil {
 		t.Fatalf("storage.NewMemory: %v", err)
 	}

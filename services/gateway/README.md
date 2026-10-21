@@ -26,7 +26,7 @@ one session layer). Design and next steps: [PLAN.md](PLAN.md).
 - **Account deletion:** iam's `IdentityProvider` removes the sign-in account through the
   core's HTTP API (`/user/remove`, OK for a missing user). It needs no SDK set-up, so
   `cmd/iam` uses it too.
-- **Dev pages** (`GYOZA_GATEWAY_DEV_PAGES`, never in production): `/dev/signin` does what
+- **Dev pages** (`MODULITH_GATEWAY_DEV_PAGES`, never in production): `/dev/signin` does what
   the SuperTokens frontend SDK would (authorisation URL, then the code to
   `/auth/signinup` on `/dev/callback/google`), plus "who am I" and sign-out.
 - **Google client:** SuperTokens' public demo client for now (`.env.example`). The SDK
@@ -34,7 +34,7 @@ one session layer). Design and next steps: [PLAN.md](PLAN.md).
   own OAuth client before anything leaves localhost.
 - **REST API** (`/api`, PLAN.md step 2 has the route table): me, orgs, invites, projects,
   shares, uploads, assets, folders, trash, documents (the snapshot as bytes with
-  `Gyoza-Format`/`Gyoza-Version`/`Gyoza-Seq`, queries, refs, forks, snapshot downloads).
+  `Modulith-Format`/`Modulith-Version`/`Modulith-Seq`, queries, refs, forks, snapshot downloads).
   JSON wire types owned here; errors `{"error": {"code", "message"}}` from one table per
   service (unmapped: a generic 500, logged). Changing requests must be
   `application/json` (the CSRF defence, with SameSite cookies and no CORS). Snapshot
@@ -47,17 +47,17 @@ one session layer). Design and next steps: [PLAN.md](PLAN.md).
   minute while joined: a user who lost it leaves the project with a `FORBIDDEN` error
   naming it. Edits need write access and the
   socket's replica in their stamp (`engine.StampOf`), and are published as the session's
-  user, never with `Gyoza-Origin`. User state is always the session's user. Same-origin
+  user, never with `Modulith-Origin`. User state is always the session's user. Same-origin
   only; closes with 4001 when the access token expires and 4008 when the tab falls 256
   messages behind (both: reconnect and rejoin). One NATS consumer and one `userstate.>`
   subscription per instance; each message is encoded once for all sockets.
-  The delta wire format (`Gyoza-*` headers) is in `platform/nats`, shared with documents.
+  The delta wire format (`Modulith-*` headers) is in `platform/nats`, shared with documents.
 - **Dev pages** also have a box to call any `/api` route as the signed-in user.
   and a WebSocket box (connect, send any message, see what comes back).
 - The SDK keeps global state: `Open` runs once per process.
-- Binaries: `cmd/gyoza` serves it next to gRPC; `cmd/gateway` alone, calling iam, storage and
+- Binaries: `cmd/modulith` serves it next to gRPC; `cmd/gateway` alone, calling iam, storage and
   documents over gRPC, and NATS. Tests: `internal/auth` (the hook, the identity provider, `/api` requiring a session;
-  the core tests need `GYOZA_TEST_SUPERTOKENS_URL=http://localhost:3567`) and
+  the core tests need `MODULITH_TEST_SUPERTOKENS_URL=http://localhost:3567`) and
   `internal/rest` (every area over the real in-memory iam, storage and documents through
   `httptest`, and the error tables) and `internal/ws` (a real WebSocket client against the
-  same services and a memory bus; the NATS bus needs `GYOZA_TEST_NATS_URL`); mutation-checked.
+  same services and a memory bus; the NATS bus needs `MODULITH_TEST_NATS_URL`); mutation-checked.

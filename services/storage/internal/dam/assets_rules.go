@@ -17,7 +17,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"gyoza/services/storage/internal/ledger"
+	"github.com/mjcourte/modulith/services/storage/internal/ledger"
 )
 
 // NewID returns a new UUIDv7 as a string. UUIDv7s start with a timestamp, so
@@ -348,7 +348,7 @@ func CopyObjectID(projectID, copyAssetID string) string {
 // come from the hash too: still deterministic, just not time-ordered.
 func derivedID(timeFrom string, parts ...string) string {
 	h := sha256.New()
-	h.Write([]byte("gyoza.storage.derived-id"))
+	h.Write([]byte("modulith.storage.derived-id"))
 	for _, p := range append([]string{timeFrom}, parts...) {
 		h.Write([]byte{0}) // separator, so ("ab", "c") and ("a", "bc") differ
 		h.Write([]byte(p))

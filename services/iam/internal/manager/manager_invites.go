@@ -7,7 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"gyoza/services/iam/internal/directory"
+	"github.com/mjcourte/modulith/services/iam/internal/directory"
 )
 
 // InviteMember invites email to the org with role; admins only. Inviting

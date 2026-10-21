@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"time"
 
-	"gyoza/services/storage"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 // maxBody caps request bodies: they carry metadata only (files go straight
@@ -61,7 +61,7 @@ func queryInt(r *http.Request, name string) (int, error) {
 // ---- Shared wire types
 
 // Owner is who owns files or a project. Browsers may name users, orgs and
-// projects; the gyoza owner (templates) is service-to-service only.
+// projects; the modulith owner (templates) is service-to-service only.
 type Owner struct {
 	Kind string `json:"kind"`
 	ID   string `json:"id"`

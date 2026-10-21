@@ -17,7 +17,7 @@ const (
 	OwnerProject OwnerKind = "project"
 	OwnerUser    OwnerKind = "user"
 	OwnerOrg     OwnerKind = "org"
-	OwnerGyoza   OwnerKind = "gyoza" // shared/common files owned by the platform; ID is empty
+	OwnerModulith   OwnerKind = "modulith" // shared/common files owned by the platform; ID is empty
 )
 
 // Owner is the single principal that owns an object. An object's lifetime
@@ -32,7 +32,7 @@ type Owner struct {
 func (o Owner) IsZero() bool { return o == Owner{} }
 
 // Validate reports whether o is well-formed: a known kind, with an ID for
-// everything except gyoza. It checks shape only, not whether the owner exists
+// everything except modulith. It checks shape only, not whether the owner exists
 // or who may act for it; other services use it so everyone agrees on what a
 // valid owner looks like.
 func (o Owner) Validate() error {
@@ -41,9 +41,9 @@ func (o Owner) Validate() error {
 		if o.ID == "" {
 			return fmt.Errorf("%s owner needs an ID", o.Kind)
 		}
-	case OwnerGyoza:
+	case OwnerModulith:
 		if o.ID != "" {
-			return errors.New("gyoza owner must not have an ID")
+			return errors.New("modulith owner must not have an ID")
 		}
 	case "":
 		return errors.New("owner is not set")

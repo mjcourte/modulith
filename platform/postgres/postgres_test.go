@@ -8,13 +8,13 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 
-	"gyoza/platform/postgres"
+	"github.com/mjcourte/modulith/platform/postgres"
 )
 
 func TestConnectAppliesSessionSettings(t *testing.T) {
-	url := os.Getenv("GYOZA_TEST_DATABASE_URL")
+	url := os.Getenv("MODULITH_TEST_DATABASE_URL")
 	if url == "" {
-		t.Skip("set GYOZA_TEST_DATABASE_URL to run against Postgres")
+		t.Skip("set MODULITH_TEST_DATABASE_URL to run against Postgres")
 	}
 	pool, err := postgres.Connect(t.Context(), url, "platform-test")
 	if err != nil {
@@ -48,9 +48,9 @@ func TestConnectFailsFastOnBadURL(t *testing.T) {
 // name: X"), or its first word, never its SQL (too long and varied to name
 // spans by). Queries outside a trace (migrations, untraced jobs) get none.
 func TestQueriesAreTraced(t *testing.T) {
-	url := os.Getenv("GYOZA_TEST_DATABASE_URL")
+	url := os.Getenv("MODULITH_TEST_DATABASE_URL")
 	if url == "" {
-		t.Skip("set GYOZA_TEST_DATABASE_URL to run against Postgres")
+		t.Skip("set MODULITH_TEST_DATABASE_URL to run against Postgres")
 	}
 	spans := tracetest.NewSpanRecorder()
 	otel.SetTracerProvider(sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(spans)))

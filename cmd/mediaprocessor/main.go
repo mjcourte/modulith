@@ -12,10 +12,10 @@ import (
 
 	"google.golang.org/grpc"
 
-	"gyoza/platform/config"
-	"gyoza/platform/shutdown"
-	"gyoza/platform/telemetry"
-	"gyoza/services/mediaprocessor"
+	"github.com/mjcourte/modulith/platform/config"
+	"github.com/mjcourte/modulith/platform/shutdown"
+	"github.com/mjcourte/modulith/platform/telemetry"
+	"github.com/mjcourte/modulith/services/mediaprocessor"
 )
 
 func main() {
@@ -35,12 +35,12 @@ func run() error {
 	// files, so it is given no secrets at all (see mediaprocessor/PLAN.md).
 	env := config.FromEnv()
 	logLevel := slog.LevelInfo
-	env.Text("GYOZA_LOG_LEVEL", &logLevel)
-	shutdownTimeout := env.Duration("GYOZA_SHUTDOWN_TIMEOUT", 20*time.Second)
+	env.Text("MODULITH_LOG_LEVEL", &logLevel)
+	shutdownTimeout := env.Duration("MODULITH_SHUTDOWN_TIMEOUT", 20*time.Second)
 	// localhost by default so local runs don't listen on the network;
 	// deployments set ":9090". Differs from the other binaries' defaults so
 	// they can all run on one machine.
-	grpcAddr := env.String("GYOZA_GRPC_ADDR", "localhost:9092")
+	grpcAddr := env.String("MODULITH_GRPC_ADDR", "localhost:9092")
 	telemetrySettings := telemetry.SettingsFromEnv(env)
 	if err := env.Err(); err != nil {
 		return err

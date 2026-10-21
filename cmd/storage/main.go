@@ -13,13 +13,13 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"gyoza/platform/config"
-	"gyoza/platform/postgres"
-	"gyoza/platform/shutdown"
-	"gyoza/platform/telemetry"
-	"gyoza/services/iam"
-	"gyoza/services/mediaprocessor"
-	"gyoza/services/storage"
+	"github.com/mjcourte/modulith/platform/config"
+	"github.com/mjcourte/modulith/platform/postgres"
+	"github.com/mjcourte/modulith/platform/shutdown"
+	"github.com/mjcourte/modulith/platform/telemetry"
+	"github.com/mjcourte/modulith/services/iam"
+	"github.com/mjcourte/modulith/services/mediaprocessor"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 func main() {
@@ -36,21 +36,21 @@ func run() error {
 	defer stop()
 
 	env := config.FromEnv()
-	dbURL := env.Required("GYOZA_DATABASE_URL")
+	dbURL := env.Required("MODULITH_DATABASE_URL")
 	logLevel := slog.LevelInfo
-	env.Text("GYOZA_LOG_LEVEL", &logLevel)
+	env.Text("MODULITH_LOG_LEVEL", &logLevel)
 	telemetrySettings := telemetry.SettingsFromEnv(env)
-	shutdownTimeout := env.Duration("GYOZA_SHUTDOWN_TIMEOUT", 20*time.Second)
+	shutdownTimeout := env.Duration("MODULITH_SHUTDOWN_TIMEOUT", 20*time.Second)
 	// localhost by default so local runs don't listen on the network;
 	// deployments set ":9090". The default differs from the monolith's so both
 	// can run on one machine.
-	grpcAddr := env.String("GYOZA_GRPC_ADDR", "localhost:9091")
+	grpcAddr := env.String("MODULITH_GRPC_ADDR", "localhost:9091")
 	// cmd/mediaprocessor's local default. While it's unreachable, video and
 	// audio uploads wait in the queue without using up their attempts.
-	mediaAddr := env.String("GYOZA_MEDIAPROCESSOR_ADDR", "localhost:9092")
+	mediaAddr := env.String("MODULITH_MEDIAPROCESSOR_ADDR", "localhost:9092")
 	// cmd/iam's local default. It answers every permission check, so while
 	// it's unreachable user calls fail (never allowed by default).
-	iamAddr := env.String("GYOZA_IAM_ADDR", "localhost:9093")
+	iamAddr := env.String("MODULITH_IAM_ADDR", "localhost:9093")
 	settings := storage.SettingsFromEnv(env)
 	if err := env.Err(); err != nil {
 		return err

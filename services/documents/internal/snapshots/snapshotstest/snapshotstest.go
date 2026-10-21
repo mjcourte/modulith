@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"gyoza/internal/engine"
-	"gyoza/services/documents/internal/snapshots"
+	"github.com/mjcourte/modulith/internal/engine"
+	"github.com/mjcourte/modulith/services/documents/internal/snapshots"
 )
 
 // RunSuite checks the behaviour every Store must share. newStore must return

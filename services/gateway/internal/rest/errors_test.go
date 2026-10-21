@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"gyoza/services/storage"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 func errorResponse(t *testing.T, err error) (int, errorDetail) {

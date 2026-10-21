@@ -15,5 +15,5 @@ gRPC and binaries. Their record, decisions included, is the README. Related:
 
 ## Not planned
 
-Billing, email sending for invites, a seeding/admin tool that creates and fills gyoza
+Billing, email sending for invites, a seeding/admin tool that creates and fills modulith
 projects.

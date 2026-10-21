@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"gyoza/services/storage/internal/blob"
-	"gyoza/services/storage/internal/blob/blobtest"
+	"github.com/mjcourte/modulith/services/storage/internal/blob"
+	"github.com/mjcourte/modulith/services/storage/internal/blob/blobtest"
 )
 
 func TestMemory(t *testing.T) {

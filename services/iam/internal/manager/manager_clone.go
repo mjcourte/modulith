@@ -19,9 +19,9 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 
-	"gyoza/platform/telemetry"
-	"gyoza/services/iam/internal/directory"
-	"gyoza/services/storage"
+	"github.com/mjcourte/modulith/platform/telemetry"
+	"github.com/mjcourte/modulith/services/iam/internal/directory"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 const (
@@ -34,7 +34,7 @@ const (
 )
 
 // CloneProject makes a new project from sourceID, owned by target, with a
-// copy of its files. The actor must be able to read the source (gyoza
+// copy of its files. The actor must be able to read the source (modulith
 // templates included) and create projects for target: their own library or
 // their org. An org-locked source can only be cloned into its own org, and
 // the clone is locked too, so cloning can't get around the lock. The clone
@@ -65,7 +65,7 @@ func (m *Manager) CloneProject(ctx context.Context, actorID, sourceID string, ta
 
 // finishClone runs a clone's remaining steps; each can be repeated.
 func (m *Manager) finishClone(ctx context.Context, clone directory.Project) (_ directory.Project, err error) {
-	ctx, span := tracer.Start(ctx, "iam.finish_clone", trace.WithAttributes(attribute.String("gyoza.project_id", clone.ID), attribute.String("gyoza.cloned_from", clone.ClonedFrom)))
+	ctx, span := tracer.Start(ctx, "iam.finish_clone", trace.WithAttributes(attribute.String("modulith.project_id", clone.ID), attribute.String("modulith.cloned_from", clone.ClonedFrom)))
 	defer telemetry.End(span, &err)
 	if _, err := m.storage.CopyProjectFiles(ctx, clone.CreatedBy, clone.ClonedFrom, clone.ID); err != nil {
 		return clone, fmt.Errorf("copy files of %s into clone %s: %w", clone.ClonedFrom, clone.ID, err)

@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"gyoza/services/storage"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 // ---- Wire types

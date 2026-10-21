@@ -17,17 +17,17 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
 
-	"gyoza/internal/engine"
-	gnats "gyoza/platform/nats"
-	"gyoza/services/documents/internal/wal"
+	"github.com/mjcourte/modulith/internal/engine"
+	gnats "github.com/mjcourte/modulith/platform/nats"
+	"github.com/mjcourte/modulith/services/documents/internal/wal"
 )
 
 // connect runs against the compose NATS cluster (see platform/nats/README.md).
 func connect(t *testing.T) (context.Context, *gnats.Client) {
 	t.Helper()
-	url := os.Getenv("GYOZA_TEST_NATS_URL")
+	url := os.Getenv("MODULITH_TEST_NATS_URL")
 	if url == "" {
-		t.Skip("set GYOZA_TEST_NATS_URL to run against NATS")
+		t.Skip("set MODULITH_TEST_NATS_URL to run against NATS")
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	t.Cleanup(cancel)

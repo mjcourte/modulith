@@ -15,8 +15,8 @@ than users.
 
 | Decision       | Choice                                                                                                                         |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| Project owner  | a user, an org, or gyoza (the ledger's `Owner`; never another project)                                                         |
-| Gyoza projects | templates: read-only for every signed-in user, and clonable into a project the cloner owns; made only by service-to-service calls |
+| Project owner  | a user, an org, or modulith (the ledger's `Owner`; never another project)                                                         |
+| Modulith projects | templates: read-only for every signed-in user, and clonable into a project the cloner owns; made only by service-to-service calls |
 | Org roles      | admin and member; an org always keeps at least one admin                                                                       |
 | Project access | every member of the owning org edits; any project can also be shared with individual users as viewer or editor                 |
 | Joining an org | an admin invites an email; a Google account with that verified email can accept on sign-in. No email sending in the MVP        |
@@ -29,7 +29,7 @@ than users.
 - sharing by email. An address with no verified account gets a pending share (the same
   answer, so sharing doesn't say who has an account; the share list still shows it, as in
   Google Docs), claimed at the first verified sign-in with it (`SignIn`) or dropped after
-  `GYOZA_SHARE_EXPIRY_DAYS` (30). Anyone with editor
+  `MODULITH_SHARE_EXPIRY_DAYS` (30). Anyone with editor
   access shares (as viewer or editor) and changes or removes others' shares; viewers
   don't; anyone can remove their own share. Sharing can raise access, never lower it
 - managing a project (rename, move, delete): the owning user, or an admin of the owning org
@@ -53,7 +53,7 @@ than users.
 | `wiring.go` | what the binaries share: `SettingsFromEnv`, `OpenStore`, `StartCleanup` |
 | `internal/directory/` | the data: `Store` and its parts, rules, `MemoryStore`, `Postgres` (`postgres*.go`), and the access rules (`access.go`); checks data shape only |
 | `internal/manager/` | the logic: `Manager`, `Service`, `StorageAuthorizer`, the deletion cascades and cleanup loop; depends on `directory`, never the other way |
-| `internal/grpcapi/` | `IAMService` and `AuthzService` (`contracts/proto/gyoza/iam/v1`): servers, and clients implementing `Service` and storage's `Authorizer` |
+| `internal/grpcapi/` | `IAMService` and `AuthzService` (`contracts/proto/modulith/iam/v1`): servers, and clients implementing `Service` and storage's `Authorizer` |
 | `internal/db/` | schema `iam`: goose migrations, one query file per area, sqlc output |
 
 The sections below name files in `internal/directory` (Store, Access, Deletion store) and `internal/manager` (Manager, `storage_authz.go`).
@@ -76,7 +76,7 @@ The sections below name files in `internal/directory` (Store, Access, Deletion s
 ## Access (step 3)
 
 - `access.go`: `projectAccess` decides a user's access to a project as a pure function: the
-  greatest of owner (editor), member of the owning org (editor), gyoza template (viewer
+  greatest of owner (editor), member of the owning org (editor), modulith template (viewer
   for everyone) and their share, with shares suspended on org-locked projects for
   people outside the org; clones in progress grant nothing. `AccessTo` gathers the
   facts from a Store; unknown users get nothing; Store failures are errors, never
@@ -84,10 +84,10 @@ The sections below name files in `internal/directory` (Store, Access, Deletion s
 - `storage_authz.go`: `StorageAuthorizer` implements storage's `Authorizer` from
   a Store alone (so the binaries can build it before storage). Files are
   reachable through their owner (own library, org library for members, a project's
-  files by project access, gyoza's files read-only for all) or, read-only, through a
+  files by project access, modulith's files read-only for all) or, read-only, through a
   project they're associated with. `ProjectOwner` tells storage who owns a project
   (unknown or deleting: refused), for storage's rule that a project uses in place only
-  its own, its owner's and gyoza's files. Refusals wrap `storage.ErrForbidden`. Tested end
+  its own, its owner's and modulith's files. Refusals wrap `storage.ErrForbidden`. Tested end
   to end with storage's memory fakes; the binaries use it in-process (monolith) or
   over gRPC (`AuthzService`)
 - performance notes: [OPTIMIZATIONS.md](OPTIMIZATIONS.md)
@@ -127,7 +127,7 @@ The sections below name files in `internal/directory` (Store, Access, Deletion s
 
 Invariants the Store enforces itself: emails unique (case-insensitive); a user belongs
 to at most one org; an org with members always has an admin (the very last member may
-leave, after which the org is deleted). Projects are owned by a user, an org or gyoza
+leave, after which the org is deleted). Projects are owned by a user, an org or modulith
 (templates, never shared); one share per user and project; only org projects can be
 org-locked, and a locked project takes no new or changed shares for outsiders (existing
 ones are kept but suspended). "My projects" lists what a user owns, what their org owns
@@ -159,7 +159,7 @@ and what's actively shared with them, each once, never clones in progress.
 ## Postgres (step 8)
 
 - `postgres*.go`: the production Store, passing the same suite as `MemoryStore`
-  (`postgres_test.go`, needs `GYOZA_TEST_DATABASE_URL`). One transaction per call
+  (`postgres_test.go`, needs `MODULITH_TEST_DATABASE_URL`). One transaction per call
 - invariants without the memory store's mutex: memberships' primary key keeps a user in
   one org; membership changes lock the org row, then apply the same pure rules
   (`orgs_rules.go`); adding a reference to a user, org or project takes a shared lock on
@@ -173,15 +173,15 @@ and what's actively shared with them, each once, never clones in progress.
 
 - `IAMService` mirrors `Service` (calls carry `actor_id`, as in storage); `AuthzService`
   is storage's `Authorizer` (`CanRead`, `CanWrite`, `ProjectOwner`). Errors carry `google.rpc.ErrorInfo`
-  (domain `iam.gyoza`), rebuilt by the clients from one table (`wireErrors`); an
+  (domain `iam.modulith`), rebuilt by the clients from one table (`wireErrors`); an
   `AuthzService` refusal comes back as `storage.ErrForbidden`, and an unreachable iam as
   an error that is never mistaken for a refusal
 - the monolith builds iam's store, the `StorageAuthorizer` on it, storage, documents, then
   iam's `Manager` (which calls storage, and documents when cloning), and serves all of
-  them. `cmd/iam` (`localhost:9093`) calls storage at `GYOZA_STORAGE_ADDR` and documents
-  at `GYOZA_DOCUMENTS_ADDR`; `cmd/storage` asks iam at `GYOZA_IAM_ADDR`
-- settings: `GYOZA_INVITE_TTL` (default 14 days), `GYOZA_SHARE_EXPIRY_DAYS` (pending
-  shares, whole days, default 30), `GYOZA_IAM_CLEANUP_INTERVAL` (10m; also removes expired
+  them. `cmd/iam` (`localhost:9093`) calls storage at `MODULITH_STORAGE_ADDR` and documents
+  at `MODULITH_DOCUMENTS_ADDR`; `cmd/storage` asks iam at `MODULITH_IAM_ADDR`
+- settings: `MODULITH_INVITE_TTL` (default 14 days), `MODULITH_SHARE_EXPIRY_DAYS` (pending
+  shares, whole days, default 30), `MODULITH_IAM_CLEANUP_INTERVAL` (10m; also removes expired
   invites and pending shares)
 
 ## Cloning (step 7)

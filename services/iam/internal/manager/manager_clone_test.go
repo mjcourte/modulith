@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"gyoza/services/iam/internal/directory"
-	"gyoza/services/iam/internal/manager"
-	"gyoza/services/storage"
+	"github.com/mjcourte/modulith/services/iam/internal/directory"
+	"github.com/mjcourte/modulith/services/iam/internal/manager"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 // copyOf is the clone's copy of version 1 of a source file: storage's
@@ -53,7 +53,7 @@ func TestCloneProject(t *testing.T) {
 		t.Errorf("source file after cloning = %+v, %v", a, err)
 	}
 
-	// Anyone signed in can clone a gyoza template.
+	// Anyone signed in can clone a modulith template.
 	tmpl, err := w.m.CreateTemplate(ctx, "Flyer")
 	if err != nil {
 		t.Fatalf("CreateTemplate: %v", err)
@@ -84,7 +84,7 @@ func TestCloneProjectRejects(t *testing.T) {
 		{"unknown source", bob.ID, "no-such-project", userOwner(bob.ID)},
 		{"into someone else's library", bob.ID, open.ID, userOwner(ann.ID)},
 		{"into an org the actor isn't in", bob.ID, open.ID, orgOwner(beta.ID)},
-		{"into gyoza", bob.ID, open.ID, gyoza},
+		{"into modulith", bob.ID, open.ID, modulith},
 		{"locked source out of its org", bob.ID, locked.ID, userOwner(bob.ID)},
 	}
 	for _, tt := range tests {

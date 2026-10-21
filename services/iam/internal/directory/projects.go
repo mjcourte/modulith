@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"gyoza/services/storage"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 // Project and share errors returned by every Store (see ProjectStore).
@@ -39,7 +39,7 @@ const (
 // (owner kind project, ID = the project's ID).
 type Project struct {
 	ID         string        // UUIDv7
-	Owner      storage.Owner // a user, an org, or gyoza (templates); never a project
+	Owner      storage.Owner // a user, an org, or modulith (templates); never a project
 	Name       string        // not unique
 	State      ProjectState
 	ClonedFrom string // the source project's ID, for a clone; "" otherwise
@@ -47,7 +47,7 @@ type Project struct {
 	// (existing ones are suspended: they grant nothing while locked) and clones
 	// only into the org. Only org-owned projects can be locked.
 	OrgLocked bool
-	CreatedBy string // user ID; "" for gyoza projects made by tooling
+	CreatedBy string // user ID; "" for modulith projects made by tooling
 	CreatedAt time.Time
 	UpdatedAt time.Time // last rename, transfer, lock or state change
 	// DeletingAt is set when the project's deletion starts (see DeletionStore):
@@ -89,10 +89,10 @@ type ProjectQuery struct {
 	// Scope: set exactly one.
 	//
 	// VisibleTo lists a user's projects: those they own, those their org owns,
-	// and those shared with them, each once. Gyoza templates aren't included:
-	// list them with Owner gyoza.
+	// and those shared with them, each once. Modulith templates aren't included:
+	// list them with Owner modulith.
 	VisibleTo string
-	// Owner lists one owner's projects: an org's, a user's, or the gyoza
+	// Owner lists one owner's projects: an org's, a user's, or the modulith
 	// templates.
 	Owner storage.Owner
 
@@ -112,8 +112,8 @@ type ProjectPage struct {
 // ProjectStore persists projects and their shares. Pure data, no
 // authorization; it enforces:
 //   - a project's owner exists (ErrUserNotFound, ErrOrgNotFound) and is a
-//     user, an org or gyoza (ErrInvalidProject)
-//   - gyoza projects (templates) are never shared: everyone can already see
+//     user, an org or modulith (ErrInvalidProject)
+//   - modulith projects (templates) are never shared: everyone can already see
 //     them (ErrInvalidShare)
 //   - only org-owned projects can be org-locked (ErrInvalidProject), and a locked
 //     project takes no new or changed shares for people outside its org
@@ -132,7 +132,7 @@ type ProjectStore interface {
 	// TransferProject gives the project to another owner (e.g. a user moving
 	// a personal project to their org). Shares are kept; the org-lock is
 	// cleared, since it was the old owner's policy. Transferring to or from
-	// gyoza is ErrInvalidProject (templates are made by tooling).
+	// modulith is ErrInvalidProject (templates are made by tooling).
 	TransferProject(ctx context.Context, id string, to storage.Owner) (Project, error)
 	// MarkProjectReady ends a clone: ProjectCloning becomes ProjectReady.
 	// Marking a ready project again changes nothing, so a resumed clone job

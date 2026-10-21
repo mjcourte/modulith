@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"gyoza/internal/engine"
+	"github.com/mjcourte/modulith/internal/engine"
 )
 
 // ErrNotOpen is returned by a Doc the registry has let go of (evicted or

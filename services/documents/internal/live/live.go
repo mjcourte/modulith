@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"gyoza/internal/engine"
+	"github.com/mjcourte/modulith/internal/engine"
 )
 
 // ErrClosed is returned by Acquire after Close.

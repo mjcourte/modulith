@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"time"
 
-	"gyoza/services/storage/internal/blob"
-	"gyoza/services/storage/internal/dam"
-	"gyoza/services/storage/internal/ledger"
+	"github.com/mjcourte/modulith/services/storage/internal/blob"
+	"github.com/mjcourte/modulith/services/storage/internal/dam"
+	"github.com/mjcourte/modulith/services/storage/internal/ledger"
 )
 
 // CompleteUpload finishes an upload the browser has PUT to S3: it checks the

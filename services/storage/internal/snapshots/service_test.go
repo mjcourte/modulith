@@ -10,7 +10,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"gyoza/services/storage/internal/snapshots"
+	"github.com/mjcourte/modulith/services/storage/internal/snapshots"
 )
 
 // runStoreTests is the suite every Store runs. newStore returns an empty
@@ -52,7 +52,7 @@ func pending(projectID string, seq uint64) snapshots.Snapshot {
 		ObjectID: id, ProjectID: projectID, Seq: seq,
 		EditedBy: "ann", EditedAt: time.Now().Add(-time.Minute),
 		Bucket: "b", Key: "projects/" + projectID + "/snapshot/" + id,
-		ContentType: "application/vnd.gyoza.app+flatbuffers; version=1", SizeBytes: 100,
+		ContentType: "application/vnd.modulith.app+flatbuffers; version=1", SizeBytes: 100,
 		ExpiresAt: time.Now().Add(15 * time.Minute),
 	}
 }

@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"gyoza/services/iam/internal/directory"
-	"gyoza/services/storage"
+	"github.com/mjcourte/modulith/services/iam/internal/directory"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 // StorageAuthorizer answers storage's "may this user read/write these
@@ -17,7 +17,7 @@ import (
 // Files are reachable two ways:
 //   - through their owner: a user's own library (read-write), their org's
 //     (read-write for members), a project's (the project access: editor ->
-//     write, viewer -> read), gyoza's shared files (read-only for everyone)
+//     write, viewer -> read), modulith's shared files (read-only for everyone)
 //   - through a project they're associated with (projectID): anyone who can
 //     read that project can read them, but writing still needs the owner route
 type StorageAuthorizer struct {
@@ -95,7 +95,7 @@ func (a *StorageAuthorizer) ownerAccess(ctx context.Context, actorID string, own
 		}
 	case storage.OwnerProject:
 		return a.projectAccess(ctx, actorID, owner.ID)
-	case storage.OwnerGyoza:
+	case storage.OwnerModulith:
 		return directory.AccessViewer, nil // shared files: everyone reads, nobody writes
 	}
 	return directory.AccessNone, nil

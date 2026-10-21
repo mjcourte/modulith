@@ -14,12 +14,12 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/test/bufconn"
 
-	pb "gyoza/contracts/gen/go/gyoza/documents/v1"
-	"gyoza/internal/engine"
-	"gyoza/services/documents/internal/grpcapi"
-	"gyoza/services/documents/internal/manager"
-	"gyoza/services/documents/internal/snapshots"
-	"gyoza/services/storage"
+	pb "github.com/mjcourte/modulith/contracts/gen/go/modulith/documents/v1"
+	"github.com/mjcourte/modulith/internal/engine"
+	"github.com/mjcourte/modulith/services/documents/internal/grpcapi"
+	"github.com/mjcourte/modulith/services/documents/internal/manager"
+	"github.com/mjcourte/modulith/services/documents/internal/snapshots"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 // testAuthz lets "ann" write and "rita" read; others get nothing.

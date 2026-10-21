@@ -14,9 +14,9 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/test/bufconn"
 
-	pb "gyoza/contracts/gen/go/gyoza/mediaprocessor/v1"
-	"gyoza/services/mediaprocessor/internal/grpcapi"
-	"gyoza/services/mediaprocessor/internal/probe"
+	pb "github.com/mjcourte/modulith/contracts/gen/go/modulith/mediaprocessor/v1"
+	"github.com/mjcourte/modulith/services/mediaprocessor/internal/grpcapi"
+	"github.com/mjcourte/modulith/services/mediaprocessor/internal/probe"
 )
 
 // newClient serves p over an in-memory connection and returns a client for it.

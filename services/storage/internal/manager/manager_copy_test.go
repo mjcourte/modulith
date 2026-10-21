@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"gyoza/services/storage/internal/blob"
-	"gyoza/services/storage/internal/dam"
-	"gyoza/services/storage/internal/ledger"
-	sm "gyoza/services/storage/internal/manager"
+	"github.com/mjcourte/modulith/services/storage/internal/blob"
+	"github.com/mjcourte/modulith/services/storage/internal/dam"
+	"github.com/mjcourte/modulith/services/storage/internal/ledger"
+	sm "github.com/mjcourte/modulith/services/storage/internal/manager"
 )
 
 var clone = ledger.Owner{Kind: ledger.OwnerProject, ID: "p2"}
@@ -225,21 +225,21 @@ func TestCopyProjectFilesRejects(t *testing.T) {
 	}
 }
 
-// forkSetup: p1 (acme's, member edits it) uses gyoza's stock image; p3 is
+// forkSetup: p1 (acme's, member edits it) uses modulith's stock image; p3 is
 // guest's own project, and guest reads p1.
 func forkSetup(t *testing.T) (testManager, dam.Asset, []byte) {
 	t.Helper()
 	tm := newTestManager(t)
-	gyoza := ledger.Owner{Kind: ledger.OwnerGyoza}
-	tm.authz.AllowOwner("tooling", gyoza, sm.AccessWrite)
-	tm.authz.AllowOwner("member", gyoza, sm.AccessRead)
+	modulith := ledger.Owner{Kind: ledger.OwnerModulith}
+	tm.authz.AllowOwner("tooling", modulith, sm.AccessWrite)
+	tm.authz.AllowOwner("member", modulith, sm.AccessRead)
 	tm.authz.SetProjectOwner("p1", acme)
 	tm.authz.AllowProject("member", "p1", sm.AccessWrite)
 	tm.authz.SetProjectOwner("p3", ledger.Owner{Kind: ledger.OwnerUser, ID: "guest"})
 	tm.authz.AllowProject("guest", "p3", sm.AccessWrite)
 	tm.authz.AllowProject("guest", "p1", sm.AccessRead)
 	req := newAssetRequest()
-	req.Owner = gyoza
+	req.Owner = modulith
 	stock, data := uploadAsset(t, tm, "tooling", req)
 	if err := tm.RecordAssetUse(t.Context(), "member", "p1", dam.AssetRef{AssetID: stock.ID, Version: 1}); err != nil {
 		t.Fatalf("RecordAssetUse: %v", err)
@@ -303,7 +303,7 @@ func TestForkAssetRejects(t *testing.T) {
 	ref := dam.AssetRef{AssetID: stock.ID, Version: 1}
 	tm.authz.SetProjectOwner("p4", acme)
 	tm.authz.AllowProject("guest", "p4", sm.AccessWrite)
-	tm.authz.AllowOwner("guest", ledger.Owner{Kind: ledger.OwnerGyoza}, sm.AccessRead)
+	tm.authz.AllowOwner("guest", ledger.Owner{Kind: ledger.OwnerModulith}, sm.AccessRead)
 	acmeFile, _ := uploadAsset(t, tm, "member", newAssetRequest()) // p1 doesn't use it; guest can't read it
 	tests := []struct {
 		name, actor, project string

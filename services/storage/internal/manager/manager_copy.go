@@ -14,8 +14,8 @@ import (
 	"fmt"
 	"path"
 
-	"gyoza/services/storage/internal/dam"
-	"gyoza/services/storage/internal/ledger"
+	"github.com/mjcourte/modulith/services/storage/internal/dam"
+	"github.com/mjcourte/modulith/services/storage/internal/ledger"
 )
 
 // copyVersion copies version v of src into a new asset owned by target, in
@@ -201,7 +201,7 @@ func (m *Manager) CopyProjectFiles(ctx context.Context, actorID, from, to string
 }
 
 // ForkAsset makes the version ref an independent copy, for editing an asset
-// the actor may use but not change (gyoza's, another owner's). The copy is
+// the actor may use but not change (modulith's, another owner's). The copy is
 // owned by target: the project itself (zero target, the default) or the
 // project's owner (into their library), and projectID's use of ref moves to
 // it. It returns the copy: its ref is {ID, 1}.

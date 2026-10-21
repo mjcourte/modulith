@@ -5,10 +5,10 @@ import (
 
 	flatbuffers "github.com/google/flatbuffers/go"
 
-	"gyoza/internal/engine/fbs"
+	"github.com/mjcourte/modulith/internal/engine/fbs"
 )
 
-//go:generate flatc --go --gen-object-api --go-module-name gyoza/internal/engine -o . ../../engine/schema/common.fbs ../../engine/schema/delta.fbs ../../engine/schema/snapshot.fbs
+//go:generate flatc --go --gen-object-api --go-module-name github.com/mjcourte/modulith/internal/engine -o . ../../engine/schema/common.fbs ../../engine/schema/delta.fbs ../../engine/schema/snapshot.fbs
 //go:generate gofmt -w fbs
 
 // The mock's wire format: flatbuffers from engine/schema, the schema the

@@ -9,9 +9,9 @@ import (
 	"strconv"
 	"strings"
 
-	"gyoza/internal/engine"
-	"gyoza/services/iam"
-	"gyoza/services/storage"
+	"github.com/mjcourte/modulith/internal/engine"
+	"github.com/mjcourte/modulith/services/iam"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 // --- users ---

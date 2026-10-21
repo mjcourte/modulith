@@ -1,9 +1,10 @@
-.agents/
+
 CLAUDE.md
 .claude/
 
 # Local settings with credentials; see .env.example
 .env
+.env.bak
 
 # SigNoz: rendered by foundryctl from deploy/observability/casting.yaml
 deploy/observability/pours/

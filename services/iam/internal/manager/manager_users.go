@@ -5,7 +5,7 @@ package manager
 import (
 	"context"
 	"errors"
-	"gyoza/services/iam/internal/directory"
+	"github.com/mjcourte/modulith/services/iam/internal/directory"
 )
 
 // SignInResult is what the gateway gets back from SignIn.

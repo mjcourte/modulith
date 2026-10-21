@@ -13,12 +13,12 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	pb "gyoza/contracts/gen/go/gyoza/mediaprocessor/v1"
-	"gyoza/services/mediaprocessor/internal/probe"
+	pb "github.com/mjcourte/modulith/contracts/gen/go/modulith/mediaprocessor/v1"
+	"github.com/mjcourte/modulith/services/mediaprocessor/internal/probe"
 )
 
 // errorDomain identifies this service in google.rpc.ErrorInfo details.
-const errorDomain = "mediaprocessor.gyoza"
+const errorDomain = "mediaprocessor.modulith"
 
 const reasonNoMedia = "NO_MEDIA"
 

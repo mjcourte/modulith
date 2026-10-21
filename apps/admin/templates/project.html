@@ -2,7 +2,7 @@
 {{with .Data}}{{$p := .Project}}
 <h1>{{$p.Name}} <span class="muted mono">{{$p.ID}}</span>{{template "orphan" $p}}</h1>
 <dl>
-  <dt>owner</dt><dd>{{if eq $p.OwnerKind "gyoza"}}gyoza (template){{else}}<a href="{{ownerURL $p.OwnerKind $p.OwnerID}}">{{$p.OwnerName}}</a> <span class="muted">{{$p.OwnerKind}}</span>{{end}}</dd>
+  <dt>owner</dt><dd>{{if eq $p.OwnerKind "modulith"}}modulith (template){{else}}<a href="{{ownerURL $p.OwnerKind $p.OwnerID}}">{{$p.OwnerName}}</a> <span class="muted">{{$p.OwnerKind}}</span>{{end}}</dd>
   <dt>state</dt><dd>{{$p.State}}</dd>
   <dt>org-locked</dt><dd>{{$p.OrgLocked}}</dd>
   {{if $p.ClonedFrom}}<dt>cloned from</dt><dd><a href="/projects/{{deref $p.ClonedFrom}}" class="mono">{{deref $p.ClonedFrom}}</a></dd>{{end}}
@@ -24,7 +24,7 @@
   <form method="post" action="/projects/{{$p.ID}}/move-to-org"><button>Move to the actor's org</button></form>
   {{end}}
   <form method="post" action="/projects/{{$p.ID}}/delete" onsubmit="return confirm('Delete this project and its files?')">
-    {{if eq $p.OwnerKind "gyoza"}}<input type="hidden" name="template" value="true">{{end}}<button class="danger">Delete</button></form>
+    {{if eq $p.OwnerKind "modulith"}}<input type="hidden" name="template" value="true">{{end}}<button class="danger">Delete</button></form>
 </div>
 
 <h2>Shares ({{len .Shares}})</h2>
@@ -51,7 +51,7 @@
     <select name="asset">{{range .Usable}}<option value="{{.ID}}:{{.CurrentVersion}}">{{.Name}} · v{{.CurrentVersion}} · {{.OwnerKind}}</option>{{end}}</select>
     <button>Record use</button>
   </form>
-  <p class="muted" style="margin:4px 0 0">Live assets this project may use in place: its own, its owner's and gyoza's, at their current version. Other versions: record from the asset's page.</p>
+  <p class="muted" style="margin:4px 0 0">Live assets this project may use in place: its own, its owner's and modulith's, at their current version. Other versions: record from the asset's page.</p>
   {{else}}<span class="muted">No assets this project can use in place.</span>{{end}}
 </div>
 

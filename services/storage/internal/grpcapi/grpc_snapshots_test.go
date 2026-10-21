@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"gyoza/services/storage/internal/manager"
+	"github.com/mjcourte/modulith/services/storage/internal/manager"
 )
 
 // The snapshot flow over gRPC gives the same answers as the Manager, and its
@@ -18,7 +18,7 @@ func TestGRPCSnapshots(t *testing.T) {
 	data := []byte("ecs tables")
 	req := manager.SnapshotRequest{
 		ProjectID: project.ID, Seq: 20, EditedBy: "ann", EditedAt: time.Now().UTC().Truncate(time.Microsecond),
-		ContentType: "application/vnd.gyoza.app+flatbuffers; version=1", SizeBytes: int64(len(data)),
+		ContentType: "application/vnd.modulith.app+flatbuffers; version=1", SizeBytes: int64(len(data)),
 	}
 
 	ticket, err := c.BeginSnapshot(ctx, req)

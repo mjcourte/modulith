@@ -1,4 +1,4 @@
-// Package storage keeps every file Gyoza stores in S3: uploads, downloads, the
+// Package storage keeps every file Modulith stores in S3: uploads, downloads, the
 // DAM, cleanup, and the ledger recording each object. The logic is under
 // internal/; this file is the public surface.
 //
@@ -12,14 +12,14 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"google.golang.org/grpc"
 
-	pb "gyoza/contracts/gen/go/gyoza/storage/v1"
-	"gyoza/services/storage/internal/blob"
-	"gyoza/services/storage/internal/dam"
-	"gyoza/services/storage/internal/db"
-	"gyoza/services/storage/internal/grpcapi"
-	"gyoza/services/storage/internal/ledger"
-	"gyoza/services/storage/internal/manager"
-	"gyoza/services/storage/internal/snapshots"
+	pb "github.com/mjcourte/modulith/contracts/gen/go/modulith/storage/v1"
+	"github.com/mjcourte/modulith/services/storage/internal/blob"
+	"github.com/mjcourte/modulith/services/storage/internal/dam"
+	"github.com/mjcourte/modulith/services/storage/internal/db"
+	"github.com/mjcourte/modulith/services/storage/internal/grpcapi"
+	"github.com/mjcourte/modulith/services/storage/internal/ledger"
+	"github.com/mjcourte/modulith/services/storage/internal/manager"
+	"github.com/mjcourte/modulith/services/storage/internal/snapshots"
 )
 
 // Who owns a file; shared with services that own files (iam).
@@ -32,7 +32,7 @@ const (
 	OwnerProject = ledger.OwnerProject
 	OwnerUser    = ledger.OwnerUser
 	OwnerOrg     = ledger.OwnerOrg
-	OwnerGyoza   = ledger.OwnerGyoza
+	OwnerModulith   = ledger.OwnerModulith
 )
 
 type AssetRef = dam.AssetRef

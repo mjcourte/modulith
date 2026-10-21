@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"gyoza/platform/config"
+	"github.com/mjcourte/modulith/platform/config"
 )
 
 // mapEnv is a lookup backed by a map, standing in for the environment.

@@ -8,9 +8,9 @@ import (
 	"errors"
 	"testing"
 
-	"gyoza/services/storage/internal/dam"
-	"gyoza/services/storage/internal/ledger"
-	sm "gyoza/services/storage/internal/manager"
+	"github.com/mjcourte/modulith/services/storage/internal/dam"
+	"github.com/mjcourte/modulith/services/storage/internal/ledger"
+	sm "github.com/mjcourte/modulith/services/storage/internal/manager"
 )
 
 // Owning the files isn't enough to associate them with a project: that puts
@@ -81,9 +81,9 @@ func TestRecordAssetUseAccess(t *testing.T) {
 	lib := newAssetRequest() // guest's library
 	lib.Owner = ledger.Owner{Kind: ledger.OwnerUser, ID: "guest"}
 	guestLib, _ := uploadAsset(t, tm, "guest", lib)
-	gyoza := ledger.Owner{Kind: ledger.OwnerGyoza} // shared stock: everyone reads it
-	stock := mustCreateAsset(t, tm.store, dam.Asset{Owner: gyoza}, "image/png")
-	tm.authz.AllowOwner("guest", gyoza, sm.AccessRead)
+	modulith := ledger.Owner{Kind: ledger.OwnerModulith} // shared stock: everyone reads it
+	stock := mustCreateAsset(t, tm.store, dam.Asset{Owner: modulith}, "image/png")
+	tm.authz.AllowOwner("guest", modulith, sm.AccessRead)
 	ref := func(a dam.Asset) dam.AssetRef { return dam.AssetRef{AssetID: a.ID, Version: 1} }
 
 	tests := []struct {
@@ -95,7 +95,7 @@ func TestRecordAssetUseAccess(t *testing.T) {
 		{"project's own asset", "member", "p1", ref(p1Own), nil},
 		{"project owner's library (org)", "member", "p1", ref(acmeShared), nil},
 		{"project owner's library (user)", "guest", "p3", ref(guestLib), nil},
-		{"gyoza's shared asset, anywhere", "guest", "p3", ref(stock), nil},
+		{"modulith's shared asset, anywhere", "guest", "p3", ref(stock), nil},
 		// Readable, but another owner's: fork it.
 		{"another project's asset", "guest", "p3", ref(p1Own), sm.ErrForkRequired},
 		{"an org's asset in a personal project", "guest", "p3", ref(acmeShared), sm.ErrForkRequired},

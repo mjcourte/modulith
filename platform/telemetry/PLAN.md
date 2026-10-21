@@ -6,7 +6,7 @@ What's left. What's built and decided is in [README.md](README.md); SigNoz itsel
 ## Next
 
 1. **See an edit's trace from the browser.** Once the web app can open and edit a project,
-   run the monolith with SigNoz and `GYOZA_TRACE_HOT_RATE=1`, and check one edit is one
+   run the monolith with SigNoz and `MODULITH_TRACE_HOT_RATE=1`, and check one edit is one
    trace in the UI: `ws.edit` → `document.apply` → `document.save`. Only the pieces are
    tested (the NATS hop over the real cluster; the WebSocket's spans); nothing yet runs the
    whole path, gateway to documents, as one trace.
@@ -35,7 +35,7 @@ What's left. What's built and decided is in [README.md](README.md); SigNoz itsel
 - **Browser tracing.** `apps/web` with the OTel web SDK, continuing traces into the gateway
   (its `traceparent` on REST calls and WebSocket messages). When the frontend has real flows.
 - **Continuous profiling.** Pyroscope, or OTel profiles once SigNoz supports them. Until then
-  `GYOZA_DEBUG_ADDR` and `go tool pprof` on demand.
+  `MODULITH_DEBUG_ADDR` and `go tool pprof` on demand.
 
 ## Known gaps (accepted)
 

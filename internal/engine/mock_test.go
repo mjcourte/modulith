@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"gyoza/internal/engine"
+	"github.com/mjcourte/modulith/internal/engine"
 )
 
 var _ engine.Engine = engine.Mock{}

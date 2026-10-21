@@ -8,11 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"gyoza/internal/engine"
-	"gyoza/services/documents/internal/manager"
-	"gyoza/services/documents/internal/snapshots"
-	"gyoza/services/documents/internal/wal"
-	"gyoza/services/storage"
+	"github.com/mjcourte/modulith/internal/engine"
+	"github.com/mjcourte/modulith/services/documents/internal/manager"
+	"github.com/mjcourte/modulith/services/documents/internal/snapshots"
+	"github.com/mjcourte/modulith/services/documents/internal/wal"
+	"github.com/mjcourte/modulith/services/storage"
 )
 
 func TestGetDocumentCreatesOnFirstOpen(t *testing.T) {

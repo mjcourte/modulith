@@ -4,7 +4,7 @@ package manager
 
 import (
 	"context"
-	"gyoza/services/iam/internal/directory"
+	"github.com/mjcourte/modulith/services/iam/internal/directory"
 )
 
 // CreateOrg creates an org with the acting user as its first admin. A user

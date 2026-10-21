@@ -16,9 +16,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"gyoza/services/storage/internal/blob"
-	"gyoza/services/storage/internal/ledger"
-	"gyoza/services/storage/internal/snapshots"
+	"github.com/mjcourte/modulith/services/storage/internal/blob"
+	"github.com/mjcourte/modulith/services/storage/internal/ledger"
+	"github.com/mjcourte/modulith/services/storage/internal/snapshots"
 )
 
 // Errors for snapshots; ErrForbidden covers an unknown project.
@@ -32,7 +32,7 @@ var (
 
 // snapshotTypes are the content types a snapshot may have, before any
 // parameters (documents adds "; version=N").
-var snapshotTypes = []string{"application/vnd.gyoza.app+flatbuffers", "application/json"}
+var snapshotTypes = []string{"application/vnd.modulith.app+flatbuffers", "application/json"}
 
 // SnapshotRequest describes a snapshot documents is about to upload.
 type SnapshotRequest struct {

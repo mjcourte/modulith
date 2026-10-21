@@ -10,7 +10,7 @@ import (
 	"slices"
 	"strings"
 
-	"gyoza/services/storage/internal/ledger"
+	"github.com/mjcourte/modulith/services/storage/internal/ledger"
 )
 
 // The helpers below read m.folders and m.assets, so the caller must hold m.mu.

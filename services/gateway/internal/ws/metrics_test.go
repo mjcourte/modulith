@@ -42,11 +42,11 @@ func TestMetrics(t *testing.T) {
 		for _, m := range sm.Metrics {
 			switch data := m.Data.(type) {
 			case metricdata.Gauge[int64]:
-				if m.Name == "gyoza.ws.sockets" && len(data.DataPoints) == 1 {
+				if m.Name == "modulith.ws.sockets" && len(data.DataPoints) == 1 {
 					sockets = data.DataPoints[0].Value
 				}
 			case metricdata.Sum[int64]:
-				if m.Name == "gyoza.ws.messages" {
+				if m.Name == "modulith.ws.messages" {
 					for _, p := range data.DataPoints {
 						typ, _ := p.Attributes.Value(attribute.Key("type"))
 						types[typ.AsString()] += p.Value
@@ -56,7 +56,7 @@ func TestMetrics(t *testing.T) {
 		}
 	}
 	if sockets != 2 {
-		t.Errorf("gyoza.ws.sockets = %d, want 2", sockets)
+		t.Errorf("modulith.ws.sockets = %d, want 2", sockets)
 	}
 	if types["unknown"] < 2 || types["made-up-1"] != 0 || types["made-up-2"] != 0 {
 		t.Errorf("messages by type %v: want the made-up types counted as unknown", types)

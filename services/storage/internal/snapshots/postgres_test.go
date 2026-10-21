@@ -5,18 +5,18 @@ import (
 	"os"
 	"testing"
 
-	"gyoza/platform/postgres"
-	"gyoza/services/storage/internal/db"
-	"gyoza/services/storage/internal/snapshots"
+	"github.com/mjcourte/modulith/platform/postgres"
+	"github.com/mjcourte/modulith/services/storage/internal/db"
+	"github.com/mjcourte/modulith/services/storage/internal/snapshots"
 )
 
-// TestPostgres runs the suite against a real database (GYOZA_TEST_DATABASE_URL).
+// TestPostgres runs the suite against a real database (MODULITH_TEST_DATABASE_URL).
 // Each subtest runs in a rolled-back transaction, except the concurrency test,
 // which needs the pool; it uses fresh project IDs and leaves its rows behind.
 func TestPostgres(t *testing.T) {
-	url := os.Getenv("GYOZA_TEST_DATABASE_URL")
+	url := os.Getenv("MODULITH_TEST_DATABASE_URL")
 	if url == "" {
-		t.Skip("set GYOZA_TEST_DATABASE_URL to run against Postgres")
+		t.Skip("set MODULITH_TEST_DATABASE_URL to run against Postgres")
 	}
 	pool, err := postgres.Connect(t.Context(), url, "storage-snapshots-test")
 	if err != nil {

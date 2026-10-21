@@ -10,9 +10,9 @@ import (
 	"sync"
 	"testing"
 
-	"gyoza/internal/engine"
-	"gyoza/services/documents/internal/manager"
-	"gyoza/services/documents/internal/snapshots"
+	"github.com/mjcourte/modulith/internal/engine"
+	"github.com/mjcourte/modulith/services/documents/internal/manager"
+	"github.com/mjcourte/modulith/services/documents/internal/snapshots"
 )
 
 // fakeAuthz allows reads to readers and writers, writes to writers.
