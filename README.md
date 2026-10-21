@@ -4,10 +4,6 @@ A modular-monorepo Go graphic design platform.
 
 The backend is Go, split into services that run either together as one binary (the monolith) or as separate binaries talking gRPC. Locally, Docker hosts the external pieces: Postgres, RustFS (S3-alike), NATS and the SuperTokens core. Cover as much ground as possible with Postgres before adding anything else.
 
-It was built outward from `storage` (blobs, the ledger, the DAM), then `iam` for
-permissions, then `documents` for live state, then the gateway, auth and NATS that front
-them — each service landing before whatever depends on it.
-
 What each component has built is in its README; what's next, in its `PLAN.md`. The
 cross-component order is in [Roadmap](#roadmap).
 
@@ -99,14 +95,14 @@ Planned (README only):
 
 Every one of these is a self-hosted stand-in for a managed service. If this ever needed to
 run for real, the distributed deployment path plus vendor versions of the above is the
-intended route — which is most of the reason the monolith/distributed split exists.
+intended route, which is most of the reason the monolith/distributed split exists.
 
 ## Roadmap
 
 Ordered roughly by dependency; each component's `PLAN.md` has the detail. Open questions
 are called out rather than resolved, because several of them gate what comes after.
 
-**Frontend, part 2** — app surface over what the backend already does
+**Frontend, part 2**
 
 - user profile and orgs
 - assets/DAM: upload, download, link/unlink, share
@@ -114,29 +110,14 @@ are called out rather than resolved, because several of them gate what comes aft
 - project listing and DAM/library pages, both with empty states
 - the canvas waits on a real engine
 
-**Fonts** — a decision point, not just a feature
+**Fonts**
 
 - a shared font library implies a font service domain; worth confirming that's wanted before committing to one
 - uploads already have somewhere to go (`Asset CategoryFont`)
 - open: scrape Google Fonts, or accept uploads only?
 
-**The real engine** — the largest open question
+**The real engine**
 
 - open: can [Yrs](https://github.com/y-crdt/y-crdt) serve as a graph CRDT?
 - Rust/Bevy ECS looks hard to avoid for representing 3D graphics
 
-**After that**
-
-- a self-hostable feature-flag provider (LaunchDarkly has no self-host option)
-- frontend part 3: canvas and interactions
-- `exporter`
-- `mcp` — open: how much is reachable against the mock engine API. A minimal GraphQL schema
-  may be enough to start.
-
-## Non-goals / exclusions
-
-- **Agent features are deferred to MCP, bring-your-own-agent.** Downstream work that assumed
-  a built-in agent — brand guides and similar — is dropped in favour of it.
-- **One-shot agent layout generation** belongs over MCP too, but it's a capstone: the platform
-  has to be worth using without an agent first.
-- **No import from other design suites.** Not worth the surface area.
