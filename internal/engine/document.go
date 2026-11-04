@@ -11,7 +11,8 @@ type Document interface {
 	Query(ctx context.Context, query Query) (*View, error)
 
 	// Merge folds a snapshot into the document in place. Snapshots are
-	// trusted: their stamps aren't bounded by MaxSkew.
+	// trusted: their stamps aren't bounded by MaxSkew, but a register
+	// stamped past the snapshot's own clock is ErrBadStamp.
 	Merge(ctx context.Context, snapshot Snapshot) error
 	// Edit applies a delta in place and returns it in wire form, for NATS distribution.
 	Edit(ctx context.Context, delta DeltaInput) (Delta, error)

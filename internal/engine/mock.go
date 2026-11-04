@@ -182,9 +182,10 @@ func (d *mockDocument) Edit(ctx context.Context, in DeltaInput) (Delta, error) {
 	return Delta{Format: WireNative, Version: mockVersion, Payload: encodeDelta(delta)}, nil
 }
 
-// Merge doesn't bound stamps (MaxSkew): snapshots come only from trusted
+// Merge doesn't bound stamps by MaxSkew: snapshots come only from trusted
 // servers (storage, another replica), whose clocks may legitimately run
-// ahead of this one's (engine/PLAN.md row 2).
+// ahead of this one's (engine/PLAN.md row 2). It does reject a register
+// stamped past the snapshot's own clock, which no honest snapshot holds.
 func (d *mockDocument) Merge(ctx context.Context, s Snapshot) error {
 	snap, err := decodeSnapshot(s)
 	if err != nil {
@@ -196,6 +197,10 @@ func (d *mockDocument) Merge(ctx context.Context, s Snapshot) error {
 		}
 		if r.Stamp == nil || r.Stamp.Lamport == 0 || r.Stamp.Replica == "" {
 			return fmt.Errorf("engine: snapshot register %q is unstamped", r.Key)
+		}
+		if r.Stamp.Lamport > snap.Clock {
+			return fmt.Errorf("%w: snapshot register %q stamp %d is past snapshot clock %d",
+				ErrBadStamp, r.Key, r.Stamp.Lamport, snap.Clock)
 		}
 	}
 	if err := d.lock(); err != nil {
