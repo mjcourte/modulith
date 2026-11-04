@@ -13,6 +13,8 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/health"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 
 	"github.com/mjcourte/modulith/platform/config"
 	gnats "github.com/mjcourte/modulith/platform/nats"
@@ -137,6 +139,8 @@ func run() error {
 	if prober != nil {
 		mediaprocessor.RegisterGRPC(server, prober)
 	}
+	hs := health.NewServer()
+	healthpb.RegisterHealthServer(server, hs)
 	httpServer := &http.Server{Handler: gw.Handler, ReadHeaderTimeout: 10 * time.Second}
 	serveErr := make(chan error, 2)
 	go func() { serveErr <- fmt.Errorf("grpc server: %w", server.Serve(lis)) }()
@@ -191,7 +195,9 @@ func run() error {
 	// its requests call the services), the background jobs (the
 	// documents consumer among them), then documents saves every open
 	// document (through storage, announcing on NATS), then NATS, then the
-	// pool, which all of them need until they've stopped.
+	// pool, which all of them need until they've stopped. The health check
+	// reports NOT_SERVING first, so probes fail while both servers drain.
+	hs.Shutdown()
 	if err := httpServer.Shutdown(shutdownCtx); err != nil {
 		httpServer.Close()
 		slog.Warn("gateway requests cut off at shutdown deadline")

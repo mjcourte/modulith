@@ -12,6 +12,8 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/health"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 
 	"github.com/mjcourte/modulith/platform/config"
 	"github.com/mjcourte/modulith/platform/postgres"
@@ -105,6 +107,8 @@ func run() error {
 	}
 	server := grpc.NewServer(telemetry.ServerOption())
 	iam.RegisterGRPC(server, manager, iam.NewStorageAuthorizer(store))
+	hs := health.NewServer()
+	healthpb.RegisterHealthServer(server, hs)
 	serveErr := make(chan error, 1)
 	go func() { serveErr <- server.Serve(lis) }()
 
@@ -130,6 +134,7 @@ func run() error {
 
 	// Reverse order of startup: stop taking calls, stop the cleanup loop,
 	// then close the pool they used.
+	hs.Shutdown()
 	if err := shutdown.Within(shutdownCtx, server.GracefulStop); err != nil {
 		server.Stop()
 		slog.Warn("grpc calls cut off at shutdown deadline")

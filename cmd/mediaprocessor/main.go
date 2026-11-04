@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/health"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 
 	"github.com/mjcourte/modulith/platform/config"
 	"github.com/mjcourte/modulith/platform/shutdown"
@@ -68,6 +70,8 @@ func run() error {
 	}
 	server := grpc.NewServer(telemetry.ServerOption())
 	mediaprocessor.RegisterGRPC(server, prober)
+	hs := health.NewServer()
+	healthpb.RegisterHealthServer(server, hs)
 	serveErr := make(chan error, 1)
 	go func() { serveErr <- server.Serve(lis) }()
 	slog.Info("mediaprocessor started", "grpc", lis.Addr().String())
@@ -83,6 +87,7 @@ func run() error {
 	defer cancel()
 
 	// Probes in progress finish (each is bounded by its own timeout).
+	hs.Shutdown()
 	if err := shutdown.Within(shutdownCtx, server.GracefulStop); err != nil {
 		server.Stop()
 		slog.Warn("grpc calls cut off at shutdown deadline")
