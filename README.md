@@ -4,8 +4,8 @@ A modular-monorepo Go graphic design platform.
 
 The backend is Go, split into services that run either together as one binary (the monolith) or as separate binaries talking gRPC. Locally, Docker hosts the external pieces: Postgres, RustFS (S3-alike), NATS and the SuperTokens core. Cover as much ground as possible with Postgres before adding anything else.
 
-What each component has built is in its README; what's next, in its `PLAN.md`. The
-cross-component order is in [Roadmap](#roadmap).
+What each component has built is in its README. The cross-component order, and what's
+next, is in [Roadmap](#roadmap).
 
 ## Running it locally
 
@@ -99,7 +99,7 @@ intended route, which is most of the reason the monolith/distributed split exist
 
 ## Roadmap
 
-Ordered roughly by dependency; each component's `PLAN.md` has the detail. Open questions
+Ordered roughly by dependency. Open questions
 are called out rather than resolved, because several of them gate what comes after.
 
 **Frontend, part 2**

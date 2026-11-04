@@ -27,7 +27,7 @@ Deltas are published to `document.{projectID}.delta`. Every replica (documents, 
 | Documents service   | One consumer: apply deltas, maintain live state, snapshot to S3, announce it, compact | In-memory replica  |
 | RustFS/S3           | Store the snapshots (versioned)                                                | Durable                   |
 | Gateway             | One consumer per instance, fanned out to the WebSockets of each project; joining clients get state from documents (`GetDocument`) | None |
-| FE clients          | Apply deltas; on a snapshot pointer, fetch it and merge into the live replica ([apps/web/PLAN.md](../../apps/web/PLAN.md)) | In-memory replica |
+| FE clients          | Apply deltas; on a snapshot pointer, fetch it and merge into the live replica | In-memory replica |
 
 ## Stream `DOCUMENTS`
 

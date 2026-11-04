@@ -4,7 +4,7 @@ A development-only web UI for looking at and poking the backend: users, orgs, me
 invites, projects, shares, assets (versions, media info, uses), folders, ledger objects
 and uploads, linked to each other. A project's page shows its live document and its
 stored snapshots, with a button to revert to any of them (administrative un-sticking:
-one fresh edit, see services/documents/PLAN.md "Reverting").
+one fresh edit).
 
 ```sh
 go run ./cmd/modulith                    # in one terminal (needs compose's RustFS)

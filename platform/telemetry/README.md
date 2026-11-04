@@ -1,7 +1,7 @@
 # Telemetry
 
 Traces, logs and metrics for every binary, sent with OpenTelemetry (OTLP/gRPC) to SigNoz
-(`deploy/observability`). What's next: [PLAN.md](PLAN.md).
+(`deploy/observability`). What's next: the root README's [Roadmap](../../README.md#roadmap).
 
 ## Status (2026-10-14): every binary instrumented
 

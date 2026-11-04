@@ -2,6 +2,9 @@
 CLAUDE.md
 .claude/
 
+# Local working notes: what's next per component. READMEs record what's built.
+PLAN.md
+
 # Local settings with credentials; see .env.example
 .env
 .env.bak

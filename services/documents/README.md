@@ -18,7 +18,7 @@ Built and running in `cmd/modulith` and `cmd/documents` (gRPC `DocumentsService`
 | `internal/wal` | the NATS write-ahead log: publish, replay by Direct Get, the one consumer |
 | `internal/grpcapi` | `DocumentsService` server and client |
 
-The engine is `internal/engine`'s mock until the native one exists. Decisions and what's next: PLAN.md.
+The engine is `internal/engine`'s mock until the native one exists.
 
 ## Internal Methods
 

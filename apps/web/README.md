@@ -1,6 +1,6 @@
 # Web app
 
-The browser frontend. Next steps: [PLAN.md](PLAN.md).
+The browser frontend. What's next: the root README's [Roadmap](../../README.md#roadmap).
 
 ## Status (2026-10-13): sign-in and the signed-in user
 

@@ -2,7 +2,7 @@
 
 The single entry point from the browser. Built in Go (previously Node.js, merged from
 the former `rest-middleware` and `nats-ws-middleware`, so REST and the WebSocket share
-one session layer). Design and next steps: [PLAN.md](PLAN.md).
+one session layer). What's next: the root README's [Roadmap](../../README.md#roadmap).
 
 ## Status (2026-10-13): sign-in, the REST API and the WebSocket
 
@@ -32,14 +32,14 @@ one session layer). Design and next steps: [PLAN.md](PLAN.md).
 - **Google client:** SuperTokens' public demo client for now (`.env.example`). The SDK
   routes it through supertokens.io, so any localhost callback works; replace it with our
   own OAuth client before anything leaves localhost.
-- **REST API** (`/api`, PLAN.md step 2 has the route table): me, orgs, invites, projects,
+- **REST API** (`/api`): me, orgs, invites, projects,
   shares, uploads, assets, folders, trash, documents (the snapshot as bytes with
   `Modulith-Format`/`Modulith-Version`/`Modulith-Seq`, queries, refs, forks, snapshot downloads).
   JSON wire types owned here; errors `{"error": {"code", "message"}}` from one table per
   service (unmapped: a generic 500, logged). Changing requests must be
   `application/json` (the CSRF defence, with SameSite cookies and no CORS). Snapshot
   downloads check read access here, as storage's snapshot calls don't.
-- **WebSocket** (`GET /api/ws`, `github.com/coder/websocket`; protocol in PLAN.md step 3):
+- **WebSocket** (`GET /api/ws`, `github.com/coder/websocket`):
   one socket per browser tab, each its own engine replica (`hello` names it, with the
   server time). Joining a project (read access, through `GetDocument`) sends the document,
   then its deltas, snapshot pointers and user state; traffic arriving during the join is

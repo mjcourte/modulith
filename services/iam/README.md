@@ -9,7 +9,7 @@ than users.
   `Authorizer` (may this user read/write files for this owner or project?). Other
   services only see that interface, never these tables. In the monolith it's passed
   in-process; distributed, over gRPC
-- decisions below; what's next: [PLAN.md](PLAN.md)
+- decisions below; what's next: the root README's [Roadmap](../../README.md#roadmap)
 
 ## Decisions (agreed 2026-10-11)
 
