@@ -1,11 +1,17 @@
 # Keep secrets and bulk out of the build context.
-.env
+.env*
+!.env.example
+
 .git
 .claude
 .agents
+
+# ignore apps except the admin UI, which cmd/admin imports (go build ./cmd/... builds it).
+# keep these two lines together
 apps
-# ...except the admin UI, which cmd/admin imports (go build ./cmd/... builds it).
 !apps/admin
+# keep the above two lines together
+
 engine
 **/node_modules
 **/target
