@@ -1,0 +1,7 @@
+{
+  "doc": "Bytes without the snapshot file identifier are refused by the format check, before any parsing is attempted.",
+  "settings": {"id": "doc", "replica": "LOCAL", "now": "2026-10-12T09:00:00Z"},
+  "ops": [
+    {"op": "merge", "rawSnapshot": "bm90IGEgc25hcHNob3QgYXQgYWxsISE=", "error": "unsupported_format"}
+  ]
+}

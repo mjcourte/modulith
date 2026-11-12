@@ -1,0 +1,10 @@
+{
+  "doc": "An asset filter naming an asset the document does not use is not found, rather than an empty result.",
+  "settings": {"id": "doc", "replica": "LOCAL", "now": "2026-10-12T09:00:00Z"},
+  "ops": [
+    {"op": "edit", "at": "2026-10-12T09:00:00Z",
+     "sets": [{"key": "logo", "value": {"assetRef": {"assetId": "a1", "version": 2}}}]},
+    {"op": "assets", "ids": ["a1"]},
+    {"op": "assets", "ids": ["a1", "never-used"], "error": "not_found"}
+  ]
+}

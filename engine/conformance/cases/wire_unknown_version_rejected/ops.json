@@ -1,0 +1,12 @@
+{
+  "doc": "A snapshot labelled with a wire version this engine does not implement is refused before it is parsed.",
+  "settings": {"id": "doc", "replica": "LOCAL", "now": "2026-10-12T09:00:00Z"},
+  "ops": [
+    {"op": "merge", "version": 99, "snapshot": {
+      "clock": {"hlcOf": "2026-10-12T09:00:00Z"},
+      "registers": [
+        {"key": "k", "value": {"str": "x"},
+         "stamp": {"hlcOf": "2026-10-12T09:00:00Z", "replica": "PEER"}}
+      ]}, "error": "unsupported_format"}
+  ]
+}

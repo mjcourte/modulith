@@ -1,0 +1,7 @@
+{
+  "doc": "A buffer carrying the right file identifier but cut short is refused as malformed, not read past its end. Go recovers the runtime's panic; Rust's verifier returns an error. Same category, different mechanism.",
+  "settings": {"id": "doc", "replica": "LOCAL", "now": "2026-10-12T09:00:00Z"},
+  "ops": [
+    {"op": "merge", "rawSnapshot": "CAAAAEdZU06A////DAAAAAAAUKU=", "error": "malformed"}
+  ]
+}

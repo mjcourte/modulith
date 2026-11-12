@@ -128,6 +128,34 @@ will carry across the C ABI at stage 8.
 | `unstamped_register` | snapshot register is unstamped |
 | `unstamped_replica` | stamped delta without a replica |
 
+## Known properties of the wire format
+
+Facts both implementations inherit from flatbuffers, specified here so nobody
+"fixes" one side into disagreeing with the other:
+
+- **Absence is never a default, and a default is never absence.** Flatbuffers
+  omits any field equal to its default, so an encoded buffer carries no payload
+  for `IntVal` 0, `FloatVal` 0.0, an empty string, an empty byte vector or
+  `AssetRef.version` 0. That must stay invisible: presence lives in the **key
+  space**, not in whether a scalar was written. A register that is present
+  holding its type's default value, a register that is tombstoned, and a key
+  that was never written are three distinct states
+  (`value_at_type_default_is_present`).
+
+  The rule this imposes on the document model: **anything whose presence
+  carries meaning gets its own key, never an optional field in a table.** An
+  ECS component is present because its key is present — if components were
+  fields of a `Node` table, "component absent" and "component present with a
+  default value" would encode identically and the distinction would be lost on
+  the first round trip. Where a schema field genuinely needs presence, declare
+  it optional (`field: int = null`), which generates `*int32` in Go and
+  `Option<i32>` in Rust; `builder.ForceDefaults(true)` is the blunter lever.
+
+- **-0.0 does not survive.** The same omission rule, in the one place it is
+  lossy rather than invisible: `-0.0 == 0.0`, so a `FloatVal` of -0.0 is never
+  written and reads back as +0.0. The loss happens when the delta is encoded,
+  so no document ever holds it (`float_negative_zero_normalises`).
+
 ## Blessing
 
 `expected.*` files are generated, not hand-written: run the Go walker with its

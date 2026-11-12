@@ -1,0 +1,7 @@
+{
+  "doc": "A query format the engine does not implement is refused rather than ignored.",
+  "settings": {"id": "doc", "replica": "LOCAL", "now": "2026-10-12T09:00:00Z"},
+  "ops": [
+    {"op": "query", "format": "sparql", "error": "unsupported_format"}
+  ]
+}

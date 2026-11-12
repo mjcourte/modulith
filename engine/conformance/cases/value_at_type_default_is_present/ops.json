@@ -1,0 +1,17 @@
+{
+  "doc": "A register holding its type's default value is still present. Flatbuffers omits any field equal to its default, so the encoded buffer carries no payload for IntVal 0, FloatVal 0.0, an empty string or an empty byte vector, and none for AssetRef.version 0 either -- but the register itself is there, and reads back with that value. Presence lives in the key space, never in whether a scalar was written: present-with-a-default-value, tombstoned, and never-written are three distinct states, and this case holds all three at once.",
+  "settings": {"id": "doc", "replica": "LOCAL", "now": "2026-10-12T09:00:00Z"},
+  "ops": [
+    {"op": "edit", "at": "2026-10-12T09:00:00Z", "sets": [
+      {"key": "zero_int", "value": {"int": "0"}},
+      {"key": "zero_float", "value": {"float": 0}},
+      {"key": "empty_str", "value": {"str": ""}},
+      {"key": "empty_bytes", "value": {"bytes": ""}},
+      {"key": "ref_version_zero", "value": {"assetRef": {"assetId": "a1", "version": 0}}},
+      {"key": "tombstoned", "value": {"int": "1"}}
+    ]},
+    {"op": "edit", "at": "2026-10-12T09:00:01Z", "sets": [{"key": "tombstoned", "remove": true}]},
+    {"op": "query"}
+  ],
+  "expect": {"snapshot": "expected.snapshot", "view": "expected.view.json"}
+}

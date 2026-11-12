@@ -1,0 +1,8 @@
+{
+  "doc": "A delta that carries a lamport must name the replica that stamped it: ordering is (lamport, replica) and an empty replica would sort below every real one.",
+  "settings": {"id": "doc", "replica": "LOCAL", "now": "2026-10-12T09:00:00Z"},
+  "ops": [
+    {"op": "edit", "stamp": {"hlcOf": "2026-10-12T08:59:00Z", "replica": ""},
+     "sets": [{"key": "k", "value": {"str": "v"}}], "error": "unstamped_replica"}
+  ]
+}

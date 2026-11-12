@@ -1,0 +1,12 @@
+{
+  "doc": "Every operation on a closed document is refused. The document is closed at the end, so it has no snapshot of its own: expected.snapshot is empty.",
+  "settings": {"id": "doc", "replica": "LOCAL", "now": "2026-10-12T09:00:00Z"},
+  "ops": [
+    {"op": "edit", "at": "2026-10-12T09:00:00Z", "sets": [{"key": "k", "value": {"str": "v"}}]},
+    {"op": "close"},
+    {"op": "edit", "at": "2026-10-12T09:00:01Z", "sets": [{"key": "k", "value": {"str": "w"}}],
+     "error": "closed"},
+    {"op": "query", "error": "closed"},
+    {"op": "snapshot", "error": "closed"}
+  ]
+}
