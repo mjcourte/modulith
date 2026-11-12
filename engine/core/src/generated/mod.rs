@@ -18,6 +18,8 @@ pub mod fbs {
   pub use self::stamp_generated::*;
   mod register_generated;
   pub use self::register_generated::*;
+  mod delta_generated;
+  pub use self::delta_generated::*;
   mod snapshot_generated;
   pub use self::snapshot_generated::*;
 } // fbs

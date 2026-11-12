@@ -1,0 +1,27 @@
+// Codegen root for the Rust binding. Not part of the wire contract: it
+// declares no types, no root_type and no file_identifier, and nothing
+// includes it.
+//
+// flatc's --rust-module-root-file writes one mod.rs per root file it is given,
+// each covering that root and its includes, all to the same path — so the last
+// root silently wins. With delta.fbs and snapshot.fbs both roots and neither
+// including the other, the winner's mod.rs declares only its own half of the
+// tree, which is how delta_generated.rs came to be generated but left
+// undeclared (and so fbs::Delta unreachable from Rust).
+//
+// This file is passed last, after the real schemas, so the mod.rs that wins is
+// one covering every type. It cannot replace them in the command: flatc emits
+// code only for the roots it is given, and a root with no types of its own
+// emits nothing but the mod.rs. --gen-all would emit the included types, but it
+// treats them as dependencies and drops their root accessors (root_as_snapshot,
+// finish_delta_buffer, the file identifiers) — exactly the API the wire layer
+// needs. Hence: every schema a root, this one last.
+//
+// Add a new .fbs to engine/schema and it goes in two places: the flatc
+// arguments in scripts/schema.sh, and the include list here.
+//
+// The Go binding needs no counterpart: flatc's Go output is one file per type
+// with no module root to overwrite.
+include "common.fbs";
+include "delta.fbs";
+include "snapshot.fbs";

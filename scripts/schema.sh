@@ -33,11 +33,30 @@ go generate ./internal/engine
 # giving owned SnapshotT/RegisterT/ValueT types on both sides. The output
 # directory is wiped first so a type deleted from the schema doesn't leave a
 # stale file behind.
+#
+# Argument order is load-bearing: flatc writes one mod.rs per root, all to the
+# same path, so bindings.fbs goes last to make the surviving one cover every
+# type. See engine/schema/bindings.fbs, and add a new schema to both.
 echo "==> rust (engine/core/src/generated)"
 out=engine/core/src/generated
 rm -rf "$out"
 mkdir -p "$out"
 (cd engine/schema && flatc --rust --gen-object-api --rust-module-root-file \
-	-o "../core/src/generated" common.fbs delta.fbs snapshot.fbs)
+	-o "../core/src/generated" common.fbs delta.fbs snapshot.fbs bindings.fbs)
+
+# Guard the above: every generated type file must be declared in mod.rs. An
+# undeclared one compiles to nothing and the type is simply missing from the
+# crate, which is silent until something reaches for it.
+missing=$(
+	for f in "$out"/fbs/*_generated.rs; do
+		m=$(basename "$f" .rs)
+		grep -q "^  mod $m;\$" "$out/mod.rs" || echo "  $m"
+	done
+)
+if [ -n "$missing" ]; then
+	echo "mod.rs does not declare:" >&2
+	echo "$missing" >&2
+	exit 1
+fi
 
 echo "done; review and commit what changed"
