@@ -1,0 +1,20 @@
+[package]
+name = "engine-renderer"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+engine-core = { path = "../core" }
+anyhow.workspace = true
+bytemuck.workspace = true
+glam.workspace = true
+
+# Stage 1 onward. Check the current major with `cargo add wgpu` before
+# pinning: wgpu breaks its API every few releases.
+wgpu = "30"
+pollster = "1" # block on wgpu's async init; the headless path has no runtime
+
+# Stage 2 onward, and only after your own flattener and ear-clipper work.
+# lyon = "1"

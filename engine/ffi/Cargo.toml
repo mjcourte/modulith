@@ -1,0 +1,13 @@
+[package]
+name = "engine-ffi"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[lib]
+name = "engine_ffi"
+create-type = ["staticlib", "cdylib"]
+
+[dependencies]
+engine-core = {path = "../core"}
+engine-renderer = {path = "../renderer"}

@@ -6,6 +6,7 @@ package gateway
 
 import (
 	"context"
+	"io"
 	"net/http"
 
 	gnats "github.com/mjcourte/modulith/platform/nats"
@@ -52,7 +53,20 @@ func Open(s Settings, svc Services) (*Gateway, error) {
 	// One span per request, outermost so sign-in (/auth) is traced too. Not
 	// the WebSocket upgrade: its messages get their own spans (internal/ws).
 	handler = telemetry.HTTPHandler(handler, func(r *http.Request) bool { return r.URL.Path == "/api/ws" })
-	return &Gateway{Handler: handler, hub: hub}, nil
+
+	// Probes before auth and telemetry: no session or flood tracing
+	root := http.NewServeMux()
+	root.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
+		io.WriteString(w, "ok\n")
+	})
+	root.HandleFunc("GET /readyz", func(w http.ResponseWriter, r *http.Request) {
+		if !svc.NATS.Conn.IsConnected() {
+			http.Error(w, "nats: "+svc.NATS.Conn.Status().String(), http.StatusServiceUnavailable)
+			return
+		}
+	})
+	root.Handle("/", handler)
+	return &Gateway{Handler: root, hub: hub}, nil
 }
 
 // StartFeed relays every project's live traffic (one NATS consumer for the

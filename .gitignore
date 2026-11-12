@@ -15,3 +15,6 @@ deploy/observability/casting.yaml.lock
 
 # go build outputs in windows
 *.exe
+
+# rust build outputs
+engine/target/

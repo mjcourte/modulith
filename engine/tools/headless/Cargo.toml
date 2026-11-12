@@ -1,0 +1,26 @@
+[package]
+name = "engine-headless"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+# Both a lib and a bin: the bin is the CLI, the lib holds the render/compare
+# logic so `tests/golden.rs` can call it directly instead of shelling out.
+# The golden suite lives here rather than in engine-renderer because it needs
+# the renderer plus PNG encoding and fixture handling, and a test in
+# engine-renderer can't depend on this crate without a dependency cycle.
+[lib]
+name = "engine_headless"
+path = "src/lib.rs"
+
+[[bin]]
+name = "headless"
+path = "src/main.rs"
+
+[dependencies]
+engine-core = { path = "../../core" }
+engine-renderer = { path = "../../renderer" }
+anyhow.workspace = true
+image.workspace = true
+clap = { version = "4", features = ["derive"] }
