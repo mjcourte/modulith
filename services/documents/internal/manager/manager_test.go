@@ -91,7 +91,7 @@ func TestQueryDocument(t *testing.T) {
 		t.Fatal(err)
 	}
 	var view struct{ Registers map[string]any }
-	if err := json.Unmarshal(v.Data, &view); err != nil || view.Registers["w"] != float64(1080) {
+	if err := json.Unmarshal(v.Data, &view); err != nil || view.Registers["w"] != "1080" {
 		t.Errorf("view = %s, %v; want w=1080", v.Data, err)
 	}
 }

@@ -77,26 +77,6 @@ func toValue(v any) (*fbs.ValueT, error) {
 	return nil, fmt.Errorf("unsupported value type %T", v)
 }
 
-// fromValue is toValue's inverse, for JSON views: AssetRef becomes an object.
-func fromValue(v *fbs.ValueT) any {
-	if v == nil {
-		return nil
-	}
-	switch x := v.Value.(type) {
-	case *fbs.IntValT:
-		return x.V
-	case *fbs.FloatValT:
-		return x.V
-	case *fbs.StrValT:
-		return x.V
-	case *fbs.BytesValT:
-		return x.V // encoding/json writes []byte as base64
-	case *fbs.AssetRefT:
-		return map[string]any{"assetId": x.AssetId, "version": x.Version}
-	}
-	return nil
-}
-
 func assetOf(v *fbs.ValueT) (AssetRef, bool) {
 	if v == nil || v.Type != fbs.ValueAssetRef {
 		return AssetRef{}, false

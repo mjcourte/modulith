@@ -19,8 +19,16 @@ var (
 type Settings struct {
 	ID string // the document (project) ID, the same on every replica
 	// Replica identifies this copy of the document; it stamps local edits and
-	// breaks ties between concurrent writes, so it must be unique per replica.
-	// Empty picks a random one.
+	// breaks ties between concurrent writes (newer, in mock.go), so it must be
+	// unique per writer: the gateway assigns one per socket, a server's is per
+	// process. Two writers sharing an ID can stamp different values alike, and
+	// one of the two writes is then silently dropped.
+	//
+	// The ID is opaque bytes, compared bytewise. Never case-fold, normalise or
+	// collate it: replicas would disagree about who won a tie and diverge
+	// permanently. Empty picks a random one — 26 characters of RFC 4648 base32
+	// (A-Z and 2-7, so ASCII by design and identical to compare in every
+	// implementation), ~130 bits, from crypto/rand.Text.
 	Replica string
 	Schema  string
 	Options map[string]any
@@ -52,6 +60,7 @@ func MaxStamp(now time.Time, skew time.Duration) uint64 {
 	return HLC(now.Add(skew)) | (1<<hlcCounterBits - 1)
 }
 
+// We must make this explicit and leave nothing to inherited Go defaults
 type Query struct {
 	Format    QueryFormat
 	Source    string
@@ -67,6 +76,22 @@ const (
 
 // View is a query result as plain JSON, readable without the engine (by MCP
 // tools, tests, people). Only deltas and snapshots use the binary wire format.
+//
+// Its encoding is a contract, not a JSON library's defaults: the mock, the
+// native engine and the WASM build must write the same bytes for the same
+// document (cases in engine/conformance), and the gateway passes them to a
+// browser unchanged. Object keys are sorted; tombstones are omitted.
+//
+//		{"clock":"117605757353984000","registers":{"a":"-12","b":1.5,"c":"aGk="}}
+//
+//	  - clock, IntVal: decimal strings. Both are 64-bit and a JSON number holds
+//	    only 2^53 — an HLC clock runs ~13x past that, so as a number it loses
+//	    the counter bits it exists to carry.
+//	  - FloatVal: a number, in the shortest form that round-trips, as ES6
+//	    Number.toString writes it (1, not 1.0). Non-finite values cannot appear:
+//	    checkRegister rejects them, so they enter no document.
+//	  - StrVal: a string. BytesVal: base64, standard alphabet, padded.
+//	  - AssetRef: {"assetId":string,"version":number}
 type View struct {
 	Data json.RawMessage
 }

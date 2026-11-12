@@ -5,13 +5,13 @@ import (
 	"cmp"
 	"context"
 	"crypto/rand"
-	"encoding/json"
 	"fmt"
 	"image"
 	"image/png"
 	"maps"
-	"reflect"
+	"math"
 	"slices"
+	"strconv"
 	"sync"
 	"time"
 
@@ -126,17 +126,44 @@ func wins(r *fbs.RegisterT, st *fbs.StampT, cur *fbs.RegisterT) bool {
 	if *st != *cur.Stamp {
 		return newer(st, cur.Stamp)
 	}
-	return valueKey(r) > valueKey(cur)
+	return compareValue(r, cur) > 0
 }
 
-// valueKey orders register contents for tie-breaks: the value's type, then
-// its JSON form. A delete is "", below every value.
-func valueKey(r *fbs.RegisterT) string {
-	if r.Removed {
-		return ""
+// compareValue orders register contents for tie-breaks: a tombstone below any
+// value, then by the union's type, then within a type by its payload. The order
+// carries no meaning beyond being total and identical in every implementation —
+// it only decides which of two writes stamped exactly alike every replica keeps
+// (engine/PLAN.md row 1).
+func compareValue(a, b *fbs.RegisterT) int {
+	if a.Removed != b.Removed {
+		if a.Removed {
+			return -1
+		}
+		return 1
 	}
-	b, _ := json.Marshal(fromValue(r.Value)) // plain values always marshal
-	return fmt.Sprintf("%d:%s", r.Value.Type, b)
+	if a.Removed {
+		return 0
+	}
+	if a.Value.Type != b.Value.Type {
+		return cmp.Compare(a.Value.Type, b.Value.Type)
+	}
+	switch a.Value.Type {
+	case fbs.ValueIntVal:
+		return cmp.Compare(a.Value.Value.(*fbs.IntValT).V, b.Value.Value.(*fbs.IntValT).V)
+	case fbs.ValueFloatVal:
+		x := math.Float64bits(a.Value.Value.(*fbs.FloatValT).V)
+		y := math.Float64bits(b.Value.Value.(*fbs.FloatValT).V)
+		return cmp.Compare(x, y)
+	case fbs.ValueStrVal:
+		return cmp.Compare(a.Value.Value.(*fbs.StrValT).V, b.Value.Value.(*fbs.StrValT).V)
+	case fbs.ValueBytesVal:
+		return bytes.Compare(a.Value.Value.(*fbs.BytesValT).V, b.Value.Value.(*fbs.BytesValT).V)
+	case fbs.ValueAssetRef:
+		x := a.Value.Value.(*fbs.AssetRefT)
+		y := b.Value.Value.(*fbs.AssetRefT)
+		return cmp.Or(cmp.Compare(x.AssetId, y.AssetId), cmp.Compare(x.Version, y.Version))
+	}
+	return 0
 }
 
 func checkRegister(r *fbs.RegisterT) error {
@@ -145,6 +172,14 @@ func checkRegister(r *fbs.RegisterT) error {
 	}
 	if !r.Removed && (r.Value == nil || r.Value.Type == fbs.ValueNONE) {
 		return fmt.Errorf("engine: register %q has no value", r.Key)
+	}
+	// NaN and ±Inf have no JSON form (View's contract) and no useful order in
+	// compareValue. Refusing them here, rather than in toValue, keeps them out
+	// of every document whatever encoded the buffer.
+	if r.Value != nil {
+		if f, ok := r.Value.Value.(*fbs.FloatValT); ok && (math.IsNaN(f.V) || math.IsInf(f.V, 0)) {
+			return fmt.Errorf("engine: register %q value is not finite", r.Key)
+		}
 	}
 	return nil
 }
@@ -238,13 +273,13 @@ func (d *mockDocument) Query(ctx context.Context, q Query) (*View, error) {
 		return nil, err
 	}
 	defer d.mu.Unlock()
-	regs := map[string]any{}
+	regs := make(map[string]viewValue, len(d.regs))
 	for k, r := range d.regs {
 		if !r.Removed {
-			regs[k] = fromValue(r.Value)
+			regs[k] = viewValue{r.Value}
 		}
 	}
-	data, err := json.Marshal(map[string]any{"clock": d.clock, "registers": regs})
+	data, err := encodeJSON(viewJSON{Clock: strconv.FormatUint(d.clock, 10), Registers: regs})
 	if err != nil {
 		return nil, err
 	}
@@ -436,7 +471,7 @@ func (d *mockDocument) RevertTo(ctx context.Context, s Snapshot) (Delta, error) 
 		cur, want := d.regs[k], target[k]
 		live := cur != nil && !cur.Removed
 		switch {
-		case want != nil && (!live || !reflect.DeepEqual(fromValue(cur.Value), fromValue(want.Value))):
+		case want != nil && (!live || compareValue(cur, want) != 0):
 			sets = append(sets, &fbs.RegisterT{Key: k, Value: want.Value})
 		case want == nil && live:
 			sets = append(sets, &fbs.RegisterT{Key: k, Removed: true})
