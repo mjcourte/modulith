@@ -1,0 +1,8 @@
+{
+  "doc": "A received delta stamped past now + MaxSkew is refused: a forged stamp must not win every write or drag clocks forward.",
+  "settings": {"id": "doc", "replica": "LOCAL", "now": "2026-10-12T09:00:00Z"},
+  "ops": [
+    {"op": "edit", "stamp": {"hlcOf": "2026-10-12T10:00:00Z", "replica": "ATTACKER"},
+     "sets": [{"key": "k", "value": {"str": "forged"}}], "error": "bad_stamp"}
+  ]
+}

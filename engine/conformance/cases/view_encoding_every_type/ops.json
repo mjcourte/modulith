@@ -1,0 +1,19 @@
+{
+  "doc": "View's pinned JSON encoding: 64-bit ints and the clock as decimal strings, floats as ES6 Number.toString writes them, bytes as padded base64, AssetRef as an object, keys sorted, tombstones omitted.",
+  "settings": {"id": "doc", "replica": "LOCAL", "now": "2026-10-12T09:00:00Z"},
+  "ops": [
+    {"op": "edit", "at": "2026-10-12T09:00:00Z", "sets": [
+      {"key": "big", "value": {"int": "9007199254740993"}},
+      {"key": "neg", "value": {"int": "-12"}},
+      {"key": "integral", "value": {"float": 1}},
+      {"key": "frac", "value": {"float": 1.5}},
+      {"key": "text", "value": {"str": "a <b> & c"}},
+      {"key": "raw", "value": {"bytes": "aGk="}},
+      {"key": "ref", "value": {"assetRef": {"assetId": "a1", "version": 3}}},
+      {"key": "gone", "value": {"str": "x"}}
+    ]},
+    {"op": "edit", "at": "2026-10-12T09:00:01Z", "sets": [{"key": "gone", "remove": true}]},
+    {"op": "query"}
+  ],
+  "expect": {"snapshot": "expected.snapshot", "view": "expected.view.json"}
+}

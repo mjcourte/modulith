@@ -1,0 +1,13 @@
+{
+  "doc": "Floats break on raw IEEE bits as unsigned: -0.0 beats +0.0 and -1.0 beats 1.0. Arbitrary, but identical in Go and Rust.",
+  "settings": {"id": "doc", "replica": "LOCAL", "now": "2026-10-12T09:00:00Z"},
+  "permute": true,
+  "ops": [
+    {"op": "edit", "stamp": {"hlcOf": "2026-10-12T08:59:00Z", "replica": "SHARED"},
+     "sets": [{"key": "zero", "value": {"floatBits": "0x0000000000000000"}},
+              {"key": "one", "value": {"floatBits": "0x3ff0000000000000"}}]},
+    {"op": "edit", "stamp": {"hlcOf": "2026-10-12T08:59:00Z", "replica": "SHARED"},
+     "sets": [{"key": "zero", "value": {"floatBits": "0x8000000000000000"}},
+              {"key": "one", "value": {"floatBits": "0xbff0000000000000"}}]}
+  ]
+}

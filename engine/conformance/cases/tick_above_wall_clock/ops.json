@@ -1,0 +1,8 @@
+{
+  "doc": "Two local edits in one millisecond: a tick is max(clock+1, HLC(now)), so the second reaches into the counter bits rather than repeating the first's stamp.",
+  "settings": {"id": "doc", "replica": "LOCAL", "now": "2026-10-12T09:00:00Z"},
+  "ops": [
+    {"op": "edit", "at": "2026-10-12T09:00:00Z", "sets": [{"key": "a", "value": {"int": "1"}}]},
+    {"op": "edit", "at": "2026-10-12T09:00:00Z", "sets": [{"key": "b", "value": {"int": "2"}}]}
+  ]
+}

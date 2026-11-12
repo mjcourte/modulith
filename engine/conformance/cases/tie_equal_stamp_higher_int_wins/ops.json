@@ -1,0 +1,11 @@
+{
+  "doc": "Two writers sharing a replica ID stamp alike; the greater value wins.",
+  "settings": {"id": "doc", "replica": "LOCAL", "now": "2026-10-12T09:00:00Z"},
+  "permute": true,
+  "ops": [
+    {"op": "edit", "stamp": {"hlcOf": "2026-10-12T08:59:00Z", "replica": "SHARED"},
+     "sets": [{"key": "k", "value": {"int": "1"}}]},
+    {"op": "edit", "stamp": {"hlcOf": "2026-10-12T08:59:00Z", "replica": "SHARED"},
+     "sets": [{"key": "k", "value": {"int": "2"}}]}
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "doc": "Equal lamports break on the replica ID, compared bytewise.",
+  "settings": {"id": "doc", "replica": "LOCAL", "now": "2026-10-12T09:00:00Z"},
+  "permute": true,
+  "ops": [
+    {"op": "edit", "stamp": {"hlcOf": "2026-10-12T08:59:00Z", "replica": "AAA"},
+     "sets": [{"key": "k", "value": {"str": "from-aaa"}}]},
+    {"op": "edit", "stamp": {"hlcOf": "2026-10-12T08:59:00Z", "replica": "BBB"},
+     "sets": [{"key": "k", "value": {"str": "from-bbb"}}]}
+  ]
+}

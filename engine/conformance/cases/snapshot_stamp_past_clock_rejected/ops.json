@@ -1,0 +1,12 @@
+{
+  "doc": "A crafted snapshot whose clock looks honest but hides a register stamped above it is refused. No honest snapshot holds one: the clock is raised by every stamp applied.",
+  "settings": {"id": "doc", "replica": "LOCAL", "now": "2026-10-12T09:00:00Z"},
+  "ops": [
+    {"op": "merge", "snapshot": {
+      "clock": {"hlcOf": "2026-10-12T09:00:00Z"},
+      "registers": [
+        {"key": "k", "value": {"str": "forged"},
+         "stamp": {"hlcOf": "2026-10-12T10:00:00Z", "replica": "ATTACKER"}}
+      ]}, "error": "bad_stamp"}
+  ]
+}

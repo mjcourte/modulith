@@ -1,0 +1,11 @@
+{
+  "doc": "The higher lamport wins, whichever arrives first.",
+  "settings": {"id": "doc", "replica": "LOCAL", "now": "2026-10-12T09:00:00Z"},
+  "permute": true,
+  "ops": [
+    {"op": "edit", "stamp": {"hlcOf": "2026-10-12T08:59:00Z", "replica": "A"},
+     "sets": [{"key": "k", "value": {"str": "older"}}]},
+    {"op": "edit", "stamp": {"hlcOf": "2026-10-12T08:59:30Z", "replica": "A"},
+     "sets": [{"key": "k", "value": {"str": "newer"}}]}
+  ]
+}

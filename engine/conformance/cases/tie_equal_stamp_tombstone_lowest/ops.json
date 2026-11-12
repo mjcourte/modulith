@@ -1,0 +1,11 @@
+{
+  "doc": "A tombstone is below every value, so at equal stamps the value survives.",
+  "settings": {"id": "doc", "replica": "LOCAL", "now": "2026-10-12T09:00:00Z"},
+  "permute": true,
+  "ops": [
+    {"op": "edit", "stamp": {"hlcOf": "2026-10-12T08:59:00Z", "replica": "SHARED"},
+     "sets": [{"key": "k", "remove": true}]},
+    {"op": "edit", "stamp": {"hlcOf": "2026-10-12T08:59:00Z", "replica": "SHARED"},
+     "sets": [{"key": "k", "value": {"str": "kept"}}]}
+  ]
+}

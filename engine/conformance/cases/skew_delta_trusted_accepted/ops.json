@@ -1,0 +1,9 @@
+{
+  "doc": "Trusted skips the bound, for deltas a server stamped or already checked; its clock may legitimately run ahead.",
+  "settings": {"id": "doc", "replica": "LOCAL", "now": "2026-10-12T09:00:00Z"},
+  "ops": [
+    {"op": "edit", "trusted": true,
+     "stamp": {"hlcOf": "2026-10-12T10:00:00Z", "replica": "FAST-SERVER"},
+     "sets": [{"key": "k", "value": {"str": "from-a-fast-peer"}}]}
+  ]
+}

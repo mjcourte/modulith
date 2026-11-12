@@ -1,0 +1,7 @@
+{
+  "doc": "A register must have a key.",
+  "settings": {"id": "doc", "replica": "LOCAL", "now": "2026-10-12T09:00:00Z"},
+  "ops": [
+    {"op": "edit", "sets": [{"key": "", "value": {"str": "x"}}], "error": "no_key"}
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "doc": "A revert diffs live registers against the snapshot and writes the difference as one fresh edit: changed keys go back, keys the snapshot never had are deleted. The snapshot's own stamps are ignored, so the revert wins everywhere and is itself in history.",
+  "settings": {"id": "doc", "replica": "LOCAL", "now": "2026-10-12T09:00:00Z"},
+  "ops": [
+    {"op": "edit", "at": "2026-10-12T09:00:00Z",
+     "sets": [{"key": "title", "value": {"str": "draft"}}]},
+    {"op": "snapshot", "save": "s1"},
+    {"op": "edit", "at": "2026-10-12T09:00:10Z",
+     "sets": [{"key": "title", "value": {"str": "final"}},
+              {"key": "extra", "value": {"int": "1"}}]},
+    {"op": "revert", "at": "2026-10-12T09:00:20Z", "from": "s1"}
+  ]
+}

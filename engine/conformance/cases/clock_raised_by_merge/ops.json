@@ -1,0 +1,13 @@
+{
+  "doc": "Merging raises the clock to the snapshot's, so the next local edit stamps above everything the document now holds (Lamport's rule).",
+  "settings": {"id": "doc", "replica": "LOCAL", "now": "2026-10-12T09:00:00Z"},
+  "ops": [
+    {"op": "merge", "snapshot": {
+      "clock": {"hlcOf": "2026-10-12T10:00:00Z"},
+      "registers": [
+        {"key": "a", "value": {"str": "merged"},
+         "stamp": {"hlcOf": "2026-10-12T10:00:00Z", "replica": "PEER"}}
+      ]}},
+    {"op": "edit", "sets": [{"key": "b", "value": {"str": "local"}}]}
+  ]
+}

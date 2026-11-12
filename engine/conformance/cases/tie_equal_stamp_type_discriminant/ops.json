@@ -1,0 +1,11 @@
+{
+  "doc": "Equal stamps of different union types break on the type's number, so StrVal (3) beats IntVal (1).",
+  "settings": {"id": "doc", "replica": "LOCAL", "now": "2026-10-12T09:00:00Z"},
+  "permute": true,
+  "ops": [
+    {"op": "edit", "stamp": {"hlcOf": "2026-10-12T08:59:00Z", "replica": "SHARED"},
+     "sets": [{"key": "k", "value": {"int": "9999"}}]},
+    {"op": "edit", "stamp": {"hlcOf": "2026-10-12T08:59:00Z", "replica": "SHARED"},
+     "sets": [{"key": "k", "value": {"str": "a"}}]}
+  ]
+}
