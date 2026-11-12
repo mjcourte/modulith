@@ -186,7 +186,14 @@ func TestManagerOrgs(t *testing.T) {
 func TestManagerInvites(t *testing.T) {
 	ctx := t.Context()
 	m, _ := newManager(t)
-	at := time.Date(2026, 10, 11, 12, 0, 0, 0, time.UTC)
+	// Near real time, deliberately not a pinned date: SetClock fakes the
+	// Manager's clock, but the invite stores check expiry against their own
+	// (directory.now), which no test can move. An invite stamped at a literal
+	// date is accepted for DefaultInviteTTL after that date and expired
+	// afterwards, so pinning it here passed for a fortnight and then failed
+	// for good. The clock is still frozen within the test, which is all the
+	// assertions below need.
+	at := time.Now().UTC().Truncate(time.Microsecond)
 	manager.SetClock(m, func() time.Time { return at })
 	ann, bob, eve := signIn(t, m, "ann"), signIn(t, m, "bob"), signIn(t, m, "eve")
 	acme := managerOrg(t, m, ann.ID, "Acme")
@@ -261,6 +268,43 @@ func TestManagerInvites(t *testing.T) {
 	}
 	if invs, _ := m.ListOrgInvites(ctx, ann.ID, acme.ID); len(invs) != 0 {
 		t.Errorf("invites left = %+v, want none", invs)
+	}
+}
+
+// An invite goes stale after DefaultInviteTTL. This is reachable only because
+// the stores take the time from the caller: the Manager stamps ExpiresAt from
+// its clock and the stores judge expiry against the same clock, so moving it
+// forward ages the invite. While they read time.Now themselves, no test could
+// move the second half.
+func TestManagerInviteExpires(t *testing.T) {
+	ctx := t.Context()
+	m, _ := newManager(t)
+	at := time.Now().UTC().Truncate(time.Microsecond)
+	manager.SetClock(m, func() time.Time { return at })
+	ann, bob := signIn(t, m, "ann"), signIn(t, m, "bob")
+	acme := managerOrg(t, m, ann.ID, "Acme")
+
+	inv, err := m.InviteMember(ctx, ann.ID, acme.ID, bob.Email, directory.RoleMember)
+	if err != nil {
+		t.Fatalf("InviteMember: %v", err)
+	}
+	if mine, err := m.ListMyInvites(ctx, bob.ID); err != nil || len(mine) != 1 {
+		t.Fatalf("bob's invites before expiry = %+v, %v; want 1", mine, err)
+	}
+
+	manager.SetClock(m, func() time.Time { return at.Add(manager.DefaultInviteTTL + time.Minute) })
+	if mine, err := m.ListMyInvites(ctx, bob.ID); err != nil || len(mine) != 0 {
+		t.Errorf("bob's invites after expiry = %+v, %v; want none", mine, err)
+	}
+	if _, err := m.AcceptInvite(ctx, bob.ID, inv.ID); !errors.Is(err, directory.ErrInviteExpired) {
+		t.Errorf("accepting an expired invite = %v, want ErrInviteExpired", err)
+	}
+	if me, err := m.GetMe(ctx, bob.ID); err != nil || me.Membership != nil {
+		t.Errorf("bob's membership = %+v, %v; want none through an expired invite", me.Membership, err)
+	}
+	// An admin still sees it, so they can re-invite.
+	if invs, err := m.ListOrgInvites(ctx, ann.ID, acme.ID); err != nil || len(invs) != 1 {
+		t.Errorf("admin ListOrgInvites after expiry = %+v, %v; want the expired invite", invs, err)
 	}
 }
 

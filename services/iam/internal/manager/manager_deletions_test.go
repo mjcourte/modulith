@@ -214,7 +214,7 @@ func TestDeleteOrg(t *testing.T) {
 	if me, err := w.m.GetMe(ctx, mem.ID); err != nil || me.Org != nil {
 		t.Errorf("member after org delete: org %v, %v; want none", me.Org, err)
 	}
-	if invites, _ := w.store.ListEmailInvites(ctx, "new@example.com"); len(invites) != 0 {
+	if invites, _ := w.store.ListEmailInvites(ctx, "new@example.com", time.Now()); len(invites) != 0 {
 		t.Errorf("invites after org delete = %v, want none", invites)
 	}
 }

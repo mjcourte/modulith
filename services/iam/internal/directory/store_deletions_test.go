@@ -134,7 +134,7 @@ func testAcceptInviteToDeletingOrg(t *testing.T, s directory.Store) {
 	if _, err := s.MarkOrgDeleting(ctx, acme.ID); err != nil {
 		t.Fatalf("MarkOrgDeleting: %v", err)
 	}
-	if _, err := s.AcceptInvite(ctx, inv.ID, bob.ID); !errors.Is(err, directory.ErrOrgNotFound) {
+	if _, err := s.AcceptInvite(ctx, inv.ID, bob.ID, time.Now()); !errors.Is(err, directory.ErrOrgNotFound) {
 		t.Errorf("accepting = %v, want ErrOrgNotFound", err)
 	}
 	if _, err := s.GetMembership(ctx, bob.ID); !errors.Is(err, directory.ErrNotMember) {
@@ -173,7 +173,7 @@ func testDeleteOrg(t *testing.T, s directory.Store) {
 			t.Errorf("%s still a member: %v", u.ID, err)
 		}
 	}
-	if invs, _ := s.ListEmailInvites(ctx, "cat@example.com"); len(invs) != 0 {
+	if invs, _ := s.ListEmailInvites(ctx, "cat@example.com", time.Now()); len(invs) != 0 {
 		t.Errorf("the org's invites survived: %+v", invs)
 	}
 	// Members are free again.
@@ -219,7 +219,7 @@ func testMarkUserDeleting(t *testing.T, s directory.Store) {
 		t.Errorf("sharing with them = %v, want ErrUserNotFound", err)
 	}
 	inv := mustInvite(t, s, acme.ID, bob.Email, directory.RoleMember, time.Hour)
-	if _, err := s.AcceptInvite(ctx, inv.ID, bob.ID); !errors.Is(err, directory.ErrUserNotFound) {
+	if _, err := s.AcceptInvite(ctx, inv.ID, bob.ID, time.Now()); !errors.Is(err, directory.ErrUserNotFound) {
 		t.Errorf("accepting an invite = %v, want ErrUserNotFound", err)
 	}
 

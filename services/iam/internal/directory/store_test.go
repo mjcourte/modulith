@@ -124,7 +124,7 @@ func mustInvite(t *testing.T, s directory.Store, orgID, email string, role direc
 func mustJoin(t *testing.T, s directory.Store, orgID string, u directory.User, role directory.Role) directory.Member {
 	t.Helper()
 	inv := mustInvite(t, s, orgID, u.Email, role, time.Hour)
-	m, err := s.AcceptInvite(t.Context(), inv.ID, u.ID)
+	m, err := s.AcceptInvite(t.Context(), inv.ID, u.ID, time.Now())
 	if err != nil {
 		t.Fatalf("AcceptInvite(%s): %v", u.ID, err)
 	}

@@ -1,5 +1,8 @@
 {
   "doc": "Every operation on a closed document is refused. The document is closed at the end, so it has no snapshot of its own: expected.snapshot is empty.",
+  "skip": {
+    "rust": "Closing is a handle concern, not a document state. Go's Document is shared and long-lived, so it needs a closed flag and ErrClosed to refuse work on a handle the caller kept; engine-core takes &mut self and owns its document, so dropping it ends it and there is nothing left to ask. The check reappears at the FFI in stage 8, where Go holds a pointer it can outlive, and this case belongs with it: what it pins is the boundary's behaviour, not the CRDT's. Eviction and reload (documents' live.Registry) are a layer above the engine and are not what this case is about."
+  },
   "settings": {"id": "doc", "replica": "LOCAL", "now": "2026-10-12T09:00:00Z"},
   "ops": [
     {"op": "edit", "at": "2026-10-12T09:00:00Z", "sets": [{"key": "k", "value": {"str": "v"}}]},

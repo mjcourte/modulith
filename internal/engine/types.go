@@ -6,6 +6,12 @@ import (
 	"time"
 )
 
+// Every error below is one name in engine/conformance's error table, and the
+// vectors bind both implementations to it: a case naming an error must fail
+// with that sentinel, never with something that merely reads alike. They are
+// all sentinels for that reason — matching the shape violations on their
+// message text let a reworded message silently weaken a case, and left Rust
+// (whose messages are its own) nothing to match at all.
 var (
 	ErrClosed            = errors.New("engine: document closed")
 	ErrUnsupportedFormat = errors.New("engine: unsupported format")
@@ -14,6 +20,26 @@ var (
 	// future to be honest (forged, or a badly skewed clock). Accepting it
 	// would let it win every write and drag every replica's clock forward.
 	ErrBadStamp = errors.New("engine: stamp from the future")
+
+	// ErrMalformed: the buffer is not a readable flatbuffer. Everything below
+	// it decoded, and then broke a rule the schema cannot express.
+	ErrMalformed = errors.New("engine: malformed buffer")
+	// ErrNoKey: a register carries no key. Presence lives in the key space
+	// (engine/conformance/README.md), so a keyless register addresses nothing.
+	ErrNoKey = errors.New("engine: register without a key")
+	// ErrNoValue: a register is neither removed nor holding a value. A
+	// present register at its type's default is a value; this is the union
+	// left unset, which no honest encoder writes.
+	ErrNoValue = errors.New("engine: register has no value")
+	// ErrNotFinite: a float register is NaN or ±Inf. Neither has a JSON form
+	// for View, nor a useful place in compareValue's order.
+	ErrNotFinite = errors.New("engine: register value is not finite")
+	// ErrUnstampedRegister: a snapshot register has no stamp. Snapshots carry
+	// a stamp per register, unlike deltas, which stamp the whole edit.
+	ErrUnstampedRegister = errors.New("engine: snapshot register is unstamped")
+	// ErrUnstampedReplica: a delta carries a lamport but no replica, so its
+	// stamp cannot break a tie and two replicas could keep different values.
+	ErrUnstampedReplica = errors.New("engine: stamped delta without a replica")
 )
 
 type Settings struct {

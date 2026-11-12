@@ -168,17 +168,17 @@ func compareValue(a, b *fbs.RegisterT) int {
 
 func checkRegister(r *fbs.RegisterT) error {
 	if r.Key == "" {
-		return fmt.Errorf("engine: register without a key")
+		return ErrNoKey
 	}
 	if !r.Removed && (r.Value == nil || r.Value.Type == fbs.ValueNONE) {
-		return fmt.Errorf("engine: register %q has no value", r.Key)
+		return fmt.Errorf("%w: %q", ErrNoValue, r.Key)
 	}
 	// NaN and ±Inf have no JSON form (View's contract) and no useful order in
 	// compareValue. Refusing them here, rather than in toValue, keeps them out
 	// of every document whatever encoded the buffer.
 	if r.Value != nil {
 		if f, ok := r.Value.Value.(*fbs.FloatValT); ok && (math.IsNaN(f.V) || math.IsInf(f.V, 0)) {
-			return fmt.Errorf("engine: register %q value is not finite", r.Key)
+			return fmt.Errorf("%w: %q", ErrNotFinite, r.Key)
 		}
 	}
 	return nil
@@ -197,7 +197,7 @@ func (d *mockDocument) Edit(ctx context.Context, in DeltaInput) (Delta, error) {
 		}
 	}
 	if delta.Lamport != 0 && delta.Replica == "" {
-		return Delta{}, fmt.Errorf("engine: stamped delta without a replica")
+		return Delta{}, fmt.Errorf("%w: lamport %d", ErrUnstampedReplica, delta.Lamport)
 	}
 	if err := d.lock(); err != nil {
 		return Delta{}, err
@@ -231,7 +231,7 @@ func (d *mockDocument) Merge(ctx context.Context, s Snapshot) error {
 			return err
 		}
 		if r.Stamp == nil || r.Stamp.Lamport == 0 || r.Stamp.Replica == "" {
-			return fmt.Errorf("engine: snapshot register %q is unstamped", r.Key)
+			return fmt.Errorf("%w: %q", ErrUnstampedRegister, r.Key)
 		}
 		if r.Stamp.Lamport > snap.Clock {
 			return fmt.Errorf("%w: snapshot register %q stamp %d is past snapshot clock %d",

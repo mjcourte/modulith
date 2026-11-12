@@ -35,7 +35,7 @@ func (m *Manager) SignIn(ctx context.Context, id directory.Identity) (SignInResu
 		if _, err := m.store.ClaimPendingShares(ctx, u.ID, u.Email, m.now()); err != nil {
 			return SignInResult{}, err
 		}
-		if r.Invites, err = m.store.ListEmailInvites(ctx, u.Email); err != nil {
+		if r.Invites, err = m.store.ListEmailInvites(ctx, u.Email, m.now()); err != nil {
 			return SignInResult{}, err
 		}
 	}

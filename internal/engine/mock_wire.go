@@ -131,6 +131,6 @@ func checkWire(what string, f WireFormat, version int) error {
 
 func recoverMalformed(what string, err *error) {
 	if r := recover(); r != nil {
-		*err = fmt.Errorf("engine: malformed %s: %v", what, r)
+		*err = fmt.Errorf("%w: %s: %v", ErrMalformed, what, r)
 	}
 }

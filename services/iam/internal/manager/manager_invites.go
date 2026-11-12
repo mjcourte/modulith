@@ -66,7 +66,7 @@ func (m *Manager) ListMyInvites(ctx context.Context, actorID string) ([]director
 	if !u.EmailVerified {
 		return nil, nil
 	}
-	return m.store.ListEmailInvites(ctx, u.Email)
+	return m.store.ListEmailInvites(ctx, u.Email, m.now())
 }
 
 // invitee returns the invite if it's addressed to the acting user's verified
@@ -96,7 +96,7 @@ func (m *Manager) AcceptInvite(ctx context.Context, actorID, inviteID string) (d
 	if _, _, err := m.invitee(ctx, actorID, inviteID); err != nil {
 		return directory.Member{}, err
 	}
-	return m.store.AcceptInvite(ctx, inviteID, actorID)
+	return m.store.AcceptInvite(ctx, inviteID, actorID, m.now())
 }
 
 // DeclineInvite deletes an invite addressed to the acting user.

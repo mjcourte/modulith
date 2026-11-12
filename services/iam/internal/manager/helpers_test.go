@@ -45,7 +45,7 @@ func mustJoin(t *testing.T, s directory.Store, orgID string, u directory.User, r
 	if err != nil {
 		t.Fatalf("CreateInvite(%s): %v", u.Email, err)
 	}
-	m, err := s.AcceptInvite(t.Context(), inv.ID, u.ID)
+	m, err := s.AcceptInvite(t.Context(), inv.ID, u.ID, time.Now())
 	if err != nil {
 		t.Fatalf("AcceptInvite(%s): %v", u.ID, err)
 	}

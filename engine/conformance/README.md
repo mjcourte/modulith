@@ -40,6 +40,7 @@ work.
     "now": "2026-10-12T09:00:00Z",      // required, RFC 3339
     "maxSkew": "1m"                     // optional, default DefaultMaxSkew
   },
+  "skip": {"rust": "why"},              // optional, see below; a last resort
   "permute": false,                     // optional, see below
   "ops": [ /* see below */ ],
   "expect": {
@@ -121,12 +122,42 @@ will carry across the C ABI at stage 8.
 | `unsupported_format` | `ErrUnsupportedFormat` |
 | `not_found` | `ErrNotFound` |
 | `closed` | `ErrClosed` |
-| `malformed` | malformed buffer |
-| `no_key` | register without a key |
-| `no_value` | register has no value |
-| `not_finite` | register value is not finite |
-| `unstamped_register` | snapshot register is unstamped |
-| `unstamped_replica` | stamped delta without a replica |
+| `malformed` | `ErrMalformed` |
+| `no_key` | `ErrNoKey` |
+| `no_value` | `ErrNoValue` |
+| `not_finite` | `ErrNotFinite` |
+| `unstamped_register` | `ErrUnstampedRegister` |
+| `unstamped_replica` | `ErrUnstampedReplica` |
+
+Every one is a sentinel, matched with `errors.Is`, and the table above is the
+whole vocabulary: a case naming anything else fails to load rather than
+matching nothing. Until 2026-11-12 the last six had no sentinel and the walker
+matched them on a substring of the message, which made a case a hostage to
+wording — and gave Rust, whose messages are its own, nothing to match. Adding a
+name means adding an error on both sides, which is the intended cost.
+
+## skip
+
+A case binds every implementation. Where one genuinely cannot be bound, the
+case says so and says why:
+
+```jsonc
+"skip": {
+  "rust": "one or more sentences arguing why this case does not apply here"
+}
+```
+
+The reason is mandatory, the implementation key must be one a walker claims
+(`go`, `rust`), and each walker validates *every* entry, not just its own — a
+typo'd key would otherwise exclude nothing while looking like it had. A walker
+counts what it skipped and names it in its output, and fails outright if
+every case was skipped.
+
+This is a last resort, not a way past a failing case. The bar is that the case
+pins something outside the CRDT the vectors specify. One case meets it today:
+[closed_document_refuses_work](cases/closed_document_refuses_work/ops.json),
+which pins handle lifetime (Go's `Close`/`ErrClosed`) rather than convergence,
+and will move to an FFI suite at stage 8 — its `skip` says so at length.
 
 ## Known properties of the wire format
 

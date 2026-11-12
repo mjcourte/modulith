@@ -58,13 +58,13 @@ func (m *MemoryStore) ListOrgInvites(ctx context.Context, orgID string) ([]Invit
 	return out, nil
 }
 
-func (m *MemoryStore) ListEmailInvites(ctx context.Context, email string) ([]Invite, error) {
-	key, t := emailKey(email), now()
+func (m *MemoryStore) ListEmailInvites(ctx context.Context, email string, at time.Time) ([]Invite, error) {
+	key := emailKey(email)
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	var out []Invite
 	for _, inv := range m.invites {
-		if inv.Email == key && !inv.expired(t) {
+		if inv.Email == key && !inv.expired(at) {
 			out = append(out, inv)
 		}
 	}
@@ -72,14 +72,14 @@ func (m *MemoryStore) ListEmailInvites(ctx context.Context, email string) ([]Inv
 	return out, nil
 }
 
-func (m *MemoryStore) AcceptInvite(ctx context.Context, inviteID, userID string) (Member, error) {
+func (m *MemoryStore) AcceptInvite(ctx context.Context, inviteID, userID string, at time.Time) (Member, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	inv, ok := m.invites[inviteID]
 	switch {
 	case !ok:
 		return Member{}, ErrInviteNotFound
-	case inv.expired(now()):
+	case inv.expired(at):
 		return Member{}, fmt.Errorf("%w: expired at %s", ErrInviteExpired, inv.ExpiresAt.Format(time.RFC3339))
 	}
 	if !m.liveOrg(inv.OrgID) {

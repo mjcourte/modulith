@@ -109,15 +109,20 @@ func testListInvites(t *testing.T, s directory.Store) {
 	}
 
 	// Someone signing in sees their live invites from every org, any case.
-	invs, err = s.ListEmailInvites(ctx, "Bob@Example.com")
+	invs, err = s.ListEmailInvites(ctx, "Bob@Example.com", time.Now())
 	if err != nil {
 		t.Fatalf("ListEmailInvites: %v", err)
 	}
 	if got, want := inviteIDs(invs), []string{bobElsewhere.ID}; !slices.Equal(got, want) {
 		t.Errorf("ListEmailInvites = %v, want %v (the expired one hidden)", got, want)
 	}
-	if invs, err := s.ListEmailInvites(ctx, "nobody@example.com"); err != nil || len(invs) != 0 {
+	if invs, err := s.ListEmailInvites(ctx, "nobody@example.com", time.Now()); err != nil || len(invs) != 0 {
 		t.Errorf("no invites = %v, %v", invs, err)
+	}
+	// Expiry is judged at the given time, not the wall clock: an hour on, the
+	// live invites are hidden too.
+	if invs, err := s.ListEmailInvites(ctx, "bob@example.com", time.Now().Add(time.Hour)); err != nil || len(invs) != 0 {
+		t.Errorf("invites an hour later = %v, %v; want none", inviteIDs(invs), err)
 	}
 }
 
@@ -127,7 +132,7 @@ func testAcceptInvite(t *testing.T, s directory.Store) {
 	bob := mustUser(t, s, "bob")
 	inv := mustInvite(t, s, o.ID, bob.Email, directory.RoleAdmin, time.Hour)
 
-	m, err := s.AcceptInvite(ctx, inv.ID, bob.ID)
+	m, err := s.AcceptInvite(ctx, inv.ID, bob.ID, time.Now())
 	if err != nil {
 		t.Fatalf("AcceptInvite: %v", err)
 	}
@@ -140,7 +145,7 @@ func testAcceptInvite(t *testing.T, s directory.Store) {
 	if _, err := s.GetInvite(ctx, inv.ID); !errors.Is(err, directory.ErrInviteNotFound) {
 		t.Errorf("accepted invite still there: %v", err)
 	}
-	if _, err := s.AcceptInvite(ctx, inv.ID, bob.ID); !errors.Is(err, directory.ErrInviteNotFound) {
+	if _, err := s.AcceptInvite(ctx, inv.ID, bob.ID, time.Now()); !errors.Is(err, directory.ErrInviteNotFound) {
 		t.Errorf("accepting twice = %v, want ErrInviteNotFound", err)
 	}
 }
@@ -150,12 +155,13 @@ func testAcceptInviteRejects(t *testing.T, s directory.Store) {
 	o := mustOrg(t, s, "Acme", mustUser(t, s, "ann").ID)
 	bob := mustUser(t, s, "bob")
 
-	if _, err := s.AcceptInvite(ctx, uuid.NewString(), bob.ID); !errors.Is(err, directory.ErrInviteNotFound) {
+	at := time.Now()
+	if _, err := s.AcceptInvite(ctx, uuid.NewString(), bob.ID, at); !errors.Is(err, directory.ErrInviteNotFound) {
 		t.Errorf("missing invite = %v, want ErrInviteNotFound", err)
 	}
 
 	expired := mustInvite(t, s, o.ID, bob.Email, directory.RoleMember, -time.Minute)
-	if _, err := s.AcceptInvite(ctx, expired.ID, bob.ID); !errors.Is(err, directory.ErrInviteExpired) {
+	if _, err := s.AcceptInvite(ctx, expired.ID, bob.ID, at); !errors.Is(err, directory.ErrInviteExpired) {
 		t.Errorf("expired invite = %v, want ErrInviteExpired", err)
 	}
 	if _, err := s.GetMembership(ctx, bob.ID); !errors.Is(err, directory.ErrNotMember) {
@@ -169,7 +175,7 @@ func testAcceptInviteRejects(t *testing.T, s directory.Store) {
 	eve := mustUser(t, s, "eve")
 	mustOrg(t, s, "Other", eve.ID)
 	toEve := mustInvite(t, s, o.ID, eve.Email, directory.RoleMember, time.Hour)
-	if _, err := s.AcceptInvite(ctx, toEve.ID, eve.ID); !errors.Is(err, directory.ErrAlreadyMember) {
+	if _, err := s.AcceptInvite(ctx, toEve.ID, eve.ID, at); !errors.Is(err, directory.ErrAlreadyMember) {
 		t.Errorf("user already in an org = %v, want ErrAlreadyMember", err)
 	}
 	if _, err := s.GetInvite(ctx, toEve.ID); err != nil {
@@ -177,8 +183,17 @@ func testAcceptInviteRejects(t *testing.T, s directory.Store) {
 	}
 
 	live := mustInvite(t, s, o.ID, "ghost@example.com", directory.RoleMember, time.Hour)
-	if _, err := s.AcceptInvite(ctx, live.ID, "ghost"); !errors.Is(err, directory.ErrUserNotFound) {
+	if _, err := s.AcceptInvite(ctx, live.ID, "ghost", at); !errors.Is(err, directory.ErrUserNotFound) {
 		t.Errorf("unknown user = %v, want ErrUserNotFound", err)
+	}
+
+	// The time is the caller's, not the store's: an invite live now is
+	// expired when accepted at a later time. Nothing else can test this —
+	// before AcceptInvite took at, the store read its own clock and only an
+	// invite stamped in the past could be refused.
+	later := mustInvite(t, s, o.ID, "cat@example.com", directory.RoleMember, time.Hour)
+	if _, err := s.AcceptInvite(ctx, later.ID, bob.ID, at.Add(2*time.Hour)); !errors.Is(err, directory.ErrInviteExpired) {
+		t.Errorf("live invite accepted two hours on = %v, want ErrInviteExpired", err)
 	}
 }
 

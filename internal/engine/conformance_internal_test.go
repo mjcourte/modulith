@@ -41,7 +41,20 @@ type confCase struct {
 	Permute  bool         `json:"permute"`
 	Ops      []confOp     `json:"ops"`
 	Expect   confExpect   `json:"expect"`
+	// Skip names the implementations a case does not bind, each with the
+	// reason. Absent means every implementation runs it, which is the point
+	// of the vectors; a reason is mandatory so a skip has to be argued for
+	// rather than reached for.
+	Skip map[string]string `json:"skip"`
 }
+
+// confImpl is this walker's key in a case's skip map.
+const confImpl = "go"
+
+// confImpls is every implementation that walks these cases. A skip for
+// anything else is a typo, and a typo'd skip would run the case it meant to
+// exclude — or, worse, exclude nothing and look like it had.
+var confImpls = []string{"go", "rust"}
 
 type confSettings struct {
 	ID      string `json:"id"`
@@ -196,22 +209,37 @@ func TestConformance(t *testing.T) {
 	if err != nil {
 		t.Fatalf("cases: %v", err)
 	}
-	var ran int
+	var cases, skipped int
 	for _, e := range entries {
 		if !e.IsDir() {
 			continue
 		}
-		ran++
+		cases++
 		t.Run(e.Name(), func(t *testing.T) {
-			confRunCase(t, filepath.Join(confCasesDir, e.Name()))
+			dir := filepath.Join(confCasesDir, e.Name())
+			c := confLoadCase(t, dir)
+			// Count before skipping: t.Skipf ends the goroutine, so nothing
+			// after it in this closure runs.
+			if why, ok := c.Skip[confImpl]; ok {
+				skipped++
+				t.Skipf("not binding on %s: %s", confImpl, why)
+			}
+			confRunCase(t, dir, c)
 		})
 	}
-	if ran == 0 {
+	if cases == 0 {
 		t.Fatal("no cases found: the spec can't be empty")
 	}
+	if cases == skipped {
+		t.Fatal("every case skipped: the suite proved nothing")
+	}
+	t.Logf("%d cases, %d run, %d skipped for %s", cases, cases-skipped, skipped, confImpl)
 }
 
-func confRunCase(t *testing.T, dir string) {
+// confLoadCase reads and validates ops.json. It checks every implementation's
+// skip, not just this one's: one walker catching another's typo is most of
+// what a shared suite is for.
+func confLoadCase(t *testing.T, dir string) confCase {
 	t.Helper()
 	b, err := os.ReadFile(filepath.Join(dir, "ops.json"))
 	if err != nil {
@@ -226,7 +254,24 @@ func confRunCase(t *testing.T, dir string) {
 	if c.Settings.Replica == "" || c.Settings.Now == "" {
 		t.Fatal("settings must state replica and now: a generated ID or a real clock makes the case unreproducible")
 	}
+	for impl, why := range c.Skip {
+		if !slices.Contains(confImpls, impl) {
+			t.Fatalf("skip names unknown implementation %q (want one of %v)", impl, confImpls)
+		}
+		if strings.TrimSpace(why) == "" {
+			t.Fatalf("skip[%q] has no reason: a case excluded without one is a case nobody can reinstate", impl)
+		}
+	}
+	for _, op := range c.Ops {
+		if op.Error != "" && confErrors[op.Error] == nil {
+			t.Fatalf("op %q expects unknown error %q", op.Op, op.Error)
+		}
+	}
+	return c
+}
 
+func confRunCase(t *testing.T, dir string, c confCase) {
+	t.Helper()
 	orders := [][]int{confIdentity(len(c.Ops))}
 	if c.Permute {
 		if err := confPermutable(c.Ops); err != nil {
@@ -445,33 +490,26 @@ func confPackSnapshot(cs *confSnapshot, version int) (Snapshot, error) {
 	return Snapshot{Format: WireNative, Version: version, Payload: b.FinishedBytes()}, nil
 }
 
-// confMatchError maps a case's stable error name onto this implementation's
-// error. Only four are sentinels; the rest are matched on their message, which
-// is an argument for promoting them (engine/conformance/README.md).
+// confErrors maps every stable error name in engine/conformance's table onto
+// this implementation's sentinel. The map is the whole vocabulary: confLoadCase
+// rejects a case naming anything outside it, so a misspelled expectation fails
+// loudly instead of matching nothing. Matching is errors.Is throughout — a
+// message substring would let a reworded error silently stop proving its case.
+var confErrors = map[string]error{
+	"bad_stamp":          ErrBadStamp,
+	"unsupported_format": ErrUnsupportedFormat,
+	"not_found":          ErrNotFound,
+	"closed":             ErrClosed,
+	"malformed":          ErrMalformed,
+	"no_key":             ErrNoKey,
+	"no_value":           ErrNoValue,
+	"not_finite":         ErrNotFinite,
+	"unstamped_register": ErrUnstampedRegister,
+	"unstamped_replica":  ErrUnstampedReplica,
+}
+
 func confMatchError(name string, err error) bool {
-	switch name {
-	case "bad_stamp":
-		return errors.Is(err, ErrBadStamp)
-	case "unsupported_format":
-		return errors.Is(err, ErrUnsupportedFormat)
-	case "not_found":
-		return errors.Is(err, ErrNotFound)
-	case "closed":
-		return errors.Is(err, ErrClosed)
-	case "malformed":
-		return strings.Contains(err.Error(), "malformed")
-	case "no_key":
-		return strings.Contains(err.Error(), "without a key")
-	case "no_value":
-		return strings.Contains(err.Error(), "has no value")
-	case "not_finite":
-		return strings.Contains(err.Error(), "not finite")
-	case "unstamped_register":
-		return strings.Contains(err.Error(), "is unstamped")
-	case "unstamped_replica":
-		return strings.Contains(err.Error(), "without a replica")
-	}
-	return false
+	return errors.Is(err, confErrors[name])
 }
 
 // confCheckFile compares got against the blessed file, or writes it under

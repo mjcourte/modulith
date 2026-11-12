@@ -59,15 +59,15 @@ func (p *Postgres) ListOrgInvites(ctx context.Context, orgID string) ([]Invite, 
 	return invitesFromRows(rows), nil
 }
 
-func (p *Postgres) ListEmailInvites(ctx context.Context, email string) ([]Invite, error) {
-	rows, err := p.q.ListEmailInvites(ctx, db.ListEmailInvitesParams{Email: emailKey(email), ExpiresAt: now()})
+func (p *Postgres) ListEmailInvites(ctx context.Context, email string, at time.Time) ([]Invite, error) {
+	rows, err := p.q.ListEmailInvites(ctx, db.ListEmailInvitesParams{Email: emailKey(email), ExpiresAt: at})
 	if err != nil {
 		return nil, err
 	}
 	return invitesFromRows(rows), nil
 }
 
-func (p *Postgres) AcceptInvite(ctx context.Context, inviteID, userID string) (Member, error) {
+func (p *Postgres) AcceptInvite(ctx context.Context, inviteID, userID string, at time.Time) (Member, error) {
 	if !validID(inviteID) {
 		return Member{}, ErrInviteNotFound
 	}
@@ -81,7 +81,7 @@ func (p *Postgres) AcceptInvite(ctx context.Context, inviteID, userID string) (M
 			return err
 		}
 		inv := inviteFromRow(row)
-		if inv.expired(now()) {
+		if inv.expired(at) {
 			return fmt.Errorf("%w: expired at %s", ErrInviteExpired, inv.ExpiresAt.Format(time.RFC3339))
 		}
 		if err := lockLiveOrg(ctx, q, inv.OrgID); err != nil {

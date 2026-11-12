@@ -27,6 +27,12 @@ type Invite struct {
 
 // InviteStore persists pending invites. An accepted, declined or revoked
 // invite is deleted; expired ones stay until the cleanup loop removes them.
+//
+// Where expiry is judged, the caller passes the time rather than the store
+// reading a clock, as ClaimPendingShares and DeleteExpiredInvites already do.
+// It is what makes expiry testable at all: a store reaching for time.Now
+// cannot be moved, so the Manager's clock would be authoritative for stamping
+// an invite's expiry and powerless over whether it had expired.
 type InviteStore interface {
 	// CreateInvite stores an invite, assigning its ID and CreatedAt. The org
 	// must exist (ErrOrgNotFound). Inviting an email that already has a
@@ -38,14 +44,14 @@ type InviteStore interface {
 	// ListOrgInvites returns the org's invites, expired ones included (so an
 	// admin can re-invite), newest first.
 	ListOrgInvites(ctx context.Context, orgID string) ([]Invite, error)
-	// ListEmailInvites returns the unexpired invites for an email address
-	// (any letter case), newest first: what a user sees after signing in.
-	ListEmailInvites(ctx context.Context, email string) ([]Invite, error)
+	// ListEmailInvites returns the invites for an email address (any letter
+	// case) unexpired at, newest first: what a user sees after signing in.
+	ListEmailInvites(ctx context.Context, email string, at time.Time) ([]Invite, error)
 	// AcceptInvite makes the user a member of the invite's org with its role
-	// and deletes the invite, atomically. An expired invite is
+	// and deletes the invite, atomically. An invite expired at is
 	// ErrInviteExpired; a user already in an org is ErrAlreadyMember. Whether
 	// this user may accept (their email matches) is the Manager's check.
-	AcceptInvite(ctx context.Context, inviteID, userID string) (Member, error)
+	AcceptInvite(ctx context.Context, inviteID, userID string, at time.Time) (Member, error)
 	// DeleteInvite removes an invite (declined or revoked). Deleting a missing
 	// one is not an error, so it's safe to retry.
 	DeleteInvite(ctx context.Context, id string) error
